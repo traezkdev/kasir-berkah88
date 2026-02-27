@@ -19,11 +19,12 @@ import {
     AppState,
     Modal,
     Dimensions,
-    Linking
+    Linking,
+    Clipboard
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
-import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone, User, Image as ImageIcon, MapPin } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone, User, Image as ImageIcon, MapPin, Copy } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -1232,9 +1233,17 @@ const ChatDetailScreen = () => {
     }, [chat.id, message, replyingTo, editingMessage, chat.name]);
 
     const handleLongPress = useCallback((item) => {
+        if (item.is_deleted) return;
         setSelectedMessage(item);
         setOptionsVisible(true);
     }, []);
+
+    const handleCopy = () => {
+        if (selectedMessage) {
+            Clipboard.setString(selectedMessage.text);
+            setOptionsVisible(false);
+        }
+    };
 
     const handleReply = () => {
         setReplyingTo(selectedMessage);
@@ -1570,6 +1579,64 @@ const ChatDetailScreen = () => {
         );
     };
 
+    const renderOptionsModal = () => {
+        if (!optionsVisible || !selectedMessage) return null;
+
+        const isMe = selectedMessage.sender === 'me';
+
+        return (
+            <Modal
+                visible={optionsVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setOptionsVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setOptionsVisible(false)}
+                >
+                    <View style={styles.optionsContainer}>
+                        <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
+                            <CornerUpRight size={22} color="#555" />
+                            <Text style={styles.optionText}>Balas</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.optionItem} onPress={handleCopy}>
+                            <Copy size={22} color="#555" />
+                            <Text style={styles.optionText}>Salin</Text>
+                        </TouchableOpacity>
+
+                        {isMe && (
+                            <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
+                                <Edit2 size={22} color="#555" />
+                                <Text style={styles.optionText}>Edit</Text>
+                            </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                Alert.alert(
+                                    'Hapus Pesan?',
+                                    'Pilih jenis penghapusan',
+                                    [
+                                        { text: 'Batal', style: 'cancel' },
+                                        { text: 'Hapus untuk saya', onPress: () => handleDelete('pribadi') },
+                                        isMe ? { text: 'Hapus untuk semua orang', style: 'destructive', onPress: () => handleDelete('semua') } : null
+                                    ].filter(Boolean)
+                                );
+                            }}
+                        >
+                            <Trash2 size={22} color="#e53935" />
+                            <Text style={[styles.optionText, { color: '#e53935' }]}>Hapus</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        );
+    };
+
     const renderMessage = useCallback(({ item }) => {
         const isSelected = !!selectedIds[item.id];
         const itemProgress = uploadProgress[item.id];
@@ -1788,6 +1855,7 @@ const ChatDetailScreen = () => {
 
             {renderViewerModal()}
             {renderMediaPreviewModal()}
+            {renderOptionsModal()}
 
             {/* Header WhatsApp Style */}
             <View style={styles.header}>
@@ -1916,30 +1984,45 @@ const ChatDetailScreen = () => {
                             </View>
                         )}
                         <View style={styles.inputRow}>
-                            <View style={styles.inputMain}>
-                                <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
-                                    <Smile size={24} color="#888" />
-                                </TouchableOpacity>
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="Ketik pesan"
-                                    placeholderTextColor="#909090"
-                                    value={message}
-                                    onChangeText={setMessage}
-                                    multiline
-                                />
-                                <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
-                                    <Paperclip size={24} color="#888" />
-                                </TouchableOpacity>
-                                {!message.trim() && (
-                                    <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
-                                        <VideoIcon size={24} color="#888" />
+                            {isRecording ? (
+                                <View style={[styles.inputMain, styles.recordingInputMain]}>
+                                    <Animated.View style={{ transform: [{ scale: micPulseAnim }] }}>
+                                        <Mic size={24} color="#e53935" />
+                                    </Animated.View>
+                                    <Text style={styles.recordingTimer}>{formatDuration(recordingDuration)}</Text>
+                                    <View style={styles.slideCancelWrapper}>
+                                        <Text style={styles.slideCancelText}>
+                                            {willCancel ? 'Lepas untuk batal' : 'Geser untuk batal ‹'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ) : (
+                                <View style={styles.inputMain}>
+                                    <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
+                                        <Smile size={24} color="#888" />
                                     </TouchableOpacity>
-                                )}
-                            </View>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="Ketik pesan"
+                                        placeholderTextColor="#909090"
+                                        value={message}
+                                        onChangeText={setMessage}
+                                        multiline
+                                    />
+                                    <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
+                                        <Paperclip size={24} color="#888" />
+                                    </TouchableOpacity>
+                                    {!message.trim() && (
+                                        <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
+                                            <VideoIcon size={24} color="#888" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
                             <TouchableOpacity
-                                style={styles.sendBtnCircle}
+                                style={[styles.sendBtnCircle, isRecording && { backgroundColor: '#e53935' }]}
                                 onPress={() => message.trim() ? sendMessage() : (isRecording ? stopRecordingAndSend() : startRecording())}
+                                {...(isRecording ? panResponder.panHandlers : {})}
                             >
                                 {message.trim() ? (
                                     <Send size={24} color="#fff" fill="#fff" />
@@ -2370,6 +2453,55 @@ const styles = StyleSheet.create({
         right: scale(20),
         padding: scale(10),
         zIndex: 10,
+    },
+    // Recording Styles
+    recordingInputMain: {
+        justifyContent: 'flex-start',
+        gap: scale(10),
+    },
+    recordingTimer: {
+        fontSize: moderateScale(18),
+        color: '#000',
+        fontWeight: '500',
+        marginLeft: scale(5),
+    },
+    slideCancelWrapper: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    slideCancelText: {
+        color: '#888',
+        fontSize: moderateScale(14),
+    },
+    // Options Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    optionsContainer: {
+        backgroundColor: '#fff',
+        borderRadius: scale(12),
+        width: '70%',
+        paddingVertical: verticalScale(8),
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    optionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: scale(20),
+        gap: scale(15),
+    },
+    optionText: {
+        fontSize: moderateScale(16),
+        color: '#333',
     },
 });
 
