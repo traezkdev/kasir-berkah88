@@ -126,62 +126,64 @@ const DesktopMenu = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
             <main className="max-w-7xl mx-auto px-8 py-8 grid grid-cols-12 gap-8">
                 {/* Sidebar Filter */}
-                <aside className="col-span-3 space-y-6">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Kategori Menu</h3>
-                        <div className="space-y-2">
-                            <button
-                                onClick={() => handleCategoryClick('all')}
-                                className={`w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight transition-all flex items-center justify-between group ${selectedCategory === 'all' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                            >
-                                <span>Semua Menu</span>
-                                <Icon name="ChevronRight" className={`w-4 h-4 transition-transform ${selectedCategory === 'all' ? 'translate-x-1' : 'opacity-0 group-hover:opacity-100'}`} />
-                            </button>
-                            {categories.map(cat => (
+                <aside className="col-span-3 relative">
+                    <div className="fixed top-28 w-[calc(1280px*3/12-2rem)] max-w-[280px] space-y-6 overflow-y-auto max-h-[calc(100vh-8rem)] no-scrollbar">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Kategori Menu</h3>
+                            <div className="space-y-2">
                                 <button
-                                    key={cat.id}
-                                    onClick={() => handleCategoryClick(cat.id)}
-                                    className={`w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight transition-all flex items-center justify-between group ${selectedCategory == cat.id ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    onClick={() => handleCategoryClick('all')}
+                                    className={`w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight transition-all flex items-center justify-between group ${selectedCategory === 'all' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                 >
-                                    <span>{cat.name}</span>
-                                    <Icon name="ChevronRight" className={`w-4 h-4 transition-transform ${selectedCategory == cat.id ? 'translate-x-1' : 'opacity-0 group-hover:opacity-100'}`} />
+                                    <span>Semua Menu</span>
+                                    <Icon name="ChevronRight" className={`w-4 h-4 transition-transform ${selectedCategory === 'all' ? 'translate-x-1' : 'opacity-0 group-hover:opacity-100'}`} />
                                 </button>
-                            ))}
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => handleCategoryClick(cat.id)}
+                                        className={`w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight transition-all flex items-center justify-between group ${selectedCategory == cat.id ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    >
+                                        <span>{cat.name}</span>
+                                        <Icon name="ChevronRight" className={`w-4 h-4 transition-transform ${selectedCategory == cat.id ? 'translate-x-1' : 'opacity-0 group-hover:opacity-100'}`} />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Quick Filters */}
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Urutkan Berdasarkan</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {[
-                                { id: 'sedang_promo', label: 'Diskon', icon: 'Zap' },
-                                { id: 'paling_laris', label: 'Terlaris', icon: 'Star' },
-                                { id: 'terbaru', label: 'Terbaru', icon: 'Clock' }
-                            ].map(filter => (
-                                <button
-                                    key={filter.id}
-                                    onClick={() => {
-                                        if (searchParams.get('filter') === filter.id) searchParams.delete('filter');
-                                        else searchParams.set('filter', filter.id);
-                                        setSearchParams(searchParams);
-                                    }}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 border transition-all ${searchParams.get('filter') === filter.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 hover:border-orange-200'}`}
-                                >
-                                    <Icon name={filter.icon} size={14} />
-                                    {filter.label}
-                                </button>
-                            ))}
+                        {/* Quick Filters */}
+                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Urutkan Berdasarkan</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'sedang_promo', label: 'Diskon', icon: 'Zap' },
+                                    { id: 'paling_laris', label: 'Terlaris', icon: 'Star' },
+                                    { id: 'terbaru', label: 'Terbaru', icon: 'Clock' }
+                                ].map(filter => (
+                                    <button
+                                        key={filter.id}
+                                        onClick={() => {
+                                            if (searchParams.get('filter') === filter.id) searchParams.delete('filter');
+                                            else searchParams.set('filter', filter.id);
+                                            setSearchParams(searchParams);
+                                        }}
+                                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 border transition-all ${searchParams.get('filter') === filter.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 hover:border-orange-200'}`}
+                                    >
+                                        <Icon name={filter.icon} size={14} />
+                                        {filter.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    {!isOpen && (
-                        <div className="bg-rose-600 rounded-[2rem] p-6 text-white text-center shadow-xl shadow-rose-600/20 border-4 border-white dark:border-slate-800">
-                            <Icon name="XCircle" className="w-10 h-10 mx-auto mb-3" />
-                            <h4 className="font-black text-lg mb-1">TOKO TUTUP</h4>
-                            <p className="text-xs font-bold text-rose-100 leading-relaxed">Saat ini kami sedang beristirahat. Silakan cek menu, tapi pemesanan belum tersedia.</p>
-                        </div>
-                    )}
+                        {!isOpen && (
+                            <div className="bg-rose-600 rounded-[2rem] p-6 text-white text-center shadow-xl shadow-rose-600/20 border-4 border-white dark:border-slate-800">
+                                <Icon name="XCircle" className="w-10 h-10 mx-auto mb-3" />
+                                <h4 className="font-black text-lg mb-1">TOKO TUTUP</h4>
+                                <p className="text-xs font-bold text-rose-100 leading-relaxed">Saat ini kami sedang beristirahat. Silakan cek menu, tapi pemesanan belum tersedia.</p>
+                            </div>
+                        )}
+                    </div>
                 </aside>
 
                 {/* Main Content Area */}

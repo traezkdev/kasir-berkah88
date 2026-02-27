@@ -1694,6 +1694,19 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
             return res.status(400).json({ error: "ID menu dan rating wajib diisi" });
         }
 
+        // Check for existing review to prevent spam
+        const [existing] = await db.query(
+            "SELECT id FROM menu_reviews WHERE user_id = ? AND menu_item_id = ?",
+            [user_id, menu_item_id]
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({
+                error: "Anda sudah memberikan ulasan untuk menu ini. Silakan gunakan fitur edit jika ingin melakukan perubahan.",
+                existing_id: existing[0].id
+            });
+        }
+
         // Anti-Spam & Validation: Check if order exists, belongs to user, is completed, AND contains the menu item
         if (order_id) {
             const [orderRows] = await db.query('SELECT items, status, user_id FROM orders WHERE id = ?', [order_id]);
@@ -1714,7 +1727,7 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
                 return res.status(400).json({ error: "Menu ini tidak ada dalam pesanan Anda" });
             }
         } else {
-            // If no order_id is provided, we check if they HAVE EVER ordered it in a completed order
+            // Find if they've ever ordered it
             const [everOrderedRows] = await db.query(`
                 SELECT id FROM orders 
                 WHERE user_id = ? AND status = 'completed' AND items LIKE ?
@@ -1725,24 +1738,66 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
             }
         }
 
-        // Use a unique constraint on (user_id, menu_item_id) if we want "one rating per menu"
-        // But the database current unique is (user_id, menu_item_id, order_id).
-        // If we want to allow EDITING regardless of order_id, we can find existing one first
-        // OR we change the DB constraint. Let's stick to the DB constraint for now but handle updates.
-
         const sql = `
             INSERT INTO menu_reviews (menu_item_id, user_id, order_id, rating, comment)
             VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment)
         `;
 
-        await db.query(sql, [menu_item_id, user_id, order_id || null, rating, comment || null]);
+        const [result] = await db.query(sql, [menu_item_id, user_id, order_id || null, rating, comment || null]);
 
         await logActivity(user_id, 'Beri Ulasan', 'menu_item', menu_item_id, `Rating ${rating} untuk menu ${menu_item_id}`);
 
-        res.status(201).json({ message: "success", data: { menu_item_id, rating, comment } });
+        res.status(201).json({ message: "success", data: { id: result.insertId, menu_item_id, rating, comment } });
     } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: "Anda sudah memberikan ulasan untuk menu ini." });
+        }
         console.error("Error submitting review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update an existing review (for customers)
+app.put("/api/menu-reviews/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rating, comment } = req.body;
+        const user_id = req.user.userId;
+
+        // Ensure user owns this review
+        const [review] = await db.query("SELECT id, user_id FROM menu_reviews WHERE id = ?", [id]);
+        if (review.length === 0) {
+            return res.status(404).json({ error: "Ulasan tidak ditemukan" });
+        }
+
+        if (review[0].user_id !== user_id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: "Anda tidak memiliki izin untuk mengedit ulasan ini" });
+        }
+
+        const sql = "UPDATE menu_reviews SET rating = ?, comment = ?, created_at = NOW() WHERE id = ?";
+        await db.query(sql, [rating, comment || null, id]);
+
+        await logActivity(user_id, 'Update Ulasan', 'review', id, `Update rating ke ${rating}`);
+
+        res.json({ message: "success", data: { id, rating, comment } });
+    } catch (err) {
+        console.error("Error updating review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get reviews for a specific order
+app.get("/api/menu-reviews/order/:order_id", authenticateToken, async (req, res) => {
+    try {
+        const { order_id } = req.params;
+        const user_id = req.user.userId;
+
+        const sql = "SELECT * FROM menu_reviews WHERE order_id = ? AND user_id = ?";
+        const [reviews] = await db.query(sql, [order_id, user_id]);
+
+        res.json({ message: "success", data: reviews });
+    } catch (err) {
+        console.error("Error fetching order reviews:", err);
         res.status(500).json({ error: err.message });
     }
 });

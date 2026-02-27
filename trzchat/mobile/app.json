@@ -1,0 +1,80 @@
+{
+  "expo": {
+    "name": "Vira Chat",
+    "slug": "vira-chat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/iconlogo.png",
+    "splash": {
+      "image": "./assets/iconlogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Aplikasi ini memerlukan akses ke kamera untuk fitur video call.",
+        "NSMicrophoneUsageDescription": "Aplikasi ini memerlukan akses ke mikrofon untuk fitur telepon dan video call."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/iconlogo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.trzchat.app",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_NETWORK_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT"
+      ]
+    },
+    "plugins": [
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Aplikasi ini memerlukan akses ke kamera untuk fitur video call.",
+          "microphonePermission": "Aplikasi ini memerlukan akses ke mikrofon untuk fitur telepon dan video call."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "expo-config-plugin-incall-manager",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/iconlogo.png",
+          "color": "#6366F1"
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d6c9dda3-051f-48a7-a7d1-8c1b786a6764"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d6c9dda3-051f-48a7-a7d1-8c1b786a6764"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "382385650018",
+    "project_id": "kasirberkah88-36bae",
+    "storage_bucket": "kasirberkah88-36bae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:382385650018:android:ab33071857efc5b0fb943b",
+        "android_client_info": {
+          "package_name": "com.traezkdev.kasirberkah88mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8M5hYDkWzura0VLbgN3md1TTJG97Y5ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:382385650018:android:fbe472f77580e3edfb943b",
+        "android_client_info": {
+          "package_name": "com.trzchat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8M5hYDkWzura0VLbgN3md1TTJG97Y5ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

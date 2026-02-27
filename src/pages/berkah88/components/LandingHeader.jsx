@@ -41,10 +41,10 @@ const LandingHeader = () => {
     return (
         <header
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 gpu-acceleration ${isMobileMenuOpen
-                    ? 'bg-white border-b border-slate-100 py-3 shadow-sm'
-                    : scrolled
-                        ? 'bg-white/95 backdrop-blur-md border-b border-slate-100 py-3 shadow-sm'
-                        : 'bg-transparent py-5'
+                ? 'bg-white border-b border-slate-100 py-3 shadow-sm'
+                : scrolled
+                    ? 'bg-white/95 backdrop-blur-md border-b border-slate-100 py-3 shadow-sm'
+                    : 'bg-transparent py-5'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -70,7 +70,7 @@ const LandingHeader = () => {
                             </button>
                         ))}
                         <button
-                            onClick={() => navigate('/login')}
+                            onClick={() => navigate('/auth')}
                             className={`px-6 py-2.5 text-sm font-black rounded-full transition-all duration-300 hover:scale-105 shadow-sm ${scrolled
                                 ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100'
                                 : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md border border-white/20'}`}
@@ -104,7 +104,7 @@ const LandingHeader = () => {
                         ))}
                         <div className="pt-4 border-t border-slate-100">
                             <button
-                                onClick={() => navigate('/login')}
+                                onClick={() => navigate('/auth')}
                                 className="w-full flex items-center justify-center px-4 py-4 text-base font-black text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all"
                             >
                                 Masuk Sekarang

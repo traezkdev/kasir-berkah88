@@ -84,7 +84,7 @@ const CustomerLayout = () => {
             </nav>
 
             {/* Main Content Area */}
-            <main className={`w-full max-w-md lg:max-w-7xl mx-auto min-h-screen relative overflow-x-hidden ${currentPath !== '/customer/chat' && currentPath !== '/customer/cart' ? 'pb-24 lg:pb-12' : ''}`}>
+            <main className={`w-full max-w-md lg:max-w-7xl mx-auto min-h-screen relative ${currentPath !== '/customer/chat' && currentPath !== '/customer/cart' ? 'pb-24 lg:pb-12' : ''}`}>
                 <Outlet />
             </main>
 
