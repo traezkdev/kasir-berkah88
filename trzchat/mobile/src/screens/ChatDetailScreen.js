@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
-import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2 } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -1757,111 +1757,145 @@ const ChatDetailScreen = () => {
     );
 
     return (
-        <View style={[styles.container, { paddingBottom: Platform.OS === 'android' ? keyboardPadding : 0 }]}>
-            <StatusBar style="dark" translucent />
+        <View style={styles.container}>
+            <StatusBar style="dark" />
 
             {renderViewerModal()}
             {renderMediaPreviewModal()}
 
-            {(optionsVisible && selectedMessage) ? (
-                <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => { setOptionsVisible(false); setSelectedMessage(null); }}>
-                    <View style={[styles.optionsBox, selectedMessage.sender === 'me' ? styles.optionsBoxMe : styles.optionsBoxThem]}>
-                        {!selectedMessage.is_deleted && (
-                            <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
-                                <Reply size={18} color="#6366F1" />
-                                <Text style={styles.optionText}>Balas</Text>
-                            </TouchableOpacity>
-                        )}
-
-                        {(selectedMessage.sender === 'me' && !selectedMessage.is_deleted) && (
-                            <View>
-                                <View style={styles.optionDivider} />
-                                <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
-                                    <Edit2 size={18} color="#555" />
-                                    <Text style={styles.optionText}>Edit</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
-                        <View style={styles.optionDivider} />
-                        <TouchableOpacity style={styles.optionItem} onPress={() => handleDelete('pribadi')}>
-                            <Trash2 size={18} color="#e53935" />
-                            <Text style={[styles.optionText, styles.dangerText]}>Hapus untuk saya</Text>
-                        </TouchableOpacity>
-
-                        {(selectedMessage.sender === 'me' && !selectedMessage.is_deleted) && (
-                            <View>
-                                <View style={styles.optionDivider} />
-                                <TouchableOpacity style={styles.optionItem} onPress={() => handleDelete('semua')}>
-                                    <CornerUpRight size={18} color="#e53935" style={{ transform: [{ scaleX: -1 }] }} />
-                                    <Text style={[styles.optionText, styles.dangerText]}>Tarik pesan (Semua)</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            ) : null}
-
-            {attachmentMenuVisible && (
-                <TouchableOpacity
-                    style={StyleSheet.absoluteFillObject}
-                    activeOpacity={1}
-                    onPress={() => setAttachmentMenuVisible(false)}
-                />
-            )}
-
+            {/* Header WhatsApp Style */}
             <View style={styles.header}>
-                {selectionMode ? (
-                    <View style={styles.headerSelectionRow}>
-                        <TouchableOpacity onPress={exitSelectionMode} style={styles.headerActionBtn}>
-                            <X size={26} color="#1F2937" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerSelectionCount}>{Object.keys(selectedIds).length} dipilih</Text>
-                        <View style={{ flex: 1 }} />
-                        <TouchableOpacity onPress={handleDeleteSelected} style={styles.headerActionBtn}>
-                            <Trash2 size={24} color="#1F2937" />
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <ArrowLeft size={24} color="#1F2937" />
-                        </TouchableOpacity>
-                        <Image source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
+                <View style={styles.headerLeft}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <ArrowLeft size={24} color="#1F2937" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.headerProfile}>
+                        <Image
+                            source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }}
+                            style={styles.headerAvatar}
+                        />
                         <View style={styles.headerInfo}>
-                            <Text style={styles.headerName}>{chat.name}</Text>
+                            <Text style={styles.headerName} numberOfLines={1}>{chat.name}</Text>
                             <Text style={styles.headerStatus}>
-                                {currentStatus === 'online'
-                                    ? 'Online'
-                                    : lastSeen
-                                        ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}`
-                                        : 'offline'}
+                                {currentStatus === 'online' ? 'online' : lastSeen ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}` : 'offline'}
                             </Text>
                         </View>
-                        <TouchableOpacity>
-                            <MoreVertical size={24} color="#1F2937" />
-                        </TouchableOpacity>
-                    </>
-                )}
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity style={styles.headerIcon}>
+                        <VideoIcon size={22} color="#1F2937" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.headerIcon}>
+                        <Phone size={22} color="#1F2937" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.headerIcon}>
+                        <MoreVertical size={22} color="#1F2937" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            <View style={{ flex: 1 }}>
-                {renderChatArea()}
-            </View>
+            {/* Chat Area with Wallpaper */}
+            <View style={styles.chatBackground}>
+                <ImageBackground
+                    source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
+                    style={StyleSheet.absoluteFillObject}
+                    resizeMode="repeat"
+                    imageStyle={{ opacity: 0.08 }}
+                />
 
-            {!selectionMode && (
-                Platform.OS === 'web' ? (
-                    renderInputBar()
-                ) : (
+                <View style={{ flex: 1 }}>
+                    {loading ? (
+                        <View style={styles.loaderContainer}>
+                            <ActivityIndicator size="large" color="#075e54" />
+                        </View>
+                    ) : (
+                        <FlatList
+                            ref={flatListRef}
+                            data={messages}
+                            keyExtractor={(item) => item.id.toString()}
+                            renderItem={renderMessage}
+                            contentContainerStyle={styles.messageList}
+                            inverted={true}
+                            onEndReached={loadMoreMessages}
+                            onEndReachedThreshold={0.5}
+                        />
+                    )}
+                </View>
+
+                {/* Input Bar Section */}
+                {!selectionMode && (
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                        style={styles.inputSection}
                     >
-                        {renderInputBar()}
+                        {(replyingTo || editingMessage) && (
+                            <View style={styles.replyBanner}>
+                                <View style={styles.replyBannerContent}>
+                                    <Text style={styles.replyUser}>
+                                        {replyingTo?.sender === 'me' ? 'Anda' : chat.name}
+                                    </Text>
+                                    <Text style={styles.replyText} numberOfLines={1}>
+                                        {replyingTo?.text || editingMessage?.text}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity onPress={cancelAction}>
+                                    <X size={18} color="#888" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        <View style={styles.inputRow}>
+                            <View style={styles.inputMain}>
+                                <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
+                                    <Smile size={24} color="#888" />
+                                </TouchableOpacity>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Ketik pesan"
+                                    placeholderTextColor="#909090"
+                                    value={message}
+                                    onChangeText={setMessage}
+                                    multiline
+                                />
+                                <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
+                                    <Paperclip size={24} color="#888" style={{ transform: [{ rotate: '45deg' }] }} />
+                                </TouchableOpacity>
+                                {!message.trim() && (
+                                    <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
+                                        <VideoIcon size={24} color="#888" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            <TouchableOpacity
+                                style={styles.sendBtnCircle}
+                                onPress={() => message.trim() ? sendMessage() : (isRecording ? stopRecordingAndSend() : startRecording())}
+                            >
+                                {message.trim() ? (
+                                    <Send size={24} color="#fff" fill="#fff" />
+                                ) : (
+                                    <Mic size={24} color="#fff" />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                        {showEmojis && (
+                            <View style={styles.emojiWrapper}>
+                                <FlatList
+                                    data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾']}
+                                    numColumns={8}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity style={styles.emojiBtn} onPress={() => handleEmojiSelected(item)}>
+                                            <Text style={{ fontSize: 26 }}>{item}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            </View>
+                        )}
                     </KeyboardAvoidingView>
-                )
-            )}
-        </View >
+                )}
+            </View>
+        </View>
     );
 };
 
@@ -1869,166 +1903,63 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        height: Platform.OS === 'web' ? '100vh' : '100%',
-        maxHeight: Platform.OS === 'web' ? '100vh' : '100%',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
     },
     header: {
-        paddingTop: verticalScale(50),
-        paddingBottom: verticalScale(14),
-        paddingHorizontal: scale(15),
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: verticalScale(2) },
-        shadowOpacity: 0.05,
-        shadowRadius: scale(4),
-    },
-    headerAvatar: {
-        width: scale(42),
-        height: scale(42),
-        borderRadius: scale(14),
-        marginLeft: scale(14),
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    headerInfo: {
-        flex: 1,
-        marginLeft: scale(12),
-    },
-    deleteActionText: {
-        fontSize: moderateScale(16),
-        fontWeight: '700',
-        color: '#fff',
-    },
-    // Media Preview Styles
-    previewModalContainer: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
-    previewHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: verticalScale(50),
-        paddingBottom: verticalScale(20),
-        paddingHorizontal: scale(20),
+        paddingTop: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(40),
+        paddingBottom: verticalScale(10),
+        paddingHorizontal: scale(10),
+        backgroundColor: '#fff',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
     },
-    previewCloseBtn: {
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    backBtn: {
         padding: scale(5),
     },
-    previewHeaderText: {
-        color: '#fff',
-        fontSize: moderateScale(18),
-        fontWeight: 'bold',
-    },
-    previewContent: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    previewMedia: {
-        width: '100%',
-        height: '100%',
-    },
-    previewFooter: {
-        padding: scale(20),
-        paddingBottom: verticalScale(40),
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    previewInputWrapper: {
+    headerProfile: {
         flexDirection: 'row',
-        alignItems: 'flex-end',
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: scale(25),
-        paddingLeft: scale(20),
-        paddingRight: scale(5),
-        paddingVertical: verticalScale(5),
-    },
-    previewInput: {
+        alignItems: 'center',
         flex: 1,
-        color: '#fff',
-        fontSize: moderateScale(16),
-        maxHeight: verticalScale(100),
-        paddingVertical: verticalScale(10),
+        marginLeft: scale(2),
     },
-    previewSendBtn: {
+    headerAvatar: {
+        width: scale(38),
+        height: scale(38),
+        borderRadius: scale(19),
+    },
+    headerInfo: {
         marginLeft: scale(10),
-        marginBottom: verticalScale(5),
-    },
-    previewSendGradient: {
-        width: scale(45),
-        height: scale(45),
-        borderRadius: scale(22.5),
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    messageOuterContainer: {
-        width: '100%',
-        paddingHorizontal: scale(5),
-    },
-    selectedMessageBg: {
-        backgroundColor: 'rgba(99, 102, 241, 0.08)',
-    },
-    selectionIndicator: {
-        justifyContent: 'center',
-        paddingRight: scale(10),
-    },
-    selectionIndicatorMe: {
-        paddingRight: 0,
-        paddingLeft: scale(10),
-    },
-    selectionIndicatorThem: {
-        paddingRight: scale(10),
-    },
-    checkbox: {
-        width: scale(20),
-        height: scale(20),
-        borderRadius: scale(10),
-        borderWidth: 2,
-        borderColor: '#6366F1',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    checkboxSelected: {
-        backgroundColor: '#6366F1',
-    },
-    headerSelectionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    headerSelectionCount: {
-        fontSize: moderateScale(18),
-        fontWeight: 'bold',
-        color: '#1F2937',
-        marginLeft: scale(15),
-    },
-    headerActionBtn: {
-        padding: scale(8),
     },
     headerName: {
-        fontSize: moderateScale(18),
-        fontWeight: '800',
-        color: '#1F2937',
-        letterSpacing: 0.3,
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        color: '#000',
     },
     headerStatus: {
         fontSize: moderateScale(12),
-        color: '#6B7280',
-        fontWeight: '600',
-        marginTop: verticalScale(1),
+        color: '#666',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    headerIcon: {
+        padding: scale(8),
+        marginLeft: scale(5),
     },
     chatBackground: {
         flex: 1,
-        backgroundColor: '#EEF0F5',
-        overflow: 'hidden',
+        backgroundColor: '#efe7de',
     },
     loaderContainer: {
         flex: 1,
@@ -2036,14 +1967,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     messageList: {
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(15),
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(10),
     },
     messageContainer: {
-        marginVertical: verticalScale(4),
-        maxWidth: '80%',
-        flexDirection: 'row',
-        alignItems: 'center',
+        marginVertical: verticalScale(2),
+        maxWidth: '85%',
     },
     myMessageContainer: {
         alignSelf: 'flex-end',
@@ -2052,29 +1981,112 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     bubble: {
-        paddingHorizontal: scale(13),
-        paddingVertical: verticalScale(9),
-        borderRadius: scale(20),
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: verticalScale(1) },
-        shadowOpacity: 0.06,
-        shadowRadius: scale(4),
+        paddingHorizontal: scale(10),
+        paddingVertical: verticalScale(6),
+        borderRadius: scale(8),
+        elevation: 1,
+        minWidth: scale(60),
     },
     myBubble: {
-        backgroundColor: '#DCFCE7',
-        borderBottomRightRadius: scale(4),
+        backgroundColor: '#dcf8c6',
+        borderTopRightRadius: 0, // "Tail" effect
     },
     theirBubble: {
         backgroundColor: '#fff',
-        borderBottomLeftRadius: scale(4),
+        borderTopLeftRadius: 0,
     },
+    messageText: {
+        fontSize: moderateScale(16),
+        color: '#000',
+    },
+    messageFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: verticalScale(2),
+    },
+    messageTime: {
+        fontSize: moderateScale(10),
+        color: '#888',
+        marginRight: scale(4),
+    },
+    inputSection: {
+        padding: scale(8),
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
+    inputMain: {
+        flex: 1,
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: scale(25),
+        alignItems: 'center',
+        paddingHorizontal: scale(10),
+        minHeight: verticalScale(45),
+        elevation: 2,
+    },
+    inputActionIcon: {
+        padding: scale(8),
+    },
+    textInput: {
+        flex: 1,
+        fontSize: moderateScale(16),
+        paddingVertical: verticalScale(8),
+        maxHeight: verticalScale(100),
+        color: '#000',
+    },
+    sendBtnCircle: {
+        width: scale(45),
+        height: scale(45),
+        borderRadius: scale(22.5),
+        backgroundColor: '#075e54',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: scale(8),
+        elevation: 2,
+    },
+    replyBanner: {
+        backgroundColor: '#fff',
+        padding: scale(10),
+        borderTopLeftRadius: scale(10),
+        borderTopRightRadius: scale(10),
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderLeftWidth: 4,
+        borderLeftColor: '#075e54',
+        marginBottom: verticalScale(2),
+    },
+    replyBannerContent: {
+        flex: 1,
+    },
+    replyUser: {
+        fontWeight: 'bold',
+        color: '#075e54',
+        fontSize: moderateScale(13),
+    },
+    replyText: {
+        color: '#666',
+        fontSize: moderateScale(13),
+    },
+    emojiWrapper: {
+        height: verticalScale(250),
+        marginTop: verticalScale(10),
+    },
+    emojiBtn: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: scale(5),
+    },
+    // Missing Media Styles
     imageContainer: {
-        borderRadius: scale(12),
+        borderRadius: scale(10),
         overflow: 'hidden',
         marginVertical: verticalScale(2),
-        width: scale(220),
-        height: scale(200), // Ukuran standar bubble
+        width: scale(250),
+        height: scale(250),
         backgroundColor: '#f3f4f6',
     },
     messageImage: {
@@ -2087,220 +2099,7 @@ const styles = StyleSheet.create({
     },
     imageCaptionText: {
         fontSize: moderateScale(15),
-        color: '#1F2937',
-    },
-    messageText: {
-        fontSize: moderateScale(16),
-        color: '#1F2937',
-    },
-    messageTime: {
-        fontSize: moderateScale(11),
-        color: '#888',
-        alignSelf: 'flex-end',
-        marginTop: verticalScale(2),
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(10),
-        alignItems: 'flex-end',
-        backgroundColor: 'transparent',
-    },
-    inputWrapper: {
-        flex: 1,
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderRadius: scale(28),
-        paddingHorizontal: scale(6),
-        alignItems: 'center',
-        minHeight: verticalScale(50),
-    },
-    input: {
-        flex: 1,
-        paddingVertical: verticalScale(10),
-        paddingHorizontal: scale(12),
-        fontSize: moderateScale(16),
-        maxHeight: verticalScale(120),
-        color: '#1F2937',
-        fontWeight: '500',
-    },
-    iconButton: {
-        padding: scale(10),
-    },
-    sendButton: {
-        width: scale(50),
-        height: scale(50),
-        borderRadius: scale(18),
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: scale(8),
-    },
-    sendButtonActive: {
-        backgroundColor: '#6366F1',
-    },
-    micButtonActive: {
-        backgroundColor: '#6366F1',
-    },
-    optionsOverlay: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 999,
-        backgroundColor: 'rgba(0,0,0,0.35)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    optionsBox: {
-        backgroundColor: '#fff',
-        borderRadius: scale(16),
-        paddingVertical: verticalScale(6),
-        minWidth: scale(180),
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: scale(10),
-    },
-    optionsBoxMe: { alignSelf: 'flex-end', marginRight: scale(20) },
-    optionsBoxThem: { alignSelf: 'flex-start', marginLeft: scale(20) },
-    optionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: scale(18),
-        paddingVertical: verticalScale(13),
-    },
-    optionText: {
-        fontSize: moderateScale(15),
-        color: '#222',
-        fontWeight: '500',
-        marginLeft: scale(12),
-    },
-    dangerText: {
-        color: '#e53935',
-    },
-    optionDivider: {
-        height: 1,
-        backgroundColor: '#f0f0f0',
-        marginHorizontal: scale(12),
-    },
-    replyBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#fff',
-        paddingHorizontal: scale(14),
-        paddingVertical: verticalScale(8),
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-        borderLeftWidth: 4,
-        borderLeftColor: '#6366F1',
-    },
-    replyBannerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    replyBannerText: { flex: 1, marginLeft: scale(10) },
-    replyBannerTitle: {
-        fontSize: moderateScale(13),
-        fontWeight: 'bold',
-        color: '#6366F1',
-    },
-    replyBannerMessage: {
-        fontSize: moderateScale(13),
-        color: '#555',
-    },
-    replyPreviewBubble: {
-        borderRadius: scale(10),
-        padding: scale(7),
-        marginBottom: verticalScale(6),
-        borderLeftWidth: 3,
-    },
-    replyPreviewMe: {
-        backgroundColor: 'rgba(99,102,241,0.1)',
-        borderLeftColor: '#8B5CF6',
-    },
-    replyPreviewThem: {
-        backgroundColor: 'rgba(99,102,241,0.1)',
-        borderLeftColor: '#6366F1',
-    },
-    replyPreviewUser: {
-        fontSize: moderateScale(12),
-        fontWeight: 'bold',
-        color: '#6366F1',
-    },
-    replyPreviewText: {
-        fontSize: moderateScale(12),
-        color: '#555',
-    },
-    messageFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginTop: verticalScale(2),
-    },
-    editedLabel: {
-        fontSize: moderateScale(10),
-        color: '#888',
-        fontStyle: 'italic',
-        marginRight: scale(4),
-    },
-    deletedBubble: {
-        opacity: 0.65,
-    },
-    deletedText: {
-        fontStyle: 'italic',
-        color: '#888',
-    },
-    recordingBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff0f0',
-        paddingHorizontal: scale(16),
-        paddingVertical: verticalScale(10),
-        borderTopWidth: 1,
-        borderTopColor: '#ffcccc',
-        gap: scale(10),
-    },
-    recordingPulse: {
-        width: scale(12),
-        height: scale(12),
-        borderRadius: scale(6),
-        backgroundColor: '#e53935',
-    },
-    recordingBannerCancel: {
-        backgroundColor: '#fff1f0',
-        borderColor: '#ffa39e',
-        borderTopWidth: 1,
-    },
-    recordingCancelBtnRaw: {
-        backgroundColor: '#fff',
-        borderWidth: 2,
-        borderColor: '#ff4d4f',
-    },
-    recordingText: {
-        flex: 1,
-        fontSize: moderateScale(14),
-        fontWeight: '600',
-        color: '#e53935',
-    },
-    recordingHint: {
-        fontSize: moderateScale(12),
-        color: '#888',
-    },
-    recordingCancelBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: verticalScale(5),
-        paddingHorizontal: scale(10),
-        backgroundColor: '#fff',
-        borderRadius: scale(15),
-        borderWidth: 1,
-        borderColor: '#ffcccc',
-    },
-    recordingCancelText: {
-        fontSize: moderateScale(13),
-        color: '#e53935',
-        fontWeight: 'bold',
-        marginLeft: scale(4),
+        color: '#000',
     },
     audioPlayer: {
         flexDirection: 'row',
@@ -2311,22 +2110,17 @@ const styles = StyleSheet.create({
         gap: scale(12),
     },
     audioPlayBtn: {
-        width: scale(44),
-        height: scale(44),
-        borderRadius: scale(22),
+        width: scale(40),
+        height: scale(40),
+        borderRadius: scale(20),
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: verticalScale(2) },
-        shadowOpacity: 0.1,
-        shadowRadius: scale(4),
-        elevation: 2,
     },
     audioPlayBtnMe: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: '#075e54',
     },
     audioPlayBtnThem: {
-        backgroundColor: '#6366F1',
+        backgroundColor: '#888',
     },
     audioWaveContainer: {
         flex: 1,
@@ -2335,66 +2129,23 @@ const styles = StyleSheet.create({
     waveformContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        height: verticalScale(30),
+        height: verticalScale(25),
         gap: scale(3),
-        marginBottom: verticalScale(4),
     },
     waveBar: {
         width: scale(3),
         backgroundColor: 'rgba(0,0,0,0.1)',
         borderRadius: scale(1.5),
     },
-    waveBarActiveMe: {
-        backgroundColor: '#7C3AED',
-    },
-    waveBarActiveThem: {
-        backgroundColor: '#6366F1',
-    },
     audioMetaRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        marginTop: verticalScale(2),
     },
     audioDurationText: {
         fontSize: moderateScale(11),
-        color: '#6B7280',
-        fontWeight: '600',
-    },
-    attachmentMenu: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        paddingVertical: verticalScale(15),
-        paddingHorizontal: scale(20),
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
-        justifyContent: 'space-around',
-    },
-    attachmentItem: {
-        alignItems: 'center',
-        gap: verticalScale(6),
-    },
-    attachmentIcon: {
-        width: scale(50),
-        height: scale(50),
-        borderRadius: scale(25),
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-    },
-    attachmentText: {
-        fontSize: moderateScale(12),
-        color: '#4B5563',
-        fontWeight: '600',
-    },
-    videoPlaceholder: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#1F2937',
-        justifyContent: 'center',
-        alignItems: 'center',
+        color: '#666',
     },
     videoWrapper: {
         flex: 1,
@@ -2406,29 +2157,28 @@ const styles = StyleSheet.create({
     },
     playOverlay: {
         position: 'absolute',
-        width: scale(50),
-        height: scale(50),
-        borderRadius: scale(25),
+        width: scale(40),
+        height: scale(40),
+        borderRadius: scale(20),
         backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#fff',
-        alignSelf: 'center',
     },
     fileContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#f0f0f0',
         padding: scale(10),
-        borderRadius: scale(12),
-        width: scale(220),
-        gap: scale(12),
+        borderRadius: scale(10),
+        width: scale(200),
+        gap: scale(10),
     },
     fileIconBox: {
-        width: scale(40),
-        height: scale(40),
-        borderRadius: scale(10),
+        width: scale(35),
+        height: scale(35),
+        borderRadius: scale(8),
         backgroundColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
@@ -2439,45 +2189,11 @@ const styles = StyleSheet.create({
     fileName: {
         fontSize: moderateScale(14),
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#000',
     },
     fileSize: {
         fontSize: moderateScale(11),
-        color: '#6B7280',
-    },
-    viewerContainer: {
-        flex: 1,
-        backgroundColor: '#000',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    viewerCloseBtn: {
-        position: 'absolute',
-        top: verticalScale(50),
-        right: scale(20),
-        zIndex: 10,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: scale(25),
-        padding: scale(8),
-    },
-    viewerImage: {
-        width: Dimensions.get('window').width,
-        height: Dimensions.get('window').height,
-    },
-    viewerVideo: {
-        width: Dimensions.get('window').width,
-        height: Dimensions.get('window').width * (16 / 9),
-        maxHeight: Dimensions.get('window').height,
-    },
-    viewerDownloadBtn: {
-        position: 'absolute',
-        bottom: verticalScale(50),
-        alignSelf: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: scale(30),
-        padding: scale(15),
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
+        color: '#666',
     },
     uploadOverlay: {
         ...StyleSheet.absoluteFillObject,
@@ -2489,27 +2205,35 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: moderateScale(14),
         fontWeight: 'bold',
-        marginTop: verticalScale(5),
     },
-    emojiContainer: {
-        height: verticalScale(250),
-        backgroundColor: '#f8f9fa',
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
+    replyPreviewBubble: {
+        borderRadius: scale(8),
+        padding: scale(5),
+        marginBottom: verticalScale(5),
+        borderLeftWidth: 3,
     },
-    emojiList: {
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(10),
-        alignItems: 'center',
+    replyPreviewMe: {
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        borderLeftColor: '#075e54',
     },
-    emojiItem: {
-        width: Dimensions.get('window').width / 8.5,
-        height: scale(45),
-        justifyContent: 'center',
-        alignItems: 'center',
+    replyPreviewThem: {
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        borderLeftColor: '#075e54',
     },
-    emojiText: {
-        fontSize: moderateScale(26),
+    replyPreviewUser: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#075e54',
+    },
+    replyPreviewText: {
+        fontSize: moderateScale(12),
+        color: '#555',
+    },
+    messageOuterContainer: {
+        width: '100%',
+    },
+    selectedMessageBg: {
+        backgroundColor: 'rgba(7, 94, 84, 0.1)',
     },
 });
 
