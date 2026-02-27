@@ -130,47 +130,49 @@ const DesktopProfile = () => {
         <div className="min-h-screen bg-transparent pb-12">
             <main className="max-w-7xl mx-auto px-8 py-8 grid grid-cols-12 gap-8">
                 {/* Sidebar Navigation */}
-                <aside className="col-span-3 space-y-6 sticky top-28 h-fit">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800 text-center">
-                        <div className="w-24 h-24 bg-gradient-to-tr from-green-600 to-emerald-400 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-green-600/20 relative group overflow-hidden">
-                            {userData.avatar_url ? (
-                                <img src={`${API_URL}${userData.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                                userData.username.charAt(0).toUpperCase()
-                            )}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                <Icon name="Camera" className="w-6 h-6 text-white" />
+                <aside className="col-span-3 relative">
+                    <div className="fixed top-28 w-[calc(1280px*3/12-2rem)] max-w-[280px] space-y-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800 text-center">
+                            <div className="w-24 h-24 bg-gradient-to-tr from-green-600 to-emerald-400 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-green-600/20 relative group overflow-hidden">
+                                {userData.avatar_url ? (
+                                    <img src={`${API_URL}${userData.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    userData.username.charAt(0).toUpperCase()
+                                )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                    <Icon name="Camera" className="w-6 h-6 text-white" />
+                                </div>
+                            </div>
+                            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">{userData.username}</h2>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">ID Pelanggan: #{userData.id || '---'}</p>
+
+                            <div className="bg-green-50 dark:bg-green-900/30 rounded-3xl p-5 border border-green-100 dark:border-green-800/50">
+                                <span className="block text-[10px] text-green-600 font-black uppercase tracking-widest mb-1">Loyalty Points</span>
+                                <span className="text-2xl font-black text-green-600">{new Intl.NumberFormat('id-ID').format(userData.points || 0)}</span>
                             </div>
                         </div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">{userData.username}</h2>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">ID Pelanggan: #{userData.id || '---'}</p>
 
-                        <div className="bg-green-50 dark:bg-green-900/30 rounded-3xl p-5 border border-green-100 dark:border-green-800/50">
-                            <span className="block text-[10px] text-green-600 font-black uppercase tracking-widest mb-1">Loyalty Points</span>
-                            <span className="text-2xl font-black text-green-600">{new Intl.NumberFormat('id-ID').format(userData.points || 0)}</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 shadow-sm border border-slate-100 dark:border-slate-800">
-                        <div className="space-y-1">
-                            {tabs.map(tab => (
+                        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                            <div className="space-y-1">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => tab.action ? tab.action() : setActiveTab(tab.id)}
+                                        className={`w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight transition-all flex items-center gap-4 group ${activeTab === tab.id ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    >
+                                        <Icon name={tab.icon} className={`w-5 h-5 transition-transform ${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110 text-slate-400'}`} />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                                <div className="h-[1px] bg-slate-100 dark:bg-slate-800 my-4 mx-4" />
                                 <button
-                                    key={tab.id}
-                                    onClick={() => tab.action ? tab.action() : setActiveTab(tab.id)}
-                                    className={`w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight transition-all flex items-center gap-4 group ${activeTab === tab.id ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    onClick={handleLogout}
+                                    className="w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-all flex items-center gap-4 group"
                                 >
-                                    <Icon name={tab.icon} className={`w-5 h-5 transition-transform ${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110 text-slate-400'}`} />
-                                    <span>{tab.label}</span>
+                                    <Icon name="LogOut" className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                                    <span>Keluar Akun</span>
                                 </button>
-                            ))}
-                            <div className="h-[1px] bg-slate-100 dark:bg-slate-800 my-4 mx-4" />
-                            <button
-                                onClick={handleLogout}
-                                className="w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm uppercase tracking-tight text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-all flex items-center gap-4 group"
-                            >
-                                <Icon name="LogOut" className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                                <span>Keluar Akun</span>
-                            </button>
+                            </div>
                         </div>
                     </div>
                 </aside>
