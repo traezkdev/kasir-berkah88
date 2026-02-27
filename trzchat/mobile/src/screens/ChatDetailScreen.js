@@ -1909,169 +1909,171 @@ const ChatDetailScreen = () => {
                 </View>
             </View>
 
-            {/* Chat Area with Wallpaper */}
-            <View style={styles.chatBackground}>
-                <ImageBackground
-                    source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
-                    style={StyleSheet.absoluteFillObject}
-                    resizeMode="repeat"
-                    imageStyle={{ opacity: 0.08 }}
-                />
+            {/* Chat Area + Input (wrapped in KeyboardAvoidingView) */}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
+                <View style={styles.chatBackground}>
+                    <ImageBackground
+                        source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
+                        style={StyleSheet.absoluteFillObject}
+                        resizeMode="repeat"
+                        imageStyle={{ opacity: 0.08 }}
+                    />
 
-                <View style={{ flex: 1 }}>
-                    {loading ? (
-                        <View style={styles.loaderContainer}>
-                            <ActivityIndicator size="large" color="#075e54" />
-                        </View>
-                    ) : (
-                        <FlatList
-                            ref={flatListRef}
-                            data={messages}
-                            keyExtractor={(item) => item.id.toString()}
-                            renderItem={renderMessage}
-                            contentContainerStyle={styles.messageList}
-                            inverted={true}
-                            onEndReached={loadMoreMessages}
-                            onEndReachedThreshold={0.5}
-                        />
-                    )}
-                </View>
+                    <View style={{ flex: 1 }}>
+                        {loading ? (
+                            <View style={styles.loaderContainer}>
+                                <ActivityIndicator size="large" color="#075e54" />
+                            </View>
+                        ) : (
+                            <FlatList
+                                ref={flatListRef}
+                                data={messages}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={renderMessage}
+                                contentContainerStyle={styles.messageList}
+                                inverted={true}
+                                onEndReached={loadMoreMessages}
+                                onEndReachedThreshold={0.5}
+                            />
+                        )}
+                    </View>
 
-                {/* Input Bar Section */}
-                {!selectionMode && (
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-                        style={styles.inputSection}
-                    >
-                        {(replyingTo || editingMessage) && (
-                            <View style={styles.replyBanner}>
-                                <View style={{ width: 4, backgroundColor: '#075e54', borderRadius: 2, marginRight: scale(8), alignSelf: 'stretch' }} />
-                                <View style={styles.replyBannerContent}>
-                                    <Text style={styles.replyUser}>
-                                        {editingMessage
-                                            ? '✏️ Edit Pesan'
-                                            : (replyingTo?.sender === 'me' ? 'Anda' : chat.name)
-                                        }
-                                    </Text>
-                                    <Text style={styles.replyText} numberOfLines={1}>
-                                        {replyingTo?.text || editingMessage?.text}
-                                    </Text>
-                                </View>
-                                <TouchableOpacity onPress={cancelAction} style={{ padding: scale(5) }}>
-                                    <X size={18} color="#888" />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                        {attachmentMenuVisible && (
-                            <View style={styles.attachmentMenuContainer}>
-                                <View style={styles.attachmentRow}>
-                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickDocument(); setAttachmentMenuVisible(false); }}>
-                                        <View style={[styles.attachmentIcon, { backgroundColor: '#5F66CD' }]}>
-                                            <File size={24} color="#fff" />
-                                        </View>
-                                        <Text style={styles.attachmentText}>Dokumen</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { takePhoto(); setAttachmentMenuVisible(false); }}>
-                                        <View style={[styles.attachmentIcon, { backgroundColor: '#EC407A' }]}>
-                                            <VideoIcon size={24} color="#fff" />
-                                        </View>
-                                        <Text style={styles.attachmentText}>Kamera</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickImage(); setAttachmentMenuVisible(false); }}>
-                                        <View style={[styles.attachmentIcon, { backgroundColor: '#BF59CF' }]}>
-                                            <ImageIcon size={24} color="#fff" />
-                                        </View>
-                                        <Text style={styles.attachmentText}>Galeri</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <View style={[styles.attachmentRow, { marginTop: verticalScale(15) }]}>
-                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
-                                        <View style={[styles.attachmentIcon, { backgroundColor: '#F06034' }]}>
-                                            <Phone size={24} color="#fff" />
-                                        </View>
-                                        <Text style={styles.attachmentText}>Audio</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
-                                        <View style={[styles.attachmentIcon, { backgroundColor: '#069E58' }]}>
-                                            <MapPin size={24} color="#fff" />
-                                        </View>
-                                        <Text style={styles.attachmentText}>Lokasi</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
-                                        <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
-                                            <User size={24} color="#fff" />
-                                        </View>
-                                        <Text style={styles.attachmentText}>Kontak</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        )}
-                        <View style={styles.inputRow}>
-                            {isRecording ? (
-                                <View style={[styles.inputMain, styles.recordingInputMain]}>
-                                    <Animated.View style={{ transform: [{ scale: micPulseAnim }] }}>
-                                        <Mic size={24} color="#e53935" />
-                                    </Animated.View>
-                                    <Text style={styles.recordingTimer}>{formatDuration(recordingDuration)}</Text>
-                                    <View style={styles.slideCancelWrapper}>
-                                        <Text style={styles.slideCancelText}>
-                                            {willCancel ? 'Lepas untuk batal' : 'Geser untuk batal ‹'}
+                    {/* Input Bar Section */}
+                    {!selectionMode && (
+                        <View style={[styles.inputSection, Platform.OS === 'android' && { paddingBottom: keyboardPadding > 0 ? keyboardPadding + scale(8) : scale(8) }]}>
+                            {(replyingTo || editingMessage) && (
+                                <View style={styles.replyBanner}>
+                                    <View style={{ width: 4, backgroundColor: '#075e54', borderRadius: 2, marginRight: scale(8), alignSelf: 'stretch' }} />
+                                    <View style={styles.replyBannerContent}>
+                                        <Text style={styles.replyUser}>
+                                            {editingMessage
+                                                ? '✏️ Edit Pesan'
+                                                : (replyingTo?.sender === 'me' ? 'Anda' : chat.name)
+                                            }
+                                        </Text>
+                                        <Text style={styles.replyText} numberOfLines={1}>
+                                            {replyingTo?.text || editingMessage?.text}
                                         </Text>
                                     </View>
-                                </View>
-                            ) : (
-                                <View style={styles.inputMain}>
-                                    <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
-                                        <Smile size={24} color="#888" />
+                                    <TouchableOpacity onPress={cancelAction} style={{ padding: scale(5) }}>
+                                        <X size={18} color="#888" />
                                     </TouchableOpacity>
-                                    <TextInput
-                                        style={styles.textInput}
-                                        placeholder="Ketik pesan"
-                                        placeholderTextColor="#909090"
-                                        value={message}
-                                        onChangeText={setMessage}
-                                        multiline
-                                    />
-                                    <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
-                                        <Paperclip size={24} color="#888" />
-                                    </TouchableOpacity>
-                                    {!message.trim() && (
-                                        <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
-                                            <VideoIcon size={24} color="#888" />
-                                        </TouchableOpacity>
-                                    )}
                                 </View>
                             )}
-                            <TouchableOpacity
-                                style={[styles.sendBtnCircle, isRecording && { backgroundColor: '#e53935' }]}
-                                onPress={() => message.trim() ? sendMessage() : (isRecording ? stopRecordingAndSend() : startRecording())}
-                                {...(isRecording ? panResponder.panHandlers : {})}
-                            >
-                                {message.trim() ? (
-                                    <Send size={24} color="#fff" fill="#fff" />
-                                ) : (
-                                    <Mic size={24} color="#fff" />
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                        {showEmojis && (
-                            <View style={styles.emojiWrapper}>
-                                <FlatList
-                                    data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾']}
-                                    numColumns={8}
-                                    keyExtractor={(item, index) => index.toString()}
-                                    renderItem={({ item }) => (
-                                        <TouchableOpacity style={styles.emojiBtn} onPress={() => handleEmojiSelected(item)}>
-                                            <Text style={{ fontSize: 26 }}>{item}</Text>
+                            {attachmentMenuVisible && (
+                                <View style={styles.attachmentMenuContainer}>
+                                    <View style={styles.attachmentRow}>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickDocument(); setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#5F66CD' }]}>
+                                                <File size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Dokumen</Text>
                                         </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { takePhoto(); setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#EC407A' }]}>
+                                                <VideoIcon size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Kamera</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickImage(); setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#BF59CF' }]}>
+                                                <ImageIcon size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Galeri</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={[styles.attachmentRow, { marginTop: verticalScale(15) }]}>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#F06034' }]}>
+                                                <Phone size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Audio</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#069E58' }]}>
+                                                <MapPin size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Lokasi</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
+                                                <User size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Kontak</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
+                            <View style={styles.inputRow}>
+                                {isRecording ? (
+                                    <View style={[styles.inputMain, styles.recordingInputMain]}>
+                                        <Animated.View style={{ transform: [{ scale: micPulseAnim }] }}>
+                                            <Mic size={24} color="#e53935" />
+                                        </Animated.View>
+                                        <Text style={styles.recordingTimer}>{formatDuration(recordingDuration)}</Text>
+                                        <View style={styles.slideCancelWrapper}>
+                                            <Text style={styles.slideCancelText}>
+                                                {willCancel ? 'Lepas untuk batal' : 'Geser untuk batal ‹'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <View style={styles.inputMain}>
+                                        <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
+                                            <Smile size={24} color="#888" />
+                                        </TouchableOpacity>
+                                        <TextInput
+                                            style={styles.textInput}
+                                            placeholder="Ketik pesan"
+                                            placeholderTextColor="#909090"
+                                            value={message}
+                                            onChangeText={setMessage}
+                                            multiline
+                                        />
+                                        <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
+                                            <Paperclip size={24} color="#888" />
+                                        </TouchableOpacity>
+                                        {!message.trim() && (
+                                            <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
+                                                <VideoIcon size={24} color="#888" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                )}
+                                <TouchableOpacity
+                                    style={[styles.sendBtnCircle, isRecording && { backgroundColor: '#e53935' }]}
+                                    onPress={() => message.trim() ? sendMessage() : (isRecording ? stopRecordingAndSend() : startRecording())}
+                                    {...(isRecording ? panResponder.panHandlers : {})}
+                                >
+                                    {message.trim() ? (
+                                        <Send size={24} color="#fff" fill="#fff" />
+                                    ) : (
+                                        <Mic size={24} color="#fff" />
                                     )}
-                                />
+                                </TouchableOpacity>
                             </View>
-                        )}
-                    </KeyboardAvoidingView>
-                )}
-            </View>
+                            {showEmojis && (
+                                <View style={styles.emojiWrapper}>
+                                    <FlatList
+                                        data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾']}
+                                        numColumns={8}
+                                        keyExtractor={(item, index) => index.toString()}
+                                        renderItem={({ item }) => (
+                                            <TouchableOpacity style={styles.emojiBtn} onPress={() => handleEmojiSelected(item)}>
+                                                <Text style={{ fontSize: 26 }}>{item}</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    />
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </View>
+            </KeyboardAvoidingView>
         </View>
     );
 };
@@ -2079,7 +2081,7 @@ const ChatDetailScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#efe7de',
         height: Platform.OS === 'web' ? '100vh' : '100%',
         maxHeight: Platform.OS === 'web' ? '100vh' : '100%',
         overflow: 'hidden',
