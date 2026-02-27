@@ -1255,11 +1255,16 @@ const ChatDetailScreen = () => {
 
     const handleEdit = () => {
         if (selectedMessage.sender !== 'me') return;
+        // Hanya izinkan edit untuk tipe text dan image (edit caption)
+        const editableTypes = [undefined, null, 'text', 'image'];
+        if (!editableTypes.includes(selectedMessage.type)) return;
+
         setEditingMessage(selectedMessage);
         setReplyingTo(null);
 
         let initialText = selectedMessage.text;
-        if (initialText === '📷 Foto' || initialText === '🎥 Video' || initialText === '🎤 Pesan Suara') {
+        // Jika teks hanya placeholder, kosongkan input agar user bisa tulis caption baru
+        if (['📷 Foto', '🎥 Video', '🎤 Pesan Suara'].includes(initialText)) {
             initialText = '';
         }
 
@@ -1620,7 +1625,7 @@ const ChatDetailScreen = () => {
                                     <Text style={styles.optionText}>Salin</Text>
                                 </TouchableOpacity>
 
-                                {isMe && (
+                                {isMe && ['text', 'image', undefined, null].includes(selectedMessage.type) && (
                                     <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
                                         <Edit2 size={22} color="#555" />
                                         <Text style={styles.optionText}>Edit</Text>
