@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager, Alert, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager, Alert, Modal, Platform, SafeAreaView, StatusBar as NativeStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions, useIsFocused } from '@react-navigation/native';
-import { Search, Menu, Send, MessageSquarePlus, MessageSquare, Trash2, AlertCircle } from 'lucide-react-native';
+import { Search, Menu, Send, MessageSquarePlus, MessageSquare, Trash2, AlertCircle, Camera, MoreVertical, Users, Phone, Bell, Archive, ShieldCheck, Circle, CheckCheck, CircleDashed } from 'lucide-react-native';
 import axios from 'axios';
 import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import { getToken } from '../utils/auth';
@@ -25,6 +25,8 @@ const ChatListScreen = () => {
     const [currentUser, setLocalUser] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [selectedChat, setSelectedChat] = useState(null);
+    const [activeFilter, setActiveFilter] = useState('Semua');
+    const filters = ['Semua', 'Belum dibaca', 'Favorit', 'Grup', 'Teman'];
 
     const fetchChats = useCallback(async () => {
         try {
@@ -34,7 +36,6 @@ const ChatListScreen = () => {
             setLocalUser(userData);
 
             const response = await axios.get(`${API_URL}/chats`);
-            // Parse otherUser if it's a string (happens with JSON_OBJECT in some MySQL configurations)
             const processedChats = response.data.map(chat => {
                 if (typeof chat.otherUser === 'string') {
                     try {
@@ -62,7 +63,6 @@ const ChatListScreen = () => {
             try {
                 await getToken();
                 const response = await axios.get(`${API_URL}/users/search?q=${text}`);
-                // Ensure unique IDs in search results
                 const uniqueResults = response.data.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
                 setSearchResults(uniqueResults);
             } catch (error) {
@@ -158,43 +158,25 @@ const ChatListScreen = () => {
             const token = await getToken();
             if (!token) return;
 
-            console.log('Attempting to connect to socket:', SOCKET_URL);
             const newSocket = io(SOCKET_URL, {
-                transports: ['polling', 'websocket'], // Polling dulu baru upgrade ke websocket
+                transports: ['polling', 'websocket'],
                 auth: { token },
                 reconnection: true,
                 reconnectionAttempts: 10,
                 reconnectionDelay: 2000,
-                reconnectionDelayMax: 10000,
-                timeout: 30000,
                 forceNew: true,
                 secure: true,
-                rejectUnauthorized: false // Abaikan error SSL jika ada (hanya untuk debug jika perlu)
+                rejectUnauthorized: false
             });
 
             currentSocket = newSocket;
             setSocket(newSocket);
 
-            newSocket.on('connect_error', (err) => {
-                console.error('ChatList Socket Connection Error Detail:', {
-                    message: err.message,
-                    description: err.description,
-                    context: err.context,
-                    type: err.type
-                });
-
-                // Jika polling gagal juga, coba bersihkan cache socket
-                if (newSocket.io.opts.transports[0] === 'polling') {
-                    console.log('Polling failed, client might be blocked by firewall or proxy');
-                }
-            });
-
             newSocket.on('connect', () => {
                 console.log('ChatList Socket Connected');
             });
 
-            newSocket.on('reconnect', (attempt) => {
-                console.log('Socket Reconnected after', attempt, 'attempts');
+            newSocket.on('reconnect', () => {
                 fetchChats();
             });
 
@@ -203,21 +185,16 @@ const ChatListScreen = () => {
             const currentUserId = currentUser?.id;
 
             newSocket.on('new-message', (newMessage) => {
-                console.log('Realtime message received in list:', newMessage.id);
                 newSocket.emit('message-delivered', { messageId: newMessage.id, chatId: newMessage.chat_id });
 
                 setChats(prevChats => {
                     const chatIndex = prevChats.findIndex(chat => String(chat.id) === String(newMessage.chat_id));
-
-                    // Jika chat tidak ada di list (chat baru), fetch ulang semua chat
                     if (chatIndex === -1) {
                         fetchChats();
                         return prevChats;
                     }
 
                     const isFromOther = String(newMessage.sender_id) !== String(currentUserId);
-
-                    // Format preview teks untuk media
                     let previewText = newMessage.text;
                     if (newMessage.is_audio || newMessage.voice_url || newMessage.audio_url) previewText = '🎤 Pesan Suara';
                     else if (newMessage.is_image || newMessage.image_url) previewText = '📷 Foto';
@@ -230,13 +207,14 @@ const ChatListScreen = () => {
                                 ...chat,
                                 last_message: previewText,
                                 last_message_time: newMessage.created_at,
-                                unread_count: isFromOther ? (chat.unread_count || 0) + 1 : (chat.unread_count || 0)
+                                unread_count: isFromOther ? (chat.unread_count || 0) + 1 : (chat.unread_count || 0),
+                                sender_id: newMessage.sender_id,
+                                status: newMessage.status
                             };
                         }
                         return chat;
                     });
 
-                    // Urutkan berdasarkan waktu pesan terbaru
                     return [...updatedChats].sort((a, b) => {
                         const timeA = new Date(a.last_message_time || 0).getTime();
                         const timeB = new Date(b.last_message_time || 0).getTime();
@@ -302,40 +280,56 @@ const ChatListScreen = () => {
         fetchChats();
     }, [fetchChats]);
 
-    const ChatItem = memo(({ item, onNavigate, onLongPress }) => {
+    const ChatItem = memo(({ item, onNavigate, onLongPress, currentUser }) => {
         const otherUser = item.otherUser || {};
-        const time = item.last_message_time ? dayjs(item.last_message_time).format('HH:mm') : '';
+        const lastMessageTime = item.last_message_time;
+        const now = dayjs();
+        const msgDate = dayjs(lastMessageTime);
+
+        let timeDisplay = '';
+        if (lastMessageTime) {
+            if (now.isSame(msgDate, 'day')) {
+                timeDisplay = msgDate.format('HH:mm');
+            } else if (now.subtract(1, 'day').isSame(msgDate, 'day')) {
+                timeDisplay = 'Kemarin';
+            } else {
+                timeDisplay = msgDate.format('DD/MM/YY');
+            }
+        }
 
         return (
             <TouchableOpacity
-                style={styles.chatCard}
+                style={styles.chatRow}
                 onPress={() => onNavigate(item)}
                 onLongPress={() => onLongPress(item)}
-                activeOpacity={0.8}
+                activeOpacity={0.6}
             >
-                <View style={styles.avatarWrapper}>
+                <View style={styles.avatarContainer}>
                     <Image
                         source={{ uri: fixUrl(otherUser.avatar) || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }}
-                        style={styles.avatar}
+                        style={styles.waAvatar}
                     />
-                    {otherUser.online === 'online' && <View style={styles.onlineDot} />}
                 </View>
-                <View style={styles.chatContent}>
-                    <View style={styles.chatHeaderRow}>
-                        <Text style={styles.chatName} numberOfLines={1}>{otherUser.name}</Text>
-                        <Text style={styles.chatTime}>{time}</Text>
+                <View style={styles.chatInfo}>
+                    <View style={styles.chatTopLine}>
+                        <Text style={styles.waChatName} numberOfLines={1}>{otherUser.name}</Text>
+                        <Text style={[styles.waChatTime, item.unread_count > 0 && { color: '#25D366' }]}>{timeDisplay}</Text>
                     </View>
-                    <View style={styles.chatFooterRow}>
-                        <Text style={styles.lastMessage} numberOfLines={1}>
-                            {item.last_message || 'Mulai obrolan baru...'}
-                        </Text>
+                    <View style={styles.chatBottomLine}>
+                        <View style={styles.msgPreviewContainer}>
+                            {item.sender_id === currentUser?.id && (
+                                <View style={styles.statusIcon}>
+                                    <CheckCheck size={14} color={item.status === 'read' ? '#34B7F1' : '#888'} />
+                                </View>
+                            )}
+                            <Text style={styles.waLastMessage} numberOfLines={1}>
+                                {item.last_message || 'Mulai obrolan baru...'}
+                            </Text>
+                        </View>
                         {item.unread_count > 0 && (
-                            <LinearGradient
-                                colors={['#6366F1', '#8B5CF6']}
-                                style={styles.unreadCountBadge}
-                            >
-                                <Text style={styles.unreadText}>{item.unread_count > 99 ? '99+' : item.unread_count}</Text>
-                            </LinearGradient>
+                            <View style={styles.waUnreadBadge}>
+                                <Text style={styles.waUnreadText}>{item.unread_count}</Text>
+                            </View>
                         )}
                     </View>
                 </View>
@@ -347,11 +341,11 @@ const ChatListScreen = () => {
         <TouchableOpacity style={styles.searchResultCard} onPress={() => onStartChat(item)}>
             <Image source={{ uri: fixUrl(item.avatar) || 'https://ui-avatars.com/api/?name=' + (item.full_name || 'User') }} style={styles.searchAvatar} />
             <View style={styles.searchInfo}>
-                <Text style={styles.chatName}>{item.full_name}</Text>
+                <Text style={styles.waChatName}>{item.full_name}</Text>
                 <Text style={styles.usernameText}>@{item.username}</Text>
             </View>
             <View style={styles.startChatBtn}>
-                <Send size={16} color="#6366F1" />
+                <Send size={16} color="#008069" />
             </View>
         </TouchableOpacity>
     ));
@@ -368,8 +362,8 @@ const ChatListScreen = () => {
     ), [startChat]);
 
     const renderItem = useCallback(({ item }) => (
-        <ChatItem item={item} onNavigate={handleNavigate} onLongPress={handleLongPress} />
-    ), [handleNavigate, handleLongPress]);
+        <ChatItem item={item} onNavigate={handleNavigate} onLongPress={handleLongPress} currentUser={currentUser} />
+    ), [handleNavigate, handleLongPress, currentUser]);
 
     const renderDeleteModal = () => (
         <Modal
@@ -378,11 +372,7 @@ const ChatListScreen = () => {
             animationType="fade"
             onRequestClose={() => setDeleteModalVisible(false)}
         >
-            <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => setDeleteModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setDeleteModalVisible(false)}>
                 <View style={styles.confirmModalWrapper}>
                     <View style={styles.alertIconBg}>
                         <AlertCircle size={32} color="#EF4444" />
@@ -391,24 +381,12 @@ const ChatListScreen = () => {
                     <Text style={styles.confirmSubtitle}>
                         Pesan dan riwayat chat dengan <Text style={{ fontWeight: '700' }}>{selectedChat?.otherUser?.name || 'User'}</Text> akan dihapus permanen.
                     </Text>
-
                     <View style={styles.confirmActionRow}>
-                        <TouchableOpacity
-                            style={styles.cancelActionBtn}
-                            onPress={() => setDeleteModalVisible(false)}
-                        >
+                        <TouchableOpacity style={styles.cancelActionBtn} onPress={() => setDeleteModalVisible(false)}>
                             <Text style={styles.cancelActionText}>Batal</Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.deleteActionBtn}
-                            onPress={confirmDelete}
-                        >
-                            <LinearGradient
-                                colors={['#EF4444', '#DC2626']}
-                                style={styles.deleteGradientBtn}
-                            >
-                                <Trash2 size={18} color="#fff" style={{ marginRight: 6 }} />
+                        <TouchableOpacity style={styles.deleteActionBtn} onPress={confirmDelete}>
+                            <LinearGradient colors={['#EF4444', '#DC2626']} style={styles.deleteGradientBtn}>
                                 <Text style={styles.deleteActionText}>Hapus</Text>
                             </LinearGradient>
                         </TouchableOpacity>
@@ -418,43 +396,99 @@ const ChatListScreen = () => {
         </Modal>
     );
 
-    return (
-        <View style={styles.container}>
-            <StatusBar style="dark" />
-            {renderDeleteModal()}
-
-            <View style={styles.mainHeader}>
-                <View style={styles.headerTopRow}>
-                    <View>
-                        <Text style={styles.greetingText}>Halo, {currentUser?.username || 'User'}!</Text>
-                        <Text style={styles.appBrandText}>Vira Chat Messenger</Text>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.menuIconButton}
-                        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-                    >
-                        <Menu size={24} color="#1F2937" />
+    const renderWhatsAppHeader = () => (
+        <View style={styles.waHeader}>
+            <View style={styles.waHeaderTop}>
+                <Text style={styles.waLogoText}>Vira chat</Text>
+                <View style={styles.waHeaderIcons}>
+                    <TouchableOpacity style={styles.waHeaderIconBtn}>
+                        <Camera size={24} color="#000" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.waHeaderIconBtn} onPress={() => setIsSearching(!isSearching)}>
+                        <Search size={24} color="#000" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.waHeaderIconBtn}>
+                        <MoreVertical size={24} color="#000" />
                     </TouchableOpacity>
                 </View>
+            </View>
 
-                <View style={styles.searchBarWrapper}>
-                    <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
+            <View style={styles.waSearchBarSection}>
+                <View style={styles.waSearchInputWrapper}>
+                    <Search size={20} color="#666" style={styles.waSearchIcon} />
                     <TextInput
                         ref={searchInputRef}
-                        style={styles.searchInputField}
-                        placeholder="Cari teman atau pesan..."
-                        placeholderTextColor="#9CA3AF"
+                        style={styles.waSearchInputField}
+                        placeholder="cari percakapan atau teman"
+                        placeholderTextColor="#666"
                         value={searchQuery}
                         onChangeText={handleSearch}
                     />
                 </View>
             </View>
 
+            <View style={styles.waFilterRow}>
+                <FlatList
+                    horizontal
+                    data={filters}
+                    keyExtractor={(item) => item}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.waFilterList}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[styles.waFilterChip, activeFilter === item && styles.waFilterChipActive]}
+                            onPress={() => setActiveFilter(item)}
+                        >
+                            <Text style={[styles.waFilterChipText, activeFilter === item && styles.waFilterChipTextActive]}>
+                                {item}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
+        </View>
+    );
+
+    const renderBottomNav = () => (
+        <View style={styles.waBottomNav}>
+            <TouchableOpacity style={styles.waNavItem}>
+                <View style={[styles.waIconContainer, styles.waNavItemIconActive]}>
+                    <MessageSquare size={22} color="#000" />
+                </View>
+                <Text style={styles.waNavItemTextActive}>Chat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waNavItem}>
+                <View style={styles.waIconContainer}>
+                    <CircleDashed size={22} color="#444" />
+                </View>
+                <Text style={styles.waNavItemText}>Pembaruan</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waNavItem}>
+                <View style={styles.waIconContainer}>
+                    <Users size={22} color="#444" />
+                </View>
+                <Text style={styles.waNavItemText}>Komunitas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waNavItem}>
+                <View style={styles.waIconContainer}>
+                    <Phone size={22} color="#444" />
+                </View>
+                <Text style={styles.waNavItemText}>Panggilan</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <StatusBar style="dark" backgroundColor="#fff" />
+            {renderDeleteModal()}
+            {renderWhatsAppHeader()}
+
             {loading ? (
                 <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#6366F1" />
+                    <ActivityIndicator size="large" color="#25D366" />
                 </View>
-            ) : isSearching ? (
+            ) : isSearching && searchQuery.length > 0 ? (
                 <FlatList
                     data={searchResults}
                     keyExtractor={(item) => item.id.toString()}
@@ -463,176 +497,291 @@ const ChatListScreen = () => {
                     ListEmptyComponent={<Text style={styles.emptyResultsText}>User tidak ditemukan</Text>}
                 />
             ) : (
-                <FlatList
-                    data={chats}
-                    keyExtractor={(item) => `chat_${item.id}`}
-                    renderItem={renderItem}
-                    contentContainerStyle={styles.chatListContent}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#6366F1']} />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyStateContainer}>
-                            <MessageSquare size={60} color="#E5E7EB" />
-                            <Text style={styles.emptyTitle}>Belum Ada Percakapan</Text>
-                            <Text style={styles.emptySubtitle}>Cari teman Anda di atas untuk mulai chatting!</Text>
-                        </View>
-                    }
-                    removeClippedSubviews={true}
-                    initialNumToRender={10}
-                />
-            )}
+                <View style={{ flex: 1 }}>
+                    <FlatList
+                        data={chats}
+                        keyExtractor={(item) => `chat_${item.id}`}
+                        renderItem={renderItem}
+                        contentContainerStyle={styles.waChatListScroll}
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#25D366']} />
+                        }
+                        ListHeaderComponent={
+                            chats.length > 0 && (
+                                <View style={styles.archiveRow}>
+                                    <View style={styles.archiveIconWrapper}>
+                                        <Archive size={20} color="#444" />
+                                    </View>
+                                    <Text style={styles.archiveText}>Diarsipkan</Text>
+                                    <Text style={styles.archiveCount}>0</Text>
+                                </View>
+                            )
+                        }
+                        ListFooterComponent={
+                            chats.length > 0 && (
+                                <View style={styles.footerInfo}>
+                                    <ShieldCheck size={16} color="#666" />
+                                    <Text style={styles.footerInfoText}>
+                                        Pesan pribadi Anda <Text style={{ color: '#008069', fontWeight: 'bold' }}>terenkripsi secara end-to-end</Text>
+                                    </Text>
+                                </View>
+                            )
+                        }
+                        ListEmptyComponent={
+                            <View style={styles.emptyStateContainer}>
+                                <MessageSquare size={60} color="#E5E7EB" />
+                                <Text style={styles.emptyTitle}>Belum Ada Percakapan</Text>
+                                <Text style={styles.emptySubtitle}>Cari teman Anda di atas untuk mulai chatting!</Text>
+                            </View>
+                        }
+                    />
 
-            <TouchableOpacity
-                style={styles.enhancedFab}
-                onPress={() => searchInputRef.current?.focus()}
-            >
-                <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    style={styles.fabGradient}
-                >
-                    <MessageSquarePlus size={26} color="#fff" />
-                </LinearGradient>
-            </TouchableOpacity>
-        </View>
+
+
+                    <TouchableOpacity style={styles.waFab} onPress={() => searchInputRef.current?.focus()}>
+                        <MessageSquarePlus size={24} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            )}
+            {renderBottomNav()}
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
-    },
-    mainHeader: {
         backgroundColor: '#fff',
-        paddingTop: verticalScale(55),
-        paddingBottom: verticalScale(25),
-        paddingHorizontal: scale(25),
-        borderBottomLeftRadius: scale(35),
-        borderBottomRightRadius: scale(35),
     },
-    headerTopRow: {
+    waHeader: {
+        backgroundColor: '#fff',
+        paddingHorizontal: scale(16),
+        paddingTop: Platform.OS === 'android' ? NativeStatusBar.currentHeight + verticalScale(5) : 0,
+    },
+    waHeaderTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: verticalScale(20),
+        paddingVertical: verticalScale(10),
     },
-    greetingText: {
-        fontSize: moderateScale(26),
-        fontWeight: '900',
-        color: '#111827',
-        letterSpacing: -0.5,
+    waLogoText: {
+        fontSize: moderateScale(24),
+        fontWeight: 'bold',
+        color: '#008069',
     },
-    appBrandText: {
-        fontSize: moderateScale(14),
-        color: '#6366F1',
-        fontWeight: '700',
-        marginTop: verticalScale(2),
-    },
-    menuIconButton: {
-        width: scale(48),
-        height: scale(48),
-        backgroundColor: '#F3F4F6',
-        borderRadius: scale(15),
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    searchBarWrapper: {
+    waHeaderIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
-        borderRadius: scale(18),
-        paddingHorizontal: scale(16),
-        height: verticalScale(54),
     },
-    searchIcon: {
+    waHeaderIconBtn: {
+        marginLeft: scale(20),
+    },
+    waSearchBarSection: {
+        marginTop: verticalScale(10),
+    },
+    waSearchInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F2F5',
+        borderRadius: scale(25),
+        paddingHorizontal: scale(16),
+        height: verticalScale(48),
+    },
+    waSearchIcon: {
         marginRight: scale(10),
     },
-    searchInputField: {
+    waSearchInputField: {
         flex: 1,
         fontSize: moderateScale(16),
-        color: '#1F2937',
+        color: '#000',
+    },
+    waFilterRow: {
+        paddingVertical: verticalScale(15),
+    },
+    waFilterList: {
+        gap: scale(8),
+    },
+    waFilterChip: {
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(6),
+        borderRadius: scale(20),
+        backgroundColor: '#F0F2F5',
+        marginRight: scale(8),
+    },
+    waFilterChipActive: {
+        backgroundColor: '#E7FFEB',
+    },
+    waFilterChipText: {
+        fontSize: moderateScale(14),
+        color: '#555',
         fontWeight: '600',
     },
-    chatListContent: {
-        paddingHorizontal: scale(18),
-        paddingTop: verticalScale(20),
-        paddingBottom: verticalScale(120),
+    waFilterChipTextActive: {
+        color: '#008069',
     },
-    chatCard: {
+    waChatListScroll: {
+        paddingBottom: verticalScale(100),
+    },
+    chatRow: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(12),
+        alignItems: 'center',
+    },
+    avatarContainer: {
+        marginRight: scale(16),
+    },
+    waAvatar: {
+        width: scale(56),
+        height: scale(56),
         borderRadius: scale(28),
-        padding: scale(16),
-        marginBottom: verticalScale(14),
-        alignItems: 'center',
+        backgroundColor: '#F0F2F5',
     },
-    avatarWrapper: {
-        position: 'relative',
-    },
-    avatar: {
-        width: scale(62),
-        height: scale(62),
-        borderRadius: scale(22),
-        backgroundColor: '#F3F4F6',
-    },
-    onlineDot: {
-        position: 'absolute',
-        bottom: scale(-2),
-        right: scale(-2),
-        width: scale(18),
-        height: scale(18),
-        borderRadius: scale(9),
-        backgroundColor: '#22C55E',
-        borderWidth: scale(4),
-        borderColor: '#fff',
-    },
-    chatContent: {
+    chatInfo: {
         flex: 1,
-        marginLeft: scale(16),
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#F0F2F5',
+        paddingBottom: verticalScale(12),
     },
-    chatHeaderRow: {
+    chatTopLine: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: verticalScale(5),
+        marginBottom: verticalScale(4),
     },
-    chatName: {
-        fontSize: moderateScale(18),
-        fontWeight: '800',
-        color: '#111827',
+    waChatName: {
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        color: '#000',
         flex: 1,
-        marginRight: scale(10),
     },
-    chatTime: {
+    waChatTime: {
         fontSize: moderateScale(12),
-        color: '#9CA3AF',
-        fontWeight: '700',
+        color: '#666',
     },
-    chatFooterRow: {
+    chatBottomLine: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    lastMessage: {
-        fontSize: moderateScale(14),
-        color: '#6B7280',
+    msgPreviewContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         flex: 1,
-        marginRight: scale(10),
-        fontWeight: '500',
     },
-    unreadCountBadge: {
-        minWidth: scale(24),
-        height: scale(24),
-        borderRadius: scale(12),
+    statusIcon: {
+        marginRight: scale(4),
+    },
+    waLastMessage: {
+        fontSize: moderateScale(14),
+        color: '#666',
+        flex: 1,
+    },
+    waUnreadBadge: {
+        backgroundColor: '#25D366',
+        width: scale(20),
+        height: scale(20),
+        borderRadius: scale(10),
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: scale(7),
     },
-    unreadText: {
+    waUnreadText: {
         color: '#fff',
-        fontSize: moderateScale(11),
-        fontWeight: '900',
+        fontSize: moderateScale(10),
+        fontWeight: 'bold',
+    },
+    archiveRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(15),
+    },
+    archiveIconWrapper: {
+        marginRight: scale(30),
+    },
+    archiveText: {
+        fontSize: moderateScale(16),
+        fontWeight: 'bold',
+        flex: 1,
+    },
+    archiveCount: {
+        fontSize: moderateScale(12),
+        color: '#25D366',
+        fontWeight: 'bold',
+    },
+    footerInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: verticalScale(30),
+    },
+    footerInfoText: {
+        fontSize: moderateScale(12),
+        color: '#666',
+        marginLeft: scale(8),
+    },
+    metaAiFab: {
+        position: 'absolute',
+        bottom: verticalScale(120),
+        right: scale(16),
+        width: scale(50),
+        height: scale(50),
+        borderRadius: scale(15),
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+    },
+    metaAiIcon: {
+        width: scale(30),
+        height: scale(30),
+    },
+    waFab: {
+        position: 'absolute',
+        bottom: verticalScale(35),
+        right: scale(16),
+        width: scale(60),
+        height: scale(60),
+        borderRadius: scale(18),
+        backgroundColor: '#01816a',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 4,
+    },
+    waBottomNav: {
+        flexDirection: 'row',
+        paddingBottom: verticalScale(10),
+        paddingTop: verticalScale(10),
+        borderTopWidth: 1,
+        borderTopColor: '#F0F2F5',
+    },
+    waNavItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    waIconContainer: {
+        height: verticalScale(30),
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: scale(56),
+    },
+    waNavItemIconActive: {
+        backgroundColor: '#E7FFEB',
+        borderRadius: scale(15),
+    },
+    waNavItemText: {
+        fontSize: moderateScale(12),
+        color: '#444',
+        marginTop: verticalScale(4),
+    },
+    waNavItemTextActive: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#000',
+        marginTop: verticalScale(4),
     },
     loaderContainer: {
         flex: 1,
@@ -641,56 +790,34 @@ const styles = StyleSheet.create({
     },
     emptyStateContainer: {
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: verticalScale(80),
-        paddingHorizontal: scale(50),
+        marginTop: verticalScale(100),
     },
     emptyTitle: {
-        fontSize: moderateScale(22),
-        fontWeight: '900',
-        color: '#374151',
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
         marginTop: verticalScale(20),
-        textAlign: 'center',
     },
     emptySubtitle: {
-        fontSize: moderateScale(15),
-        color: '#9CA3AF',
+        fontSize: moderateScale(14),
+        color: '#666',
         textAlign: 'center',
-        marginTop: verticalScale(12),
-        lineHeight: moderateScale(22),
-        fontWeight: '500',
+        paddingHorizontal: scale(40),
+        marginTop: verticalScale(10),
     },
-    enhancedFab: {
-        position: 'absolute',
-        bottom: verticalScale(35),
-        right: scale(25),
-        elevation: 12,
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: verticalScale(8) },
-        shadowOpacity: 0.35,
-        shadowRadius: scale(15),
-    },
-    fabGradient: {
-        width: scale(70),
-        height: scale(70),
-        borderRadius: scale(24),
-        justifyContent: 'center',
-        alignItems: 'center',
+    resultsList: {
+        paddingTop: verticalScale(10),
     },
     searchResultCard: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderRadius: scale(22),
-        padding: scale(14),
-        marginHorizontal: scale(18),
-        marginBottom: verticalScale(12),
+        padding: scale(16),
         alignItems: 'center',
-        elevation: 2,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F2F5',
     },
     searchAvatar: {
-        width: scale(54),
-        height: scale(54),
-        borderRadius: scale(20),
+        width: scale(50),
+        height: scale(50),
+        borderRadius: scale(25),
     },
     searchInfo: {
         flex: 1,
@@ -698,99 +825,70 @@ const styles = StyleSheet.create({
     },
     usernameText: {
         fontSize: moderateScale(14),
-        color: '#6366F1',
-        fontWeight: '700',
-        marginTop: verticalScale(2),
+        color: '#008069',
     },
     startChatBtn: {
-        width: scale(42),
-        height: scale(42),
-        borderRadius: scale(14),
-        backgroundColor: '#EEF2FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    resultsList: {
-        paddingTop: verticalScale(25),
-    },
-    emptyResultsText: {
-        textAlign: 'center',
-        color: '#9CA3AF',
-        marginTop: verticalScale(40),
-        fontSize: moderateScale(16),
-        fontWeight: '600',
+        padding: scale(10),
     },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: scale(30),
+        padding: scale(20),
     },
     confirmModalWrapper: {
         backgroundColor: '#fff',
-        borderRadius: scale(25),
-        padding: scale(25),
-        width: '100%',
+        borderRadius: 20,
+        padding: 20,
         alignItems: 'center',
-        elevation: 10,
     },
     alertIconBg: {
-        width: scale(64),
-        height: scale(64),
-        borderRadius: scale(32),
-        backgroundColor: '#FEF2F2',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: verticalScale(16),
+        backgroundColor: '#fff1f1',
+        padding: 15,
+        borderRadius: 40,
+        marginBottom: 10,
     },
     confirmTitle: {
-        fontSize: moderateScale(22),
-        fontWeight: '800',
-        color: '#111827',
-        marginBottom: verticalScale(8),
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
     },
     confirmSubtitle: {
-        fontSize: moderateScale(15),
-        color: '#6B7280',
         textAlign: 'center',
-        lineHeight: moderateScale(22),
-        marginBottom: verticalScale(25),
+        color: '#666',
+        marginBottom: 20,
     },
     confirmActionRow: {
         flexDirection: 'row',
-        width: '100%',
-        gap: scale(12),
+        gap: 10,
     },
     cancelActionBtn: {
         flex: 1,
-        height: verticalScale(50),
-        borderRadius: scale(15),
-        backgroundColor: '#F3F4F6',
-        justifyContent: 'center',
+        padding: 15,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 10,
         alignItems: 'center',
     },
     cancelActionText: {
-        fontSize: moderateScale(16),
-        fontWeight: '700',
-        color: '#4B5563',
+        fontWeight: 'bold',
     },
     deleteActionBtn: {
         flex: 1,
-        height: verticalScale(50),
-        borderRadius: scale(15),
+        borderRadius: 10,
         overflow: 'hidden',
     },
     deleteGradientBtn: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
+        padding: 15,
         alignItems: 'center',
     },
     deleteActionText: {
-        fontSize: moderateScale(16),
-        fontWeight: '700',
         color: '#fff',
+        fontWeight: 'bold',
+    },
+    emptyResultsText: {
+        textAlign: 'center',
+        marginTop: 50,
+        color: '#999',
     }
 });
 
