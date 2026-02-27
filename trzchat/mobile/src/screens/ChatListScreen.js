@@ -31,6 +31,7 @@ const ChatListScreen = () => {
     // Multi-Selection States
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState({});
+    const [archivedCount, setArchivedCount] = useState(0);
 
     const fetchChats = useCallback(async () => {
         try {
@@ -51,12 +52,23 @@ const ChatListScreen = () => {
                 return chat;
             });
             setChats(processedChats);
+            fetchArchivedCount();
             return processedChats;
         } catch (error) {
             console.error('Error fetching chats:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
+        }
+    }, []);
+
+    const fetchArchivedCount = useCallback(async () => {
+        try {
+            await getToken();
+            const response = await axios.get(`${API_URL}/chats/archived/count`);
+            setArchivedCount(response.data.count);
+        } catch (error) {
+            console.error('Error fetching archived count:', error);
         }
     }, []);
 
@@ -169,6 +181,23 @@ const ChatListScreen = () => {
             ]
         );
     };
+
+    const handleArchiveSelected = async () => {
+        const ids = Object.keys(selectedIds);
+        try {
+            await getToken();
+            await Promise.all(ids.map(id =>
+                axios.post(`${API_URL}/chats/${id}/archive`, { archive: true })
+            ));
+            exitSelectionMode();
+            fetchChats();
+            Alert.alert('Berhasil', `${ids.length} chat telah diarsipkan.`);
+        } catch (error) {
+            console.error('Error archiving chats:', error);
+            Alert.alert('Gagal', 'Tidak dapat mengarsipkan chat.');
+        }
+    };
+
 
     useEffect(() => {
         if (isFocused) {
@@ -469,7 +498,7 @@ const ChatListScreen = () => {
                             <TouchableOpacity style={styles.waHeaderIconBtn}>
                                 <Bell size={22} color="#111B21" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                            <TouchableOpacity style={styles.waHeaderIconBtn} onPress={handleArchiveSelected}>
                                 <Archive size={22} color="#111B21" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.waHeaderIconBtn}>
@@ -594,14 +623,18 @@ const ChatListScreen = () => {
                             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#25D366']} />
                         }
                         ListHeaderComponent={
-                            chats.length > 0 && (
-                                <View style={styles.archiveRow}>
+                            (chats.length > 0 || archivedCount > 0) && (
+                                <TouchableOpacity
+                                    style={styles.archiveRow}
+                                    onPress={() => navigation.navigate('ArchivedChats')}
+                                    activeOpacity={0.7}
+                                >
                                     <View style={styles.archiveIconWrapper}>
                                         <Archive size={20} color="#444" />
                                     </View>
                                     <Text style={styles.archiveText}>Diarsipkan</Text>
-                                    <Text style={styles.archiveCount}>0</Text>
-                                </View>
+                                    <Text style={styles.archiveCount}>{archivedCount}</Text>
+                                </TouchableOpacity>
                             )
                         }
                         ListFooterComponent={

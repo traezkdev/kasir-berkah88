@@ -2013,7 +2013,7 @@ const styles = StyleSheet.create({
         minWidth: scale(60),
     },
     myBubble: {
-        backgroundColor: '#dcf8c6',
+        backgroundColor: '#d9fdd3',
         borderTopRightRadius: 0, // "Tail" effect
     },
     theirBubble: {

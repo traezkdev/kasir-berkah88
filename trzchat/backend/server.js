@@ -535,7 +535,7 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
             JOIN chat_participants cp1 ON c.id = cp1.chat_id
             JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id != cp1.user_id
             JOIN users u ON cp2.user_id = u.id
-            WHERE cp1.user_id = ?
+            WHERE cp1.user_id = ? AND cp1.is_archived = 0
             GROUP BY c.id
             ORDER BY c.last_message_time DESC
         `;
@@ -608,6 +608,65 @@ app.delete('/api/chats/:id', authenticateToken, async (req, res) => {
         res.json({ message: 'Chat deleted successfully' });
     } catch (error) {
         console.error('Error deleting chat:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Archived Chats
+app.get('/api/chats/archived', authenticateToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT c.*, 
+            JSON_OBJECT('id', u.id, 'name', u.full_name, 'avatar', u.avatar, 'online', u.status) as otherUser,
+            (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.id AND m.sender_id != ? AND m.status != 'read') as unread_count
+            FROM chats c
+            JOIN chat_participants cp1 ON c.id = cp1.chat_id
+            JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id != cp1.user_id
+            JOIN users u ON cp2.user_id = u.id
+            WHERE cp1.user_id = ? AND cp1.is_archived = 1
+            GROUP BY c.id
+            ORDER BY c.last_message_time DESC
+        `;
+        const [rows] = await pool.query(query, [req.user.id, req.user.id]);
+        const processedRows = rows.map(row => {
+            if (typeof row.otherUser === 'string') {
+                try { row.otherUser = JSON.parse(row.otherUser); } catch (e) { }
+            }
+            return row;
+        });
+        res.json(processedRows);
+    } catch (error) {
+        console.error('Error fetching archived chats:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Toggle Archive Chat
+app.post('/api/chats/:id/archive', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { archive } = req.body; // true to archive, false to unarchive
+    try {
+        await pool.query(
+            'UPDATE chat_participants SET is_archived = ? WHERE chat_id = ? AND user_id = ?',
+            [archive ? 1 : 0, id, req.user.id]
+        );
+        res.json({ message: archive ? 'Chat archived' : 'Chat unarchived' });
+    } catch (error) {
+        console.error('Error archiving chat:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Archived Count
+app.get('/api/chats/archived/count', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT COUNT(*) as count FROM chat_participants WHERE user_id = ? AND is_archived = 1',
+            [req.user.id]
+        );
+        res.json({ count: rows[0].count });
+    } catch (error) {
+        console.error('Error fetching archived count:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

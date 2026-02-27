@@ -16,6 +16,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ArchivedChatsScreen from '../screens/ArchivedChatsScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -259,6 +260,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="Main" component={MainDrawer} />
                 <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="ArchivedChats" component={ArchivedChatsScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
