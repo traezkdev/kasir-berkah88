@@ -14,7 +14,7 @@ import {
     StatusBar,
     Image
 } from 'react-native';
-import { User, Lock, Phone, MapPin, Mail, ChevronLeft, ArrowRight } from 'lucide-react-native';
+import { User, Lock, Phone, MapPin, Mail, ChevronLeft, ArrowRight, Eye, EyeOff } from 'lucide-react-native';
 import apiService from '../api/apiService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,6 +32,8 @@ const RegisterScreen = ({ navigation }) => {
         password: '',
         confirmPassword: ''
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const insets = useSafeAreaInsets();
     const { logoUrl } = useAppSettings();
@@ -168,8 +170,11 @@ const RegisterScreen = ({ navigation }) => {
                                 placeholder="Minimal 6 karakter"
                                 value={formData.password}
                                 onChangeText={(text) => setFormData({ ...formData, password: text })}
-                                secureTextEntry
+                                secureTextEntry={!showPassword}
                                 autoCapitalize="none"
+                                showEye
+                                isEyeOpen={showPassword}
+                                onEyePress={() => setShowPassword(!showPassword)}
                             />
                             <InputGroup
                                 label="Konfirmasi Kata Sandi"
@@ -177,8 +182,11 @@ const RegisterScreen = ({ navigation }) => {
                                 placeholder="Ketik ulang kata sandi"
                                 value={formData.confirmPassword}
                                 onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                                secureTextEntry
+                                secureTextEntry={!showConfirmPassword}
                                 autoCapitalize="none"
+                                showEye
+                                isEyeOpen={showConfirmPassword}
+                                onEyePress={() => setShowConfirmPassword(!showConfirmPassword)}
                             />
 
                             <TouchableOpacity
@@ -218,7 +226,7 @@ const RegisterScreen = ({ navigation }) => {
     );
 };
 
-const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, multiline, autoCapitalize = 'sentences' }) => (
+const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, multiline, autoCapitalize = 'sentences', showEye, isEyeOpen, onEyePress }) => (
     <View style={styles.inputWrapper}>
         <Text style={styles.inputLabel}>{label}</Text>
         <View style={[styles.inputField, multiline && styles.inputFieldMultiline]}>
@@ -236,6 +244,15 @@ const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secur
                 textAlignVertical={multiline ? 'top' : 'center'}
                 autoCapitalize={autoCapitalize}
             />
+            {showEye && (
+                <TouchableOpacity onPress={onEyePress} style={styles.eyeBtn}>
+                    {isEyeOpen ? (
+                        <EyeOff size={18} color="rgba(255,255,255,0.7)" />
+                    ) : (
+                        <Eye size={18} color="rgba(255,255,255,0.7)" />
+                    )}
+                </TouchableOpacity>
+            )}
         </View>
     </View>
 );
@@ -347,6 +364,9 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',
+    },
+    eyeBtn: {
+        padding: 5,
     },
     inputMultiline: {
         paddingTop: 12,

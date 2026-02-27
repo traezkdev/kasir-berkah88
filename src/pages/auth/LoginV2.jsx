@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiLock, FiArrowRight, FiAlertCircle, FiChevronLeft } from 'react-icons/fi';
+import { FiUser, FiLock, FiArrowRight, FiAlertCircle, FiChevronLeft, FiEye, FiEyeOff } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
 import AppIcon from '../../components/AppIcon';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -17,6 +17,7 @@ const LoginV2 = () => {
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
     const { logoUrl, headerTitle } = useAppSettings();
 
@@ -141,14 +142,21 @@ const LoginV2 = () => {
                                     <FiLock className="text-emerald-300" size={18} />
                                 </div>
                                 <input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     name="password"
                                     value={formData.password}
                                     onChange={handleInputChange}
                                     placeholder="Masukkan kata sandi"
                                     required
-                                    className="w-full h-[58px] bg-white/15 border border-white/20 rounded-[18px] py-4 pl-14 pr-6 text-white font-semibold placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-all"
+                                    className="w-full h-[58px] bg-white/15 border border-white/20 rounded-[18px] py-4 pl-14 pr-12 text-white font-semibold placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-all font-sans"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                                >
+                                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                </button>
                             </div>
                         </div>
 
@@ -275,14 +283,21 @@ const LoginV2 = () => {
                                         <FiLock className="text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                                     </div>
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleInputChange}
                                         placeholder="••••••••"
                                         required
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-3xl py-4 pl-14 pr-6 text-sm lg:text-base text-gray-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-gray-800 transition-all duration-300"
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-3xl py-4 pl-14 pr-12 text-sm lg:text-base text-gray-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-gray-800 transition-all duration-300 font-sans"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-500 transition-colors"
+                                    >
+                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                    </button>
                                 </div>
                             </div>
 
