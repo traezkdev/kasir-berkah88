@@ -2342,6 +2342,35 @@ const styles = StyleSheet.create({
     selectedMessageBg: {
         backgroundColor: 'rgba(7, 94, 84, 0.1)',
     },
+    // Media Viewer Styles
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height,
+    },
+    viewerVideo: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height,
+    },
+    viewerCloseBtn: {
+        position: 'absolute',
+        top: verticalScale(50),
+        left: scale(20),
+        padding: scale(10),
+        zIndex: 10,
+    },
+    viewerDownloadBtn: {
+        position: 'absolute',
+        bottom: verticalScale(50),
+        right: scale(20),
+        padding: scale(10),
+        zIndex: 10,
+    },
 });
 
 export default ChatDetailScreen;
