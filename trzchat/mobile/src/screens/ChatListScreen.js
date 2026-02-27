@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager, Alert, Modal, Platform, SafeAreaView, StatusBar as NativeStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions, useIsFocused } from '@react-navigation/native';
-import { Search, Menu, Send, MessageSquarePlus, MessageSquare, Trash2, AlertCircle, Camera, MoreVertical, Users, Phone, Bell, Archive, ShieldCheck, Circle, CheckCheck, CircleDashed } from 'lucide-react-native';
+import { Search, Menu, Send, MessageSquarePlus, MessageSquare, Trash2, AlertCircle, Camera, MoreVertical, Users, Phone, Bell, Archive, ShieldCheck, Circle, CheckCheck, CircleDashed, ArrowLeft, Check } from 'lucide-react-native';
 import axios from 'axios';
 import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import { getToken } from '../utils/auth';
@@ -27,6 +27,10 @@ const ChatListScreen = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [activeFilter, setActiveFilter] = useState('Semua');
     const filters = ['Semua', 'Belum dibaca', 'Favorit', 'Grup', 'Teman'];
+
+    // Multi-Selection States
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState({});
 
     const fetchChats = useCallback(async () => {
         try {
@@ -119,21 +123,52 @@ const ChatListScreen = () => {
         }
     }, []);
 
+    const toggleSelection = useCallback((id) => {
+        setSelectedIds(prev => {
+            const next = { ...prev };
+            if (next[id]) {
+                delete next[id];
+                const hasRemaining = Object.keys(next).length > 0;
+                if (!hasRemaining) setSelectionMode(false);
+            } else {
+                next[id] = true;
+            }
+            return next;
+        });
+    }, []);
+
+    const enterSelectionMode = useCallback((id) => {
+        setSelectionMode(true);
+        setSelectedIds({ [id]: true });
+    }, []);
+
+    const exitSelectionMode = useCallback(() => {
+        setSelectionMode(false);
+        setSelectedIds({});
+    }, []);
+
     const handleLongPress = useCallback((item) => {
+        enterSelectionMode(item.id);
+    }, [enterSelectionMode]);
+
+    const handleDeleteSelected = async () => {
+        const ids = Object.keys(selectedIds);
         Alert.alert(
             'Hapus Chat?',
-            `Apakah Anda ingin menghapus chat dengan ${item.otherUser?.name || 'User'}?`,
+            `Apakah Anda ingin menghapus ${ids.length} chat yang dipilih?`,
             [
                 { text: 'BATAL', style: 'cancel' },
                 {
                     text: 'HAPUS CHAT',
                     style: 'destructive',
-                    onPress: () => deleteChat(item.id)
+                    onPress: async () => {
+                        await Promise.all(ids.map(id => deleteChat(id)));
+                        exitSelectionMode();
+                    }
                 }
-            ],
-            { cancelable: true }
+            ]
         );
-    }, [deleteChat]);
+    };
 
     useEffect(() => {
         if (isFocused) {
@@ -284,7 +319,7 @@ const ChatListScreen = () => {
         fetchChats();
     }, [fetchChats]);
 
-    const ChatItem = memo(({ item, onNavigate, onLongPress, currentUser }) => {
+    const ChatItem = memo(({ item, onNavigate, onLongPress, currentUser, isSelected, selectionMode, onToggle }) => {
         const otherUser = item.otherUser || {};
         const lastMessageTime = item.last_message_time;
         const now = dayjs();
@@ -303,9 +338,9 @@ const ChatListScreen = () => {
 
         return (
             <TouchableOpacity
-                style={styles.chatRow}
-                onPress={() => onNavigate(item)}
-                onLongPress={() => onLongPress(item)}
+                style={[styles.chatRow, isSelected && styles.selectedChatRow]}
+                onPress={() => selectionMode ? onToggle(item.id) : onNavigate(item)}
+                onLongPress={() => !selectionMode ? onLongPress(item) : null}
                 activeOpacity={0.7}
             >
                 <View style={styles.avatarWrapper}>
@@ -313,11 +348,18 @@ const ChatListScreen = () => {
                         source={{ uri: fixUrl(otherUser.avatar) || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }}
                         style={styles.waAvatar}
                     />
+                    {isSelected && (
+                        <View style={styles.checkOverlay}>
+                            <View style={styles.checkCircle}>
+                                <Check size={12} color="#fff" strokeWidth={4} />
+                            </View>
+                        </View>
+                    )}
                 </View>
                 <View style={styles.chatInfo}>
                     <View style={styles.chatTopLine}>
                         <Text style={styles.waChatName} numberOfLines={1}>{otherUser.name}</Text>
-                        <Text style={[styles.waChatTime, item.unread_count > 0 && { color: '#25D366', fontWeight: 'bold' }]}>{timeDisplay}</Text>
+                        <Text style={[styles.waChatTime, (item.unread_count > 0 && !isSelected) && { color: '#25D366', fontWeight: 'bold' }]}>{timeDisplay}</Text>
                     </View>
                     <View style={styles.chatBottomLine}>
                         <View style={styles.msgPreviewWrapper}>
@@ -330,7 +372,7 @@ const ChatListScreen = () => {
                                 {item.last_message || 'Mulai obrolan baru...'}
                             </Text>
                         </View>
-                        {item.unread_count > 0 && (
+                        {(item.unread_count > 0 && !isSelected) && (
                             <View style={styles.waUnreadBadge}>
                                 <Text style={styles.waUnreadText}>{item.unread_count}</Text>
                             </View>
@@ -365,9 +407,20 @@ const ChatListScreen = () => {
         <SearchItem item={item} onStartChat={startChat} />
     ), [startChat]);
 
-    const renderItem = useCallback(({ item }) => (
-        <ChatItem item={item} onNavigate={handleNavigate} onLongPress={handleLongPress} currentUser={currentUser} />
-    ), [handleNavigate, handleLongPress, currentUser]);
+    const renderItem = useCallback(({ item }) => {
+        const isSelected = !!selectedIds[item.id];
+        return (
+            <ChatItem
+                item={item}
+                onNavigate={handleNavigate}
+                onLongPress={handleLongPress}
+                currentUser={currentUser}
+                isSelected={isSelected}
+                selectionMode={selectionMode}
+                onToggle={toggleSelection}
+            />
+        );
+    }, [handleNavigate, handleLongPress, currentUser, selectedIds, selectionMode, toggleSelection]);
 
     const renderDeleteModal = () => (
         <Modal
@@ -398,58 +451,91 @@ const ChatListScreen = () => {
             </TouchableOpacity>
         </Modal>
     );
-    const renderWhatsAppHeader = () => (
-        <View style={styles.waHeader}>
-            <View style={styles.waHeaderTop}>
-                <Text style={styles.waLogoText}>Vira chat</Text>
-                <View style={styles.waHeaderIcons}>
-                    <TouchableOpacity style={styles.waHeaderIconBtn}>
-                        <Camera size={24} color="#000" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.waHeaderIconBtn} onPress={() => setIsSearching(!isSearching)}>
-                        <Search size={24} color="#000" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.waHeaderIconBtn}>
-                        <MoreVertical size={24} color="#000" />
-                    </TouchableOpacity>
-                </View>
-            </View>
+    const renderWhatsAppHeader = () => {
+        return (
+            <View style={styles.waHeader}>
+                {selectionMode ? (
+                    <View style={[styles.waHeaderTop, styles.selectionHeaderLayout]}>
+                        <View style={styles.headerLeft}>
+                            <TouchableOpacity onPress={exitSelectionMode} style={{ paddingRight: scale(10) }}>
+                                <ArrowLeft size={24} color="#111B21" />
+                            </TouchableOpacity>
+                            <Text style={styles.selectionCountText}>{Object.keys(selectedIds).length}</Text>
+                        </View>
+                        <View style={styles.waHeaderIcons}>
+                            <TouchableOpacity style={styles.waHeaderIconBtn} onPress={handleDeleteSelected}>
+                                <Trash2 size={22} color="#111B21" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <Bell size={22} color="#111B21" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <Archive size={22} color="#111B21" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <MoreVertical size={22} color="#111B21" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ) : (
+                    <View style={styles.waHeaderTop}>
+                        <Text style={styles.waLogoText}>Vira chat</Text>
+                        <View style={styles.waHeaderIcons}>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <Camera size={24} color="#000" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.waHeaderIconBtn} onPress={() => setIsSearching(!isSearching)}>
+                                <Search size={24} color="#000" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <MoreVertical size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
-            <View style={styles.waSearchBarSection}>
-                <View style={styles.waSearchInputWrapper}>
-                    <Search size={20} color="#666" style={styles.waSearchIcon} />
-                    <TextInput
-                        ref={searchInputRef}
-                        style={styles.waSearchInputField}
-                        placeholder="cari percakapan atau teman"
-                        placeholderTextColor="#666"
-                        value={searchQuery}
-                        onChangeText={handleSearch}
+                <View style={styles.waSearchBarSection} pointerEvents="auto">
+                    <View style={styles.waSearchInputWrapper}>
+                        <Search size={20} color="#666" style={styles.waSearchIcon} />
+                        <TextInput
+                            ref={searchInputRef}
+                            style={styles.waSearchInputField}
+                            placeholder="cari percakapan atau teman"
+                            placeholderTextColor="#666"
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                            onFocus={() => {
+                                if (selectionMode) exitSelectionMode();
+                            }}
+                        />
+                    </View>
+                </View>
+
+                <View style={styles.waFilterRow} pointerEvents="auto">
+                    <FlatList
+                        horizontal
+                        data={filters}
+                        keyExtractor={(item) => item}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.waFilterList}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={[styles.waFilterChip, activeFilter === item && styles.waFilterChipActive]}
+                                onPress={() => {
+                                    if (selectionMode) exitSelectionMode();
+                                    setActiveFilter(item);
+                                }}
+                            >
+                                <Text style={[styles.waFilterChipText, activeFilter === item && styles.waFilterChipTextActive]}>
+                                    {item}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     />
                 </View>
             </View>
-
-            <View style={styles.waFilterRow}>
-                <FlatList
-                    horizontal
-                    data={filters}
-                    keyExtractor={(item) => item}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.waFilterList}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[styles.waFilterChip, activeFilter === item && styles.waFilterChipActive]}
-                            onPress={() => setActiveFilter(item)}
-                        >
-                            <Text style={[styles.waFilterChipText, activeFilter === item && styles.waFilterChipTextActive]}>
-                                {item}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-        </View>
-    );
+        );
+    };
 
     const renderBottomNav = () => (
         <View style={styles.waBottomNav}>
@@ -563,7 +649,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: verticalScale(10),
+        height: verticalScale(48), // Pastikan tinggi konsisten
     },
     waLogoText: {
         fontSize: moderateScale(24),
@@ -583,7 +669,7 @@ const styles = StyleSheet.create({
     waSearchInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F0F2F5',
+        backgroundColor: '#F0F2F5', // Kembali ke warna abu-abu semula
         borderRadius: scale(25),
         paddingHorizontal: scale(16),
         height: verticalScale(48),
@@ -606,11 +692,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(6),
         borderRadius: scale(20),
-        backgroundColor: '#F0F2F5',
+        backgroundColor: 'transparent',
         marginRight: scale(8),
+        borderWidth: 1,
+        borderColor: '#E1E3E6', // Border halus sesuai gaya WA terbaru
     },
     waFilterChipActive: {
         backgroundColor: '#E7FFEB',
+        borderColor: '#E7FFEB',
     },
     waFilterChipText: {
         fontSize: moderateScale(14),
@@ -879,6 +968,42 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(14),
         fontWeight: 'bold',
         color: '#008069',
+    },
+    // Multi-Selection Styles
+    selectedChatRow: {
+        backgroundColor: '#e7ffeb', // Hijau muda seleksi WA
+    },
+    checkOverlay: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        backgroundColor: '#fff',
+        borderRadius: scale(10),
+        padding: 1,
+    },
+    checkCircle: {
+        backgroundColor: '#25D366',
+        width: scale(18),
+        height: scale(18),
+        borderRadius: scale(9),
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#fff',
+    },
+    selectionHeaderLayout: {
+        backgroundColor: '#fff',
+        height: verticalScale(48),
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    selectionCountText: {
+        fontSize: moderateScale(20),
+        fontWeight: '500',
+        color: '#111B21',
+        marginLeft: scale(25), // Jarak lebih lebar antara panah dan angka
     },
     emptyResultsText: {
         textAlign: 'center',
