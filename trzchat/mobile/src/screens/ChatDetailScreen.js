@@ -161,12 +161,11 @@ const MessageItem = memo(({
                 style={[
                     styles.messageContainer,
                     isMe ? styles.myMessageContainer : styles.theirMessageContainer,
-                    selectionMode && { maxWidth: '85%' },
-                    selectionMode && { flexDirection: isMe ? 'row-reverse' : 'row' }
+                    selectionMode && { maxWidth: '100%', width: '100%', alignSelf: 'center', flexDirection: 'row', alignItems: 'center' },
                 ]}
             >
                 {selectionMode && (
-                    <View style={[styles.selectionIndicator, isMe ? styles.selectionIndicatorMe : styles.selectionIndicatorThem]}>
+                    <View style={styles.selectionIndicator}>
                         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                             {isSelected && <Check size={12} color="#fff" strokeWidth={4} />}
                         </View>
@@ -177,6 +176,7 @@ const MessageItem = memo(({
                     onPress={() => selectionMode ? onToggleSelection(item.id) : null}
                     delayLongPress={400}
                     activeOpacity={0.85}
+                    style={selectionMode ? { flex: 1, alignItems: isMe ? 'flex-end' : 'flex-start' } : null}
                 >
                     <Animated.View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble, isDeleted ? styles.deletedBubble : null, animatedBubbleStyle]}>
                         {hasReply ? (
@@ -1324,6 +1324,20 @@ const ChatDetailScreen = () => {
         setSelectedIds({});
     }, []);
 
+    const handleCopyMultiple = useCallback(() => {
+        const ids = Object.keys(selectedIds);
+        const selectedMessages = messages.filter(m => ids.includes(String(m.id)));
+        const combinedText = selectedMessages
+            .reverse() // Balik karena di flatlist inverted
+            .map(m => m.text)
+            .join('\n');
+
+        Clipboard.setString(combinedText);
+        Alert.alert('Tersalin', `${ids.length} pesan telah disalin ke papan klip.`);
+        exitSelectionMode();
+    }, [selectedIds, messages, exitSelectionMode]);
+
+
     const handleDeleteSelected = async () => {
         const ids = Object.keys(selectedIds);
         if (ids.length === 0) return;
@@ -1687,35 +1701,56 @@ const ChatDetailScreen = () => {
             {renderOptionsModal()}
 
             {/* Header WhatsApp Style */}
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <ArrowLeft size={24} color="#1F2937" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerProfile}>
-                        <Image
-                            source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }}
-                            style={styles.headerAvatar}
-                        />
-                        <View style={styles.headerInfo}>
-                            <Text style={styles.headerName} numberOfLines={1}>{chat.name}</Text>
-                            <Text style={styles.headerStatus}>
-                                {currentStatus === 'online' ? 'online' : lastSeen ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}` : 'offline'}
-                            </Text>
+            <View style={[styles.header, selectionMode && styles.selectionHeader]}>
+                {selectionMode ? (
+                    <>
+                        <View style={styles.headerLeft}>
+                            <TouchableOpacity onPress={exitSelectionMode} style={styles.headerIcon}>
+                                <X size={24} color="#1F2937" />
+                            </TouchableOpacity>
+                            <Text style={styles.selectionCount}>{Object.keys(selectedIds).length}</Text>
                         </View>
-                    </TouchableOpacity>
-                </View>
-                <View style={styles.headerRight}>
-                    <TouchableOpacity style={styles.headerIcon}>
-                        <VideoIcon size={22} color="#1F2937" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerIcon}>
-                        <Phone size={22} color="#1F2937" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerIcon}>
-                        <MoreVertical size={22} color="#1F2937" />
-                    </TouchableOpacity>
-                </View>
+                        <View style={styles.headerRight}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={handleCopyMultiple}>
+                                <Copy size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcon} onPress={handleDeleteSelected}>
+                                <Trash2 size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        <View style={styles.headerLeft}>
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                                <ArrowLeft size={24} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerProfile}>
+                                <Image
+                                    source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }}
+                                    style={styles.headerAvatar}
+                                />
+                                <View style={styles.headerInfo}>
+                                    <Text style={styles.headerName} numberOfLines={1}>{chat.name}</Text>
+                                    <Text style={styles.headerStatus}>
+                                        {currentStatus === 'online' ? 'online' : lastSeen ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}` : 'offline'}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.headerRight}>
+                            <TouchableOpacity style={styles.headerIcon}>
+                                <VideoIcon size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcon}>
+                                <Phone size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcon}>
+                                <MoreVertical size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
             </View>
 
             {/* Chat Area + Input (wrapped in KeyboardAvoidingView) */}
@@ -1957,12 +1992,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     messageList: {
-        paddingHorizontal: scale(12),
         paddingVertical: verticalScale(10),
     },
     messageContainer: {
         marginVertical: verticalScale(2),
         maxWidth: '85%',
+        paddingHorizontal: scale(12), // Pindahkan padding ke sini
     },
     myMessageContainer: {
         alignSelf: 'flex-end',
@@ -2274,7 +2309,27 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     selectedMessageBg: {
-        backgroundColor: 'rgba(7, 94, 84, 0.1)',
+        backgroundColor: 'rgba(52, 183, 241, 0.15)', // Warna biru khas WA saat dipilih
+    },
+    selectionIndicator: {
+        width: scale(30),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(5),
+    },
+    checkbox: {
+        width: scale(20),
+        height: scale(20),
+        borderRadius: scale(10),
+        borderWidth: 2,
+        borderColor: '#8696A0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+    },
+    checkboxSelected: {
+        backgroundColor: '#00A884', // Warna hijau WA
+        borderColor: '#00A884',
     },
     // Media Viewer Styles
     viewerContainer: {
@@ -2353,6 +2408,19 @@ const styles = StyleSheet.create({
     optionText: {
         fontSize: moderateScale(16),
         color: '#333',
+    },
+    // Selection Styles
+    selectionHeader: {
+        backgroundColor: '#fff',
+        elevation: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f1f1',
+    },
+    selectionCount: {
+        fontSize: moderateScale(20),
+        fontWeight: '500',
+        color: '#1F2937',
+        marginLeft: scale(10),
     },
     // Media Preview Styles
     previewModalContainer: {
