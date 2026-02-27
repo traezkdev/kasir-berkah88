@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
-import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone, User, Image as ImageIcon, MapPin } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -838,7 +838,7 @@ const ChatDetailScreen = () => {
 
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
-                allowsEditing: false, // Menghilangkan crop paksa
+                allowsEditing: false,
                 quality: 0.8,
             });
 
@@ -851,6 +851,32 @@ const ChatDetailScreen = () => {
             }
         } catch (error) {
             console.error('Error picking image:', error);
+        }
+    };
+
+    const takePhoto = async () => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin kamera untuk mengambil foto.');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                const { uri, width, height } = result.assets[0];
+                setSelectedMedia({ uri, type: 'image', width, height });
+                setMediaCaption('');
+                setMediaPreviewVisible(true);
+                setAttachmentMenuVisible(false);
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error);
         }
     };
 
@@ -1845,6 +1871,50 @@ const ChatDetailScreen = () => {
                                 </TouchableOpacity>
                             </View>
                         )}
+                        {attachmentMenuVisible && (
+                            <View style={styles.attachmentMenuContainer}>
+                                <View style={styles.attachmentRow}>
+                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickDocument(); setAttachmentMenuVisible(false); }}>
+                                        <View style={[styles.attachmentIcon, { backgroundColor: '#5F66CD' }]}>
+                                            <File size={24} color="#fff" />
+                                        </View>
+                                        <Text style={styles.attachmentText}>Dokumen</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { takePhoto(); setAttachmentMenuVisible(false); }}>
+                                        <View style={[styles.attachmentIcon, { backgroundColor: '#EC407A' }]}>
+                                            <VideoIcon size={24} color="#fff" />
+                                        </View>
+                                        <Text style={styles.attachmentText}>Kamera</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickImage(); setAttachmentMenuVisible(false); }}>
+                                        <View style={[styles.attachmentIcon, { backgroundColor: '#BF59CF' }]}>
+                                            <ImageIcon size={24} color="#fff" />
+                                        </View>
+                                        <Text style={styles.attachmentText}>Galeri</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={[styles.attachmentRow, { marginTop: verticalScale(15) }]}>
+                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                        <View style={[styles.attachmentIcon, { backgroundColor: '#F06034' }]}>
+                                            <Phone size={24} color="#fff" />
+                                        </View>
+                                        <Text style={styles.attachmentText}>Audio</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                        <View style={[styles.attachmentIcon, { backgroundColor: '#069E58' }]}>
+                                            <MapPin size={24} color="#fff" />
+                                        </View>
+                                        <Text style={styles.attachmentText}>Lokasi</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                        <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
+                                            <User size={24} color="#fff" />
+                                        </View>
+                                        <Text style={styles.attachmentText}>Kontak</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
                         <View style={styles.inputRow}>
                             <View style={styles.inputMain}>
                                 <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
@@ -1859,7 +1929,7 @@ const ChatDetailScreen = () => {
                                     multiline
                                 />
                                 <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
-                                    <Paperclip size={24} color="#888" style={{ transform: [{ rotate: '45deg' }] }} />
+                                    <Paperclip size={24} color="#888" />
                                 </TouchableOpacity>
                                 {!message.trim() && (
                                     <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
@@ -2082,6 +2152,40 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: scale(5),
+    },
+    attachmentMenuContainer: {
+        backgroundColor: '#fff',
+        borderRadius: scale(20),
+        padding: scale(20),
+        marginBottom: verticalScale(12),
+        marginHorizontal: scale(10),
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+    },
+    attachmentRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+    },
+    attachmentItem: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: scale(70),
+    },
+    attachmentIcon: {
+        width: scale(52),
+        height: scale(52),
+        borderRadius: scale(26),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(8),
+    },
+    attachmentText: {
+        fontSize: moderateScale(13),
+        color: '#555',
     },
     // Missing Media Styles
     imageContainer: {
