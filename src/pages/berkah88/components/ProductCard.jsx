@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Star, Zap } from 'lucide-react';
 
 const ProductCard = ({ product }) => {
+    const navigate = useNavigate();
     const apiUrl = import.meta.env.VITE_API_URL;
     const imageUrl = product.image_url ? `${apiUrl}${product.image_url}` : '/assets/images/placeholder.png';
 
@@ -15,7 +17,10 @@ const ProductCard = ({ product }) => {
     };
 
     return (
-        <div className="group bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-100 hover:border-emerald-100 transition-all duration-500 overflow-hidden flex flex-col h-full">
+        <div
+            onClick={() => navigate('/auth')}
+            className="group bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-100 hover:border-emerald-100 transition-all duration-500 overflow-hidden flex flex-col h-full cursor-pointer"
+        >
             {/* Image container */}
             <div className="relative h-64 overflow-hidden">
                 <img

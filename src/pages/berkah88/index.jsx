@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LandingHeader from './components/LandingHeader';
 import LandingFooter from './components/LandingFooter';
@@ -42,12 +42,20 @@ const BerkahLandingPage = () => {
         fetchProducts();
     }, [apiUrl]);
 
-    // Extract unique categories
-    const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
+    // Extract unique categories (case-insensitive)
+    const categories = useMemo(() => {
+        const unique = ['all', ...new Set(products.map(p => p.category?.trim().toLowerCase()))].filter(Boolean);
+        return unique.map(cat => {
+            if (cat === 'all') return 'all';
+            const original = products.find(p => p.category?.toLowerCase() === cat)?.category;
+            return original || cat.charAt(0).toUpperCase() + cat.slice(1);
+        });
+    }, [products]);
 
-    const filteredProducts = activeCategory === 'all'
-        ? products
-        : products.filter(p => p.category === activeCategory);
+    const filteredProducts = useMemo(() => {
+        if (activeCategory === 'all') return products;
+        return products.filter(p => p.category?.toLowerCase() === activeCategory.toLowerCase());
+    }, [products, activeCategory]);
 
     const productsToShow = filteredProducts.slice(0, visibleCount);
 

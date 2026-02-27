@@ -126,7 +126,7 @@ const DesktopMenu = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
             <main className="max-w-7xl mx-auto px-8 py-8 grid grid-cols-12 gap-8">
                 {/* Sidebar Filter */}
-                <aside className="col-span-3 space-y-6">
+                <aside className="col-span-3 space-y-6 sticky top-28 h-fit z-10">
                     <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
                         <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Kategori Menu</h3>
                         <div className="space-y-2">

@@ -127,10 +127,10 @@ const DesktopProfile = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-transparent pb-12 overflow-x-hidden">
+        <div className="min-h-screen bg-transparent pb-12">
             <main className="max-w-7xl mx-auto px-8 py-8 grid grid-cols-12 gap-8">
                 {/* Sidebar Navigation */}
-                <aside className="col-span-3 space-y-6">
+                <aside className="col-span-3 space-y-6 sticky top-28 h-fit">
                     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800 text-center">
                         <div className="w-24 h-24 bg-gradient-to-tr from-green-600 to-emerald-400 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-green-600/20 relative group overflow-hidden">
                             {userData.avatar_url ? (

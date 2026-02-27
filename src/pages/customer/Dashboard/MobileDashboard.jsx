@@ -222,7 +222,7 @@ const MobileDashboard = () => {
             </div>
 
             {/* Header Section with Gradient */}
-            <header className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 pt-6 pb-28 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-30">
+            <header className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 pt-6 pb-28 rounded-b-[2rem] text-white shadow-lg">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <p className="text-green-100 text-sm font-medium">{getGreeting()},</p>

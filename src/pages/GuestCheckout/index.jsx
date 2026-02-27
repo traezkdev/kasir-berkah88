@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiPlus, FiMinus, FiShoppingCart, FiAlertCircle, FiTrash2, FiChevronLeft,
-    FiHome, FiCheckCircle, FiSearch, FiPackage, FiZap, FiMapPin, FiUser, FiInfo, FiArrowLeft
+    FiHome, FiCheckCircle, FiSearch, FiPackage, FiZap, FiMapPin, FiUser, FiInfo, FiArrowLeft, FiShoppingBag
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa6';
 import AppImage from '../../components/AppImage';
@@ -147,7 +147,7 @@ const GuestCheckout = () => {
 
             if (!response.ok) throw new Error('Gagal mengirim pesanan. Silakan coba lagi.');
 
-            // Detailed WhatsApp Message following Mobile version
+            // Detailed WhatsApp Message
             let msg = `*Pesan Baru (Guest Checkout)*\n\n`;
             msg += `👤 *Nama:* ${customerName}\n`;
             msg += `📍 *Alamat:* ${customerAddress}\n`;
@@ -180,12 +180,20 @@ const GuestCheckout = () => {
         }
     };
 
-    const categories = useMemo(() => ['Semua', ...new Set(menuItems.map(item => item.category))].filter(Boolean), [menuItems]);
+    const categories = useMemo(() => {
+        const unique = ['Semua', ...new Set(menuItems.map(item => item.category?.trim().toLowerCase()))].filter(Boolean);
+        return unique.map(cat => {
+            if (cat === 'semua') return 'Semua';
+            // Mencari casing original dari menuItems agar tampilannya bagus
+            const original = menuItems.find(m => m.category?.toLowerCase() === cat)?.category;
+            return original || cat.charAt(0).toUpperCase() + cat.slice(1);
+        });
+    }, [menuItems]);
 
     const filteredMenu = useMemo(() => {
         let filtered = menuItems;
         if (activeCategory !== 'Semua') {
-            filtered = filtered.filter(item => item.category === activeCategory);
+            filtered = filtered.filter(item => item.category?.toLowerCase() === activeCategory.toLowerCase());
         }
         if (searchTerm) {
             filtered = filtered.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -197,265 +205,326 @@ const GuestCheckout = () => {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
                 <div className="w-12 h-12 border-4 border-emerald-600/30 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-                <p className="text-emerald-600 font-bold">Menyiapkan Menu Berkah...</p>
+                <p className="text-emerald-600 font-bold tracking-widest text-xs uppercase">Menyiapkan Menu Berkah...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-32">
-            {/* Header: Following Mobile Design */}
-            <header className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 pt-5 pb-10 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-50">
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-4">
-                        <Link to="/" className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
+            {/* Header: Desktop specific (Split view friendly) */}
+            <header className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-[60] transition-colors">
+                <div className="max-w-[1600px] mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link to="/" className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all">
                             <FiArrowLeft size={20} />
                         </Link>
                         <div>
-                            <h1 className="text-lg font-black leading-tight">Pesan Delivery</h1>
-                            <p className="text-emerald-100 text-xs font-semibold">Tamu Berkah 88</p>
+                            <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-tight uppercase">Pesan Delivery</h1>
+                            <p className="text-emerald-600 dark:text-emerald-400 text-xs font-black tracking-[0.2em] uppercase">Tamu Berkah 88</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
+
+                    <div className="flex-grow max-w-xl mx-12 hidden md:block">
+                        <div className="relative group">
+                            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Cari menu favoritmu di sini..."
+                                className="w-full bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent rounded-2xl py-3 pl-12 pr-4 text-gray-800 dark:text-white text-sm font-bold focus:bg-white dark:focus:bg-gray-800 focus:border-emerald-500/30 focus:outline-none transition-all placeholder:text-gray-400"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <DarkModeToggle />
+                        <div className="relative p-2 text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer lg:hidden">
                             <FiShoppingCart size={24} />
                             {totalItems > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-emerald-600">
+                                <span className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
                                     {totalItems}
                                 </span>
                             )}
                         </div>
-                        <DarkModeToggle />
                     </div>
-                </div>
-
-                {/* Search Bar */}
-                <div className="relative group max-w-2xl mx-auto mb-6">
-                    <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Cari menu favoritmu..."
-                        className="w-full bg-white rounded-2xl py-3 pl-11 pr-4 text-gray-800 text-sm font-bold shadow-sm border-none focus:ring-2 focus:ring-emerald-500/20 placeholder:text-gray-400"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-
-                {/* Categories Scroll */}
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat
-                                ? 'bg-white text-emerald-600 shadow-md'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                                }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 mt-6">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <main className="max-w-[1600px] mx-auto px-4 lg:px-6 py-8">
+                <div className="flex flex-col lg:flex-row gap-8">
 
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-12">
-                        {/* Delivery Info Section: Match Mobile's ListHeaderComponent */}
-                        <div className="bg-white rounded-2xl p-5 mb-6 border border-gray-100 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4">
-                                <FiInfo className="text-emerald-600" size={18} />
-                                <h3 className="font-extrabold text-[#1E293B]">Informasi Pengiriman</h3>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="relative">
-                                    <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                    <input
-                                        type="text"
-                                        placeholder="Nama Lengkap Anda"
-                                        className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-[#1E293B] focus:border-emerald-500 focus:ring-0 transition-all"
-                                        value={customerName}
-                                        onChange={(e) => setCustomerName(e.target.value)}
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <FiMapPin className="absolute left-3.5 top-4 text-gray-400" size={18} />
-                                    <textarea
-                                        placeholder="Alamat Pengiriman Lengkap"
-                                        rows="2"
-                                        className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-[#1E293B] focus:border-emerald-500 focus:ring-0 transition-all resize-none"
-                                        value={customerAddress}
-                                        onChange={(e) => setCustomerAddress(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Validation Error */}
-                        <AnimatePresence>
-                            {validationError && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mb-4 bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold flex items-center gap-2 border border-red-100"
-                                >
-                                    <FiAlertCircle size={16} />
-                                    {validationError}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Menu Categories Header */}
-                        <div className="flex items-center justify-between mb-4 px-1">
-                            <h2 className="text-sm font-extrabold text-[#1E293B] uppercase tracking-wider">
-                                {activeCategory === 'Semua' ? 'Semua Menu' : activeCategory}
-                            </h2>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">{filteredMenu.length} Item</span>
-                        </div>
-
-                        {/* Menu Grid: Match Mobile's 2 column numColumns */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {filteredMenu.map(item => {
-                                const qty = cart[item.id] || 0;
-                                const isOutOfStock = !globalIgnoreStock && item.stock !== null && item.stock <= 0;
-                                const discount = item.discount || 0;
-                                const priceAfterDiscount = item.price * (1 - discount);
-
-                                return (
-                                    <motion.div
-                                        layout
-                                        key={item.id}
-                                        className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col group hover:shadow-md transition-all"
+                    {/* LEFT PANEL: Menu Catalog */}
+                    <div className="flex-grow lg:w-[65%]">
+                        {/* Sticky Categories on Left Panel Top */}
+                        <div className="sticky top-20 z-40 bg-gray-50/80 dark:bg-gray-950/80 backdrop-blur-md py-4 mb-8 -mx-4 px-4">
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setActiveCategory(cat)}
+                                        className={`px-6 py-2.5 rounded-2xl text-[10px] font-black tracking-widest uppercase whitespace-nowrap transition-all border-2 ${activeCategory === cat
+                                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200 dark:shadow-none'
+                                            : 'bg-white dark:bg-gray-900 text-gray-400 border-gray-100 dark:border-gray-800 hover:border-emerald-500'
+                                            }`}
                                     >
-                                        <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
-                                            <AppImage
-                                                src={item.image_url ? `${import.meta.env.VITE_API_URL}${item.image_url}` : "/assets/images/no_image.png"}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {discount > 0 && (
-                                                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg">
-                                                    -{Math.round(discount * 100)}%
-                                                </div>
-                                            )}
-                                            {isOutOfStock && (
-                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                                    <span className="text-white text-xs font-black tracking-widest">HABIS</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                                        <div className="p-3 flex flex-col flex-grow">
-                                            <h4 className="font-bold text-[#1E293B] text-[13px] line-clamp-2 leading-tight h-8 mb-1">{item.name}</h4>
-                                            <p className="text-[10px] text-gray-400 font-bold mb-2">{item.category || 'Lainnya'}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <AnimatePresence mode="popLayout">
+                                {filteredMenu.map(item => {
+                                    const qty = cart[item.id] || 0;
+                                    const isOutOfStock = !globalIgnoreStock && item.stock !== null && item.stock <= 0;
+                                    const discount = item.discount || 0;
+                                    const priceAfterDiscount = item.price * (1 - discount);
 
-                                            <div className="mb-3">
+                                    return (
+                                        <motion.div
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            key={item.id}
+                                            className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col group hover:shadow-2xl hover:shadow-emerald-900/5 hover:-translate-y-1 transition-all duration-300"
+                                        >
+                                            <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
+                                                <AppImage
+                                                    src={item.image_url ? `${import.meta.env.VITE_API_URL}${item.image_url}` : "/assets/images/no_image.png"}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                />
                                                 {discount > 0 && (
-                                                    <p className="text-[10px] text-gray-400 line-through leading-none mb-0.5">Rp {item.price.toLocaleString('id-ID')}</p>
+                                                    <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg uppercase tracking-tight">
+                                                        Hemat {Math.round(discount * 100)}%
+                                                    </div>
                                                 )}
-                                                <div className="flex justify-between items-end">
-                                                    <p className="font-extrabold text-emerald-600 text-sm leading-none">
-                                                        Rp {priceAfterDiscount.toLocaleString('id-ID')}
-                                                    </p>
-                                                    <div className="bg-[#F1F5F9] px-1.5 py-0.5 rounded-md">
-                                                        <span className="text-[9px] font-bold text-[#64748B]">
+                                                {isOutOfStock && (
+                                                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-[2px] flex items-center justify-center">
+                                                        <span className="text-white text-[10px] font-black tracking-[0.3em] uppercase bg-gray-900/80 px-4 py-2 rounded-xl">Habis</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-5 flex flex-col flex-grow">
+                                                <div className="mb-4">
+                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest block mb-1">{item.category || 'Berkah 88'}</span>
+                                                    <h4 className="font-black text-gray-900 dark:text-white text-base line-clamp-2 leading-tight h-10 uppercase tracking-tight">{item.name}</h4>
+                                                </div>
+
+                                                <div className="mb-6">
+                                                    {discount > 0 && (
+                                                        <span className="text-xs text-gray-400 line-through block mb-0.5">Rp {item.price.toLocaleString('id-ID')}</span>
+                                                    )}
+                                                    <div className="flex justify-between items-baseline">
+                                                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-lg">
+                                                            Rp {priceAfterDiscount.toLocaleString('id-ID')}
+                                                        </span>
+                                                        <span className="text-[9px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-widest">
                                                             Stok: {globalIgnoreStock ? '∞' : item.stock}
                                                         </span>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="mt-auto">
-                                                {qty > 0 ? (
-                                                    <div className="bg-[#ECFDF5] rounded-full p-1 flex items-center justify-between border border-[#D1FAE5]">
+                                                <div className="mt-auto pt-2">
+                                                    {qty > 0 ? (
+                                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-[1.2rem] p-1.5 flex items-center justify-between border border-emerald-100 dark:border-emerald-800 shadow-inner">
+                                                            <button
+                                                                onClick={() => handleRemoveFromCart(item)}
+                                                                className="w-10 h-10 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all"
+                                                            >
+                                                                <FiMinus size={18} strokeWidth={3} />
+                                                            </button>
+                                                            <span className="font-black text-base text-emerald-600 dark:text-emerald-400">{qty}</span>
+                                                            <button
+                                                                disabled={!globalIgnoreStock && qty >= item.stock}
+                                                                onClick={() => handleAddToCart(item)}
+                                                                className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm active:scale-90 transition-all ${(!globalIgnoreStock && qty >= item.stock) ? 'bg-gray-100 dark:bg-gray-800 text-gray-300' : 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400'
+                                                                    }`}
+                                                            >
+                                                                <FiPlus size={18} strokeWidth={3} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
                                                         <button
-                                                            onClick={() => handleRemoveFromCart(item)}
-                                                            className="w-8 h-8 bg-white text-emerald-600 rounded-full flex items-center justify-center shadow-sm active:scale-90 transition-all"
-                                                        >
-                                                            <FiMinus size={14} strokeWidth={3} />
-                                                        </button>
-                                                        <span className="font-black text-sm text-emerald-600">{qty}</span>
-                                                        <button
-                                                            disabled={!globalIgnoreStock && qty >= item.stock}
+                                                            disabled={isOutOfStock}
                                                             onClick={() => handleAddToCart(item)}
-                                                            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm active:scale-90 transition-all ${(!globalIgnoreStock && qty >= item.stock) ? 'bg-gray-100 text-gray-300' : 'bg-white text-emerald-600'
+                                                            className={`w-full py-4 rounded-[1.2rem] font-black text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 uppercase ${isOutOfStock
+                                                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                                                                : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-0.5'
                                                                 }`}
                                                         >
-                                                            <FiPlus size={14} strokeWidth={3} />
+                                                            <FiPlus size={20} strokeWidth={3} />
+                                                            Tambah
                                                         </button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        disabled={isOutOfStock}
-                                                        onClick={() => handleAddToCart(item)}
-                                                        className={`w-full py-2.5 rounded-full font-black text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 ${isOutOfStock
-                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                            : 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700'
-                                                            }`}
-                                                    >
-                                                        <FiPlus size={16} strokeWidth={3} />
-                                                        TAMBAH
-                                                    </button>
-                                                )}
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
                         </div>
 
                         {filteredMenu.length === 0 && (
-                            <div className="py-20 text-center flex flex-col items-center gap-4">
-                                <FiInfo size={48} className="text-gray-200" />
-                                <p className="text-gray-400 font-bold">Menu belum tersedia</p>
+                            <div className="py-32 flex flex-col items-center gap-6 bg-white dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                                <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-3xl flex items-center justify-center text-gray-300">
+                                    <FiPackage size={40} />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-gray-900 dark:text-white font-black text-xl uppercase tracking-tighter">Menu Belum Tersedia</p>
+                                    <p className="text-gray-400 font-medium">Hapus filter atau cari dengan kata kunci lain</p>
+                                </div>
+                                <button onClick={() => { setSearchTerm(''); setActiveCategory('Semua'); }} className="text-emerald-600 font-bold uppercase text-xs tracking-widest hover:underline">Reset Semua Filter</button>
                             </div>
                         )}
+                    </div>
+
+                    {/* RIGHT PANEL: Checkout Sidebar */}
+                    <div className="lg:w-[35%] lg:sticky lg:top-28 lg:h-[calc(100vh-140px)]">
+                        <div className="h-full overflow-y-auto no-scrollbar space-y-6 pr-2">
+
+                            {/* Delivery Info Card */}
+                            <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center">
+                                            <FiMapPin size={20} />
+                                        </div>
+                                        <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-tight">Detail Pengiriman</h3>
+                                    </div>
+                                    <AnimatePresence>
+                                        {(customerName && customerAddress) && (
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                                                <FiCheckCircle size={20} className="text-emerald-500" />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-1">Nama Penerima</label>
+                                        <div className="relative group">
+                                            <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
+                                            <input
+                                                type="text"
+                                                placeholder="Nama Lengkap Anda"
+                                                className="w-full bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-800 focus:border-emerald-500/30 transition-all outline-none"
+                                                value={customerName}
+                                                onChange={(e) => setCustomerName(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-1">Alamat Lengkap</label>
+                                        <div className="relative group">
+                                            <FiMapPin className="absolute left-4 top-5 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
+                                            <textarea
+                                                placeholder="Tuliskan alamat pengiriman secara detail..."
+                                                rows="3"
+                                                className="w-full bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-800 focus:border-emerald-500/30 transition-all outline-none resize-none"
+                                                value={customerAddress}
+                                                onChange={(e) => setCustomerAddress(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Cart Summary Card */}
+                            <div className="bg-gray-900 text-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                                <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                                            <FiShoppingBag size={20} />
+                                        </div>
+                                        <h3 className="font-black uppercase tracking-tight">Ringkasan Pesanan</h3>
+                                    </div>
+                                    {totalItems > 0 && (
+                                        <button onClick={handleClearCart} className="p-2 text-white/40 hover:text-red-400 transition-colors" title="Kosongkan">
+                                            <FiTrash2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="max-h-60 overflow-y-auto no-scrollbar mb-8 space-y-4">
+                                    {totalItems === 0 ? (
+                                        <div className="py-6 text-center text-white/30 italic text-sm font-medium">Keranjang masih kosong</div>
+                                    ) : (
+                                        Object.entries(cart).map(([itemId, quantity]) => {
+                                            const item = menuItems.find(m => m.id.toString() === itemId.toString());
+                                            if (!item) return null;
+                                            const finalPrice = item.price * (1 - (item.discount || 0));
+                                            return (
+                                                <div key={itemId} className="flex justify-between items-center group">
+                                                    <div className="flex-grow">
+                                                        <p className="font-bold text-sm tracking-tight line-clamp-1">{item.name}</p>
+                                                        <p className="text-[10px] text-white/40 font-black tracking-widest uppercase">{quantity}x @ Rp {finalPrice.toLocaleString('id-ID')}</p>
+                                                    </div>
+                                                    <p className="font-black text-emerald-400 text-sm ml-4">
+                                                        Rp {(finalPrice * quantity).toLocaleString('id-ID')}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+
+                                <div className="space-y-4 pt-6 border-t border-white/5">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-white/40 text-xs font-black uppercase tracking-widest">Total Produk</span>
+                                        <span className="font-bold">{totalItems} Item</span>
+                                    </div>
+                                    <div className="flex justify-between items-end border-t border-white/10 pt-4">
+                                        <div>
+                                            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Total Pembayaran</p>
+                                            <p className="text-3xl font-black text-emerald-400 leading-none tracking-tighter">
+                                                Rp {calculateTotal.toLocaleString('id-ID')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleCheckout}
+                                    disabled={isSubmitting || totalItems === 0}
+                                    className="w-full mt-10 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-[1.5rem] shadow-xl shadow-emerald-900/50 transform active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed group"
+                                >
+                                    {isSubmitting ? (
+                                        <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <>
+                                            <FaWhatsapp size={22} className="group-hover:scale-110 transition-transform" />
+                                            <span className="tracking-[0.2em] text-sm font-black uppercase">Konfirmasi Order</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {validationError && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-red-500/10 border border-red-500/20 text-red-500 p-5 rounded-3xl flex items-center gap-4"
+                                >
+                                    <FiAlertCircle size={24} className="shrink-0" />
+                                    <p className="text-xs font-black uppercase tracking-tight leading-tight">{validationError}</p>
+                                </motion.div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>
 
-            {/* Bottom Bar: Sticky Fixed Layout match Mobile */}
-            {totalItems > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] z-[60]">
-                    <div className="max-w-2xl mx-auto">
-                        <div className="flex justify-between items-center mb-4 px-2">
-                            <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Total Pembayaran</p>
-                                <p className="text-xl font-black text-emerald-600 leading-none">Rp {calculateTotal.toLocaleString('id-ID')}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={handleClearCart}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <FiTrash2 size={14} />
-                                    <span className="text-[10px] font-black uppercase">Hapus</span>
-                                </button>
-                                <div className="bg-emerald-50 px-3 py-1.5 rounded-lg">
-                                    <span className="text-emerald-600 text-[10px] font-extrabold">{totalItems} Item</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleCheckout}
-                            disabled={isSubmitting}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-200 transform active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70"
-                        >
-                            {isSubmitting ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            ) : (
-                                <>
-                                    <FaWhatsapp size={20} />
-                                    <span className="tracking-widest text-sm">PESAN VIA WHATSAPP</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Mobile Navigation Indicator (Only visible if small screens) */}
+            <div className="lg:hidden h-24"></div>
 
             <ConfirmationModal
                 isOpen={showClearConfirm}
@@ -466,7 +535,7 @@ const GuestCheckout = () => {
                 }}
                 title="Kosongkan Keranjang"
                 message="Bismillah, apakah Anda yakin ingin menghapus semua item dari keranjang?"
-                confirmText="Ya, Hapus"
+                confirmText="Ya, Hapus Semua"
                 cancelText="Batal"
                 isDestructive={true}
             />

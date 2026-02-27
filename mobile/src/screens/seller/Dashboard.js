@@ -650,11 +650,11 @@ const styles = StyleSheet.create({
     },
     statsWrapper: {
         backgroundColor: '#FFFFFF',
-        marginHorizontal: '4%',
+        marginHorizontal: 0,
         marginTop: Platform.select({ web: 30, default: 40 }),
-        borderRadius: 24,
-        paddingBottom: 10,
-        paddingTop: 5,
+        borderRadius: 0,
+        paddingBottom: 25,
+        paddingTop: 20,
     },
     statsGrid: {
         flexDirection: 'row',
@@ -712,8 +712,8 @@ const styles = StyleSheet.create({
     },
     sectionWrapper: {
         backgroundColor: '#FFFFFF',
-        marginHorizontal: '4%',
-        borderRadius: 24,
+        marginHorizontal: 0,
+        borderRadius: 0,
         paddingBottom: 15,
         paddingTop: 15,
     },

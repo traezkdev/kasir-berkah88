@@ -122,10 +122,10 @@ const DesktopDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-transparent pb-12 overflow-x-hidden">
+        <div className="min-h-screen bg-transparent pb-12">
             <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 grid grid-cols-12 gap-8">
                 {/* Left Side: Sidebar Stats & Info */}
-                <aside className="col-span-12 lg:col-span-3 space-y-6">
+                <aside className="col-span-12 lg:col-span-3 space-y-6 lg:sticky lg:top-28 self-start">
                     {/* Profile Card */}
                     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800 text-center">
                         <div className="w-24 h-24 bg-gradient-to-tr from-green-600 to-emerald-400 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-green-600/20">
