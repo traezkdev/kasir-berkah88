@@ -417,12 +417,17 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
     try {
         const [users] = await pool.query('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
         if (users.length > 0 && users[0].fcm_token) {
-            console.log(`[Push] Mencoba kirim notifikasi ke user ${targetUserId}...`);
+            const token = users[0].fcm_token;
+            console.log(`[Push] Menyiapkan pengiriman ke User ${targetUserId}...`);
+
+            // Pastikan URL gambar aman (HTTPS atau URL valid)
+            const senderAvatar = data.senderAvatar && data.senderAvatar.startsWith('http') ? data.senderAvatar : null;
+
             const message = {
                 notification: {
                     title: title,
                     body: body,
-                    ...(data.senderAvatar ? { image: String(data.senderAvatar) } : {}),
+                    ...(senderAvatar ? { image: String(senderAvatar) } : {}),
                 },
                 android: {
                     priority: 'high',
@@ -430,39 +435,47 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
                     notification: {
                         channelId: 'default',
                         sound: 'default',
-                        ...(data.senderAvatar ? { imageUrl: String(data.senderAvatar) } : {}),
+                        priority: 'max',
+                        visibility: 'public',
+                        ...(senderAvatar ? { imageUrl: String(senderAvatar) } : {}),
                     }
                 },
                 apns: {
                     headers: {
-                        'apns-priority': '10', // Prioritas tinggi untuk iOS
+                        'apns-priority': '10',
                     },
                     payload: {
                         aps: {
                             sound: 'default',
                             contentAvailable: true,
+                            mutableContent: true, // Diperlukan agar gambar tampil di iOS
                         }
+                    },
+                    fcmOptions: {
+                        image: senderAvatar ? String(senderAvatar) : undefined
                     }
                 },
                 data: {
                     ...data,
                     chatId: String(data.chatId),
                     senderName: String(title),
-                    senderAvatar: String(data.senderAvatar || ''),
+                    senderAvatar: String(senderAvatar || ''),
                     type: String(data.type || 'text'),
-                    experienceId: '@vira-chat/vira-chat',
                 },
-                token: users[0].fcm_token,
+                token: token,
             };
 
             const response = await admin.messaging().send(message);
-            console.log(`[Push] Sukses kirim ke user ${targetUserId}:`, response);
+            console.log(`[Push] BERHASIL dikirim ke User ${targetUserId}. ID: ${response}`);
             return response;
         } else {
-            console.log(`[Push] Skip user ${targetUserId}: Token tidak ditemukan.`);
+            console.log(`[Push] SKIP: User ${targetUserId} tidak punya fcm_token.`);
         }
     } catch (error) {
-        console.error(`[Push] Error kirim ke user ${targetUserId}:`, error.message);
+        console.error(`[Push] GAGAL mengirim ke User ${targetUserId}:`, error.message);
+        if (error.code === 'messaging/registration-token-not-registered') {
+            console.log(`[Push] Token User ${targetUserId} sudah tidak valid. Perlu login ulang.`);
+        }
     }
 };
 
