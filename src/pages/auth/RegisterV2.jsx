@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiLock, FiArrowRight, FiCheckCircle, FiAlertCircle, FiPhone, FiMapPin, FiMail, FiChevronLeft } from 'react-icons/fi';
+import { FiUser, FiLock, FiArrowRight, FiCheckCircle, FiAlertCircle, FiPhone, FiMapPin, FiMail, FiChevronLeft, FiEye, FiEyeOff } from 'react-icons/fi';
 import AppIcon from '../../components/AppIcon';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 
@@ -21,6 +21,8 @@ const RegisterV2 = () => {
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [registrationEnabled, setRegistrationEnabled] = useState(true);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
     const { logoUrl, headerTitle } = useAppSettings();
 
@@ -193,14 +195,21 @@ const RegisterV2 = () => {
                                         <div className="relative">
                                             <FiLock className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-300" size={18} />
                                             <input
-                                                type="password"
+                                                type={showPassword ? "text" : "password"}
                                                 name="password"
                                                 value={formData.password}
                                                 onChange={handleInputChange}
                                                 placeholder="Minimal 6 karakter"
                                                 required
-                                                className="w-full h-[54px] bg-white/15 border border-white/20 rounded-2xl py-3 pl-14 pr-6 text-white text-sm font-semibold placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-all"
+                                                className="w-full h-[54px] bg-white/15 border border-white/20 rounded-2xl py-3 pl-14 pr-12 text-white text-sm font-semibold placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-all font-sans"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                                            >
+                                                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                            </button>
                                         </div>
                                     </div>
 
@@ -209,14 +218,21 @@ const RegisterV2 = () => {
                                         <div className="relative">
                                             <FiLock className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-300" size={18} />
                                             <input
-                                                type="password"
+                                                type={showConfirmPassword ? "text" : "password"}
                                                 name="confirmPassword"
                                                 value={formData.confirmPassword}
                                                 onChange={handleInputChange}
                                                 placeholder="Ketik ulang kata sandi"
                                                 required
-                                                className="w-full h-[54px] bg-white/15 border border-white/20 rounded-2xl py-3 pl-14 pr-6 text-white text-sm font-semibold placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-all"
+                                                className="w-full h-[54px] bg-white/15 border border-white/20 rounded-2xl py-3 pl-14 pr-12 text-white text-sm font-semibold placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-all font-sans"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                                            >
+                                                {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -391,14 +407,21 @@ const RegisterV2 = () => {
                                     <div className="relative group">
                                         <FiLock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             name="password"
                                             value={formData.password}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
                                             required
-                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold focus:outline-none focus:border-emerald-500 transition-all"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-14 pr-12 text-sm font-black focus:outline-none focus:border-emerald-500 transition-all font-sans"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-500 transition-colors"
+                                        >
+                                            {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -407,14 +430,21 @@ const RegisterV2 = () => {
                                     <div className="relative group">
                                         <FiLock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? "text" : "password"}
                                             name="confirmPassword"
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
                                             required
-                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold focus:outline-none focus:border-emerald-500 transition-all"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-14 pr-12 text-sm font-black focus:outline-none focus:border-emerald-500 transition-all font-sans"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-500 transition-colors"
+                                        >
+                                            {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                        </button>
                                     </div>
                                 </div>
 

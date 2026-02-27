@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useAppSettings } from '../context/AppSettingsContext';
-import { User, Lock, ChevronLeft, ArrowRight } from 'lucide-react-native';
+import { User, Lock, ChevronLeft, ArrowRight, Eye, EyeOff } from 'lucide-react-native';
 import { API_URL } from '../api/apiService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +25,7 @@ const { width, height } = Dimensions.get('window');
 const LoginScreen = ({ navigation }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const { logoUrl } = useAppSettings();
@@ -119,9 +120,19 @@ const LoginScreen = ({ navigation }) => {
                                         selectionColor="#FFFFFF"
                                         value={password}
                                         onChangeText={setPassword}
-                                        secureTextEntry
+                                        secureTextEntry={!showPassword}
                                         autoCapitalize="none"
                                     />
+                                    <TouchableOpacity
+                                        onPress={() => setShowPassword(!showPassword)}
+                                        style={styles.eyeBtn}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff size={18} color="rgba(255,255,255,0.7)" />
+                                        ) : (
+                                            <Eye size={18} color="rgba(255,255,255,0.7)" />
+                                        )}
+                                    </TouchableOpacity>
                                 </View>
                             </View>
 
@@ -271,6 +282,9 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 15,
         fontWeight: '600',
+    },
+    eyeBtn: {
+        padding: 5,
     },
     forgotBtn: {
         alignSelf: 'flex-end',
