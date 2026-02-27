@@ -1946,15 +1946,19 @@ const ChatDetailScreen = () => {
                     >
                         {(replyingTo || editingMessage) && (
                             <View style={styles.replyBanner}>
+                                <View style={{ width: 4, backgroundColor: '#075e54', borderRadius: 2, marginRight: scale(8), alignSelf: 'stretch' }} />
                                 <View style={styles.replyBannerContent}>
                                     <Text style={styles.replyUser}>
-                                        {replyingTo?.sender === 'me' ? 'Anda' : chat.name}
+                                        {editingMessage
+                                            ? '✏️ Edit Pesan'
+                                            : (replyingTo?.sender === 'me' ? 'Anda' : chat.name)
+                                        }
                                     </Text>
                                     <Text style={styles.replyText} numberOfLines={1}>
                                         {replyingTo?.text || editingMessage?.text}
                                     </Text>
                                 </View>
-                                <TouchableOpacity onPress={cancelAction}>
+                                <TouchableOpacity onPress={cancelAction} style={{ padding: scale(5) }}>
                                     <X size={18} color="#888" />
                                 </TouchableOpacity>
                             </View>
@@ -2201,7 +2205,9 @@ const styles = StyleSheet.create({
         marginRight: scale(4),
     },
     inputSection: {
-        padding: scale(8),
+        paddingHorizontal: scale(8),
+        paddingBottom: scale(8),
+        paddingTop: scale(4),
     },
     inputRow: {
         flexDirection: 'row',
@@ -2239,14 +2245,15 @@ const styles = StyleSheet.create({
     },
     replyBanner: {
         backgroundColor: '#fff',
-        padding: scale(10),
-        borderTopLeftRadius: scale(10),
-        borderTopRightRadius: scale(10),
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(10),
         flexDirection: 'row',
         alignItems: 'center',
-        borderLeftWidth: 4,
-        borderLeftColor: '#075e54',
-        marginBottom: verticalScale(2),
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+        marginBottom: verticalScale(6),
+        borderRadius: scale(8),
+        elevation: 1,
     },
     replyBannerContent: {
         flex: 1,
