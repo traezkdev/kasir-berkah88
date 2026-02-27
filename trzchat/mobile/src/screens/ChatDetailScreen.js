@@ -285,10 +285,13 @@ const MessageItem = memo(({
                                 </View>
                                 <Download size={18} color="#888" />
                             </TouchableOpacity>
+                        ) : isDeleted ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(5) }}>
+                                <Text style={styles.deletedText}>🚫</Text>
+                                <Text style={styles.deletedText}>Pesan ini telah dihapus</Text>
+                            </View>
                         ) : (
-                            <Text style={[styles.messageText, isDeleted ? styles.deletedText : null]}>
-                                {isDeleted ? 'Pesan ini telah dihapus' : item.text}
-                            </Text>
+                            <Text style={styles.messageText}>{item.text}</Text>
                         )}
                         <View style={styles.messageFooter}>
                             {(item.is_edited && !isDeleted) ? (
@@ -2154,6 +2157,20 @@ const styles = StyleSheet.create({
     messageText: {
         fontSize: moderateScale(16),
         color: '#000',
+    },
+    deletedBubble: {
+        opacity: 0.7,
+    },
+    deletedText: {
+        fontSize: moderateScale(15),
+        color: '#8696A0',
+        fontStyle: 'italic',
+    },
+    editedLabel: {
+        fontSize: moderateScale(11),
+        color: '#8696A0',
+        fontStyle: 'italic',
+        marginRight: scale(4),
     },
     messageFooter: {
         flexDirection: 'row',
