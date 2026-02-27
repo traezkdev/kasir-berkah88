@@ -80,6 +80,126 @@ const DesktopOrderConfirmation = () => {
         }
     };
 
+    // State for individual item reviews in the modal
+    const [itemReviews, setItemReviews] = useState({});
+
+    // Fetch existing reviews when modal opens
+    const fetchExistingReviews = useCallback(async (itemIds) => {
+        if (!itemIds || itemIds.length === 0) return {};
+        try {
+            const res = await authFetch(`${API_URL}/api/my-reviews?menu_item_ids=${itemIds.join(',')}`);
+            const result = await res.json();
+            if (res.ok && result.data) {
+                const reviewsMap = {};
+                result.data.forEach(review => {
+                    // Force key as string to ensure robust mapping
+                    reviewsMap[String(review.menu_item_id)] = {
+                        id: review.id,
+                        rating: review.rating,
+                        comment: review.comment,
+                        isSubmitted: true
+                    };
+                });
+                return reviewsMap;
+            }
+        } catch (error) {
+            console.error("Error fetching reviews:", error);
+        }
+        return {};
+    }, [API_URL]);
+
+    useEffect(() => {
+        const initReviews = async () => {
+            if (selectedOrderForRating) {
+                const items = typeof selectedOrderForRating.items === 'string'
+                    ? JSON.parse(selectedOrderForRating.items)
+                    : (selectedOrderForRating.items || []);
+
+                // Collect all item IDs to check for existing reviews globally
+                const itemIds = items.map(item => String(item.id || item.menu_item_id || item.menuId));
+                const existingReviews = await fetchExistingReviews(itemIds);
+
+                const initialReviews = {};
+                items.forEach((item) => {
+                    const itemId = String(item.id || item.menu_item_id || item.menuId);
+                    if (existingReviews[itemId]) {
+                        initialReviews[itemId] = existingReviews[itemId];
+                    } else {
+                        initialReviews[itemId] = {
+                            rating: 5,
+                            comment: '',
+                            isSubmitted: false
+                        };
+                    }
+                });
+                setItemReviews(initialReviews);
+            }
+        };
+        initReviews();
+    }, [selectedOrderForRating, fetchExistingReviews]);
+
+    const handleRatingChange = (itemId, rating) => {
+        setItemReviews(prev => ({
+            ...prev,
+            [String(itemId)]: { ...prev[String(itemId)], rating, isSubmitted: false } // Mark as not submitted to allow Re-send
+        }));
+    };
+
+    const handleCommentChange = (itemId, comment) => {
+        setItemReviews(prev => ({
+            ...prev,
+            [String(itemId)]: { ...prev[String(itemId)], comment, isSubmitted: false }
+        }));
+    };
+
+    const handleStartEdit = (itemId) => {
+        setItemReviews(prev => ({
+            ...prev,
+            [String(itemId)]: { ...prev[String(itemId)], isSubmitted: false }
+        }));
+    };
+
+    const submitItemReview = async (itemId) => {
+        const reviewData = itemReviews[itemId];
+        if (!reviewData) return;
+
+        setSubmittingRating(true);
+        try {
+            const isUpdate = !!reviewData.id;
+            const endpoint = isUpdate
+                ? `${API_URL}/api/menu-reviews/${reviewData.id}`
+                : `${API_URL}/api/menu-reviews`;
+
+            const res = await authFetch(endpoint, {
+                method: isUpdate ? 'PUT' : 'POST',
+                body: JSON.stringify({
+                    menu_item_id: itemId,
+                    order_id: selectedOrderForRating.id,
+                    rating: reviewData.rating,
+                    comment: reviewData.comment
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setItemReviews(prev => ({
+                    ...prev,
+                    [itemId]: {
+                        ...prev[itemId],
+                        id: isUpdate ? reviewData.id : data.data?.id,
+                        isSubmitted: true
+                    }
+                }));
+            } else {
+                alert(data.error || 'Gagal mengirim ulasan');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Terjadi kesalahan saat mengirim ulasan');
+        } finally {
+            setSubmittingRating(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-transparent pb-12 overflow-x-hidden">
             <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
@@ -208,35 +328,87 @@ const DesktopOrderConfirmation = () => {
                 )}
             </main>
 
-            {/* Rating Modal Desktop Placeholder - For completeness, usually reusable or separate */}
-            {isRatingModalOpen && (
-                <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-8 animate-in fade-in duration-500">
-                    <div className="bg-white dark:bg-slate-950 w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
-                        <button onClick={() => setIsRatingModalOpen(false)} className="absolute top-8 right-8 p-3 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-                            <Icon name="X" />
-                        </button>
-                        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Beri Ulasan</h2>
-                        <p className="text-slate-400 mb-8 font-medium">Bantu kami meningkatkan kualitas dengan memberikan rating untuk pesanan #{selectedOrderForRating?.id}.</p>
+            {/* Rating Modal Desktop */}
+            <AnimatePresence>
+                {isRatingModalOpen && (
+                    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-8 animate-in fade-in duration-500">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-slate-950 w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl border border-slate-200 dark:border-slate-800 relative"
+                        >
+                            <button onClick={() => setIsRatingModalOpen(false)} className="absolute top-8 right-8 p-3 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 hover:text-red-500 transition-colors">
+                                <Icon name="X" />
+                            </button>
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Beri Ulasan</h2>
+                            <p className="text-slate-400 mb-8 font-medium">Bantu kami meningkatkan kualitas dengan memberikan rating untuk pesanan #{selectedOrderForRating?.id}.</p>
 
-                        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
-                            {(typeof selectedOrderForRating?.items === 'string' ? JSON.parse(selectedOrderForRating.items) : (selectedOrderForRating?.items || [])).map((item, idx) => (
-                                <div key={idx} className="bg-slate-50 dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-black text-lg text-slate-800 dark:text-white">{item.name}</h4>
-                                        <div className="flex gap-2">
-                                            {[1, 2, 3, 4, 5].map(s => <Icon key={s} name="Star" className="w-8 h-8 text-slate-200 cursor-pointer hover:text-amber-400 transition-colors" />)}
+                            <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                                {(typeof selectedOrderForRating?.items === 'string' ? JSON.parse(selectedOrderForRating.items) : (selectedOrderForRating?.items || [])).map((item, idx) => {
+                                    const itemId = String(item.id || item.menu_item_id || item.menuId);
+                                    const review = itemReviews[itemId] || { rating: 5, comment: '', isSubmitted: false };
+                                    const hasExistingId = !!review.id;
+
+                                    return (
+                                        <div key={idx} className="bg-slate-50 dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-black text-lg text-slate-800 dark:text-white">{item.name}</h4>
+                                                <div className="flex gap-2">
+                                                    {[1, 2, 3, 4, 5].map(s => (
+                                                        <Icon
+                                                            key={s}
+                                                            name="Star"
+                                                            onClick={() => handleRatingChange(itemId, s)}
+                                                            className={`w-8 h-8 cursor-pointer transition-colors ${s <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <textarea
+                                                className="w-full bg-white dark:bg-slate-800 border-transparent focus:border-amber-400 rounded-3xl p-6 text-sm font-bold min-h-[100px] outline-none transition-all disabled:opacity-50"
+                                                placeholder="Bagaimana rasanya? (Opsional)..."
+                                                value={review.comment}
+                                                onChange={(e) => handleCommentChange(itemId, e.target.value)}
+                                            />
+                                            <div className="flex flex-col gap-3">
+                                                {review.isSubmitted ? (
+                                                    <div className="flex gap-2">
+                                                        <div className="flex-1 bg-green-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-black py-4 rounded-2xl flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800/50">
+                                                            <Icon name="Check" size={18} />
+                                                            {hasExistingId ? 'Sudah Diulas' : 'Ulasan Terkirim'}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleStartEdit(itemId)}
+                                                            className="px-6 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700 active:scale-95"
+                                                        >
+                                                            EDIT
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => submitItemReview(itemId)}
+                                                        disabled={submittingRating}
+                                                        className={`w-full font-black py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 bg-amber-500 text-white hover:bg-amber-600`}
+                                                    >
+                                                        {submittingRating ? (
+                                                            <Icon name="Loader2" className="w-5 h-5 animate-spin" />
+                                                        ) : (
+                                                            <>{hasExistingId ? 'Update Ulasan' : 'Kirim Ulasan Item Ini'}</>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <textarea className="w-full bg-white dark:bg-slate-800 border-transparent focus:border-amber-400 rounded-3xl p-6 text-sm font-bold min-h-[100px]" placeholder="Bagaimana rasanya? (Opsional)..." />
-                                    <button className="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-lg">Kirim Ulasan Item Ini</button>
-                                </div>
-                            ))}
-                        </div>
+                                    );
+                                })}
+                            </div>
 
-                        <button onClick={() => setIsRatingModalOpen(false)} className="w-full mt-10 bg-slate-900 dark:bg-slate-800 text-white font-black py-5 rounded-[2rem]">SELESAI</button>
+                            <button onClick={() => setIsRatingModalOpen(false)} className="w-full mt-10 bg-slate-900 dark:bg-slate-800 text-white font-black py-5 rounded-[2rem] hover:opacity-90 transition-all">TUTUP MODAL</button>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 };

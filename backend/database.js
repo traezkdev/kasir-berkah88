@@ -1833,34 +1833,41 @@ const setupDatabase = async () => {
 
     // Migration for unique constraint
     try {
+      // 1. First, clean up any existing duplicate reviews (keeping only the latest one)
+      // This is necessary because ALTER TABLE ADD UNIQUE will fail if duplicates exist.
+      await connection.query(`
+        DELETE r1 FROM menu_reviews r1
+        JOIN menu_reviews r2 
+        ON r1.user_id = r2.user_id 
+        AND r1.menu_item_id = r2.menu_item_id 
+        AND r1.id < r2.id
+      `);
+      console.log('Cleaned up duplicate reviews from menu_reviews table.');
+
       const [existingConstraints] = await connection.query(`
             SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item_order'
         `);
       if (existingConstraints.length > 0) {
-        // Drop the index safely - if it fails because of FK, we might need to drop FK first, 
-        // but for now let's just avoid the error by checking more deeply or just skipping if it fails.
-        // Usually, unique_user_item_order was (user_id, menu_item_id, order_id)
         try {
           await connection.query("ALTER TABLE menu_reviews DROP INDEX unique_user_item_order");
           console.log('Successfully dropped old unique_user_item_order index.');
         } catch (dropErr) {
-          // If it fails, it's likely a FK issue. We can log but not crash.
           if (!dropErr.message.includes('foreign key constraint')) {
             throw dropErr;
           }
           console.log('Skipping drop of unique_user_item_order as it is needed by a FK.');
         }
+      }
 
-        // Add the new constraint if it doesn't exist
-        const [newConstr] = await connection.query(`
-            SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item'
-        `);
-        if (newConstr.length === 0) {
-          await connection.query("ALTER TABLE menu_reviews ADD UNIQUE KEY unique_user_item (user_id, menu_item_id(191))");
-          console.log('Successfully added menu_reviews unique_user_item constraint.');
-        }
+      // 2. Add the new unique constraint if it doesn't exist
+      const [newConstr] = await connection.query(`
+          SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item'
+      `);
+      if (newConstr.length === 0) {
+        await connection.query("ALTER TABLE menu_reviews ADD UNIQUE KEY unique_user_item (user_id, menu_item_id(191))");
+        console.log('Successfully added menu_reviews unique_user_item constraint.');
       }
     } catch (err) {
       console.error('Error migrating menu_reviews constraints:', err.message);
