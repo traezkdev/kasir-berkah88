@@ -153,27 +153,27 @@ const AdminSettings = () => {
 
             {/* MODAL EDITOR DINAMIS */}
             {activeCategory && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden">
-                    {/* Backdrop: Kami gunakan fixed inset-0 agar benar-benar menutupi seluruh layar tanpa celah */}
+                <div className="fixed inset-0 z-[9999] sm:flex sm:items-center sm:justify-center overflow-hidden">
+                    {/* Backdrop: Hanya di Desktop */}
                     <div
-                        className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl transition-opacity duration-300"
+                        className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl transition-opacity duration-300 hidden sm:block"
                         onClick={() => setActiveCategory(null)}
                     ></div>
 
-                    {/* Card Modal */}
-                    <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-[0_0_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden animate-in zoom-in fade-in duration-300">
+                    {/* Card Modal: Benar-benar menempel di tepi layar pada Mobile (Fixed Inset-0) */}
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto sm:max-w-2xl bg-white dark:bg-slate-900 sm:rounded-[3rem] shadow-none sm:shadow-[0_0_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in fade-in duration-300 flex flex-col">
 
-                        {/* Modal Header */}
-                        <div className="p-8 bg-indigo-600 text-white flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-black uppercase tracking-tight">Edit {activeCategory}</h2>
-                                <p className="text-indigo-100/70 text-sm font-bold uppercase tracking-widest mt-1">Konfigurasi Tingkat Sistem</p>
+                        {/* Modal Header: Benar-benar di posisi paling atas */}
+                        <div className="p-6 sm:p-8 bg-indigo-600 text-white flex justify-between items-center shrink-0 border-none m-0">
+                            <div className="mt-0">
+                                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight leading-none">Edit {activeCategory}</h2>
+                                <p className="text-indigo-100/70 text-[10px] sm:text-xs font-bold uppercase tracking-widest mt-1">Konfigurasi Tingkat Sistem</p>
                             </div>
-                            <button onClick={() => setActiveCategory(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-all font-black text-xl">×</button>
+                            <button onClick={() => setActiveCategory(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-all font-black text-2xl">×</button>
                         </div>
 
                         {/* Modal Body: Render Form Based on Category */}
-                        <div className="p-10 max-h-[70vh] overflow-y-auto space-y-8">
+                        <div className="p-10 flex-1 overflow-y-auto space-y-8">
 
                             {activeCategory === 'tampilan' && (
                                 <>
