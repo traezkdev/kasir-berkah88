@@ -19,8 +19,7 @@ const DataSiswa = () => {
         jenis_kelamin: 'L',
         nisn_nik: '',
         email: '',
-        wa_number: '',
-        role: 'siswa'
+        wa_number: ''
     });
 
     const resetForm = () => {
@@ -31,8 +30,7 @@ const DataSiswa = () => {
             jenis_kelamin: 'L',
             nisn_nik: '',
             email: '',
-            wa_number: '',
-            role: 'siswa'
+            wa_number: ''
         });
         setSelectedId(null);
         setIsEditMode(false);
@@ -42,7 +40,7 @@ const DataSiswa = () => {
         setIsRefreshing(true);
         try {
             const token = localStorage.getItem('siakad_token');
-            const apiUrl = import.meta.env.VITE_API_URL;
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
             const response = await fetch(`${apiUrl}/api/admin/users?role=siswa`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -70,11 +68,12 @@ const DataSiswa = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('siakad_token');
-        const apiUrl = import.meta.env.VITE_API_URL;
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
         try {
             let response;
             if (isEditMode) {
+                // Update
                 response = await fetch(`${apiUrl}/api/admin/users/${selectedId}`, {
                     method: 'PUT',
                     headers: {
@@ -84,12 +83,14 @@ const DataSiswa = () => {
                     body: JSON.stringify(formData)
                 });
             } else {
-                response = await fetch(`${apiUrl}/api/register`, {
+                // Create
+                response = await fetch(`${apiUrl}/api/admin/users`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({ ...formData, role: 'siswa' })
                 });
             }
 
@@ -111,13 +112,12 @@ const DataSiswa = () => {
         setSelectedId(item.id);
         setFormData({
             username: item.username,
-            password: '',
-            nama_lengkap: item.nama_lengkap || '',
+            password: '', // Password empty on edit
+            nama_lengkap: item.nama_lengkap,
             jenis_kelamin: item.jenis_kelamin || 'L',
             nisn_nik: item.nisn_nik || '',
             email: item.email || '',
-            wa_number: item.wa_number || '',
-            role: 'siswa'
+            wa_number: item.wa_number || ''
         });
         setIsEditMode(true);
         setShowModal(true);
@@ -128,19 +128,18 @@ const DataSiswa = () => {
 
         try {
             const token = localStorage.getItem('siakad_token');
-            const apiUrl = import.meta.env.VITE_API_URL;
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
             const response = await fetch(`${apiUrl}/api/admin/users/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            const data = await response.json();
             if (response.ok) {
                 toast.success("Siswa berhasil dihapus.");
                 fetchSiswa();
             } else {
-                toast.error(data.error || "Gagal menghapus data.");
+                toast.error("Gagal menghapus data.");
             }
         } catch (err) {
             toast.error("Terjadi kesalahan sistem.");
@@ -152,10 +151,6 @@ const DataSiswa = () => {
         s.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.nisn_nik?.includes(searchTerm)
     );
-
-    // Hitung Statistik
-    const totalLaki = siswa.filter(s => s.jenis_kelamin === 'L').length;
-    const totalPerempuan = siswa.filter(s => s.jenis_kelamin === 'P').length;
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -200,36 +195,38 @@ const DataSiswa = () => {
                                 <span className="text-indigo-200/60 text-[10px] font-bold">Terdaftar</span>
                             </div>
                         </div>
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-white/10 blur-xl rounded-full animate-pulse"></div>
-                            <div className="relative p-4 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl transform group-hover:rotate-12 transition-transform duration-500">
-                                <FaUserGraduate size={24} className="text-white drop-shadow-lg" />
-                            </div>
+                        <div className="p-4 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl transform group-hover:rotate-12 transition-transform duration-500">
+                            <FaUserGraduate size={24} className="text-white drop-shadow-lg" />
                         </div>
                     </div>
+
                     <div className="relative z-10 mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-indigo-100/50">
                         <span>Akademik Aktif</span>
                         <div className="flex -space-x-1.5">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="w-4 h-4 rounded-full border border-indigo-700 bg-indigo-400 flex items-center justify-center text-[7px]">
+                                <div key={i} className="w-4 h-4 rounded-full border border-indigo-700 bg-indigo-400 flex items-center justify-center text-[7px] font-bold">
                                     {i}
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
-                {/* Placeholder stats */}
+
                 <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-between hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group">
                     <div>
                         <p className="text-slate-400 text-sm font-medium mb-1">Laki-laki</p>
-                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{totalLaki}</h3>
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors">
+                            {siswa.filter(s => s.jenis_kelamin === 'L').length}
+                        </h3>
                     </div>
                     <div className="text-indigo-500 font-black text-4xl opacity-[0.08] group-hover:opacity-20 transition-all pointer-events-none select-none">L</div>
                 </div>
                 <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-between hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group">
                     <div>
                         <p className="text-slate-400 text-sm font-medium mb-1">Perempuan</p>
-                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{totalPerempuan}</h3>
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors">
+                            {siswa.filter(s => s.jenis_kelamin === 'P').length}
+                        </h3>
                     </div>
                     <div className="text-indigo-500 font-black text-4xl opacity-[0.08] group-hover:opacity-20 transition-all pointer-events-none select-none">P</div>
                 </div>
@@ -248,35 +245,33 @@ const DataSiswa = () => {
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
                         />
                     </div>
+                    <div className="flex items-center space-x-2">
+                        <button className="flex items-center space-x-2 px-4 py-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-300 transition-all">
+                            <FaFilter size={14} />
+                            <span>Filter</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
                                 <th className="px-6 py-4">Siswa</th>
-                                <th className="px-6 py-4">Identitas</th>
+                                <th className="px-6 py-4">NISN / Identitas</th>
                                 <th className="px-6 py-4">Kontak</th>
-                                <th className="px-6 py-4 text-center">Tgl Terdaftar</th>
+                                <th className="px-6 py-4">Tgl Terdaftar</th>
                                 <th className="px-6 py-4 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="p-12 text-center">
-                                        <div className="inline-flex items-center space-x-2">
-                                            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                            <span className="font-bold text-slate-500">Memuat data...</span>
-                                        </div>
-                                    </td>
+                                    <td colSpan="5" className="p-12 text-center text-slate-500 font-bold animate-pulse">Memuat data...</td>
                                 </tr>
                             ) : filteredSiswa.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="p-12 text-center font-bold text-slate-500">
-                                        {searchTerm ? "Data siswa tidak ditemukan." : "Belum ada siswa terdaftar."}
-                                    </td>
+                                    <td colSpan="5" className="p-12 text-center font-bold text-slate-500 italic">Data siswa tidak ditemukan.</td>
                                 </tr>
                             ) : filteredSiswa.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
@@ -292,36 +287,25 @@ const DataSiswa = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex flex-col space-y-1">
-                                            <span className={`w-fit text-[10px] font-black px-2 py-0.5 rounded-lg ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                                {item.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
-                                            </span>
-                                            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
-                                                {item.nisn_nik || '-'}
-                                            </span>
-                                        </div>
+                                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg">
+                                            {item.nisn_nik || '-'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{item.email || '-'}</p>
                                         <p className="text-xs text-indigo-500 font-bold">{item.wa_number || '-'}</p>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase text-xs tracking-tighter">
+                                    <td className="px-6 py-4">
+                                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                                             {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </p>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button
-                                                onClick={() => handleEdit(item)}
-                                                className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all"
-                                            >
+                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all">
                                                 <FaEdit size={16} />
                                             </button>
-                                            <button
-                                                onClick={() => handleDelete(item.id, item.nama_lengkap)}
-                                                className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all"
-                                            >
+                                            <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
                                                 <FaTrash size={16} />
                                             </button>
                                         </div>
@@ -331,89 +315,20 @@ const DataSiswa = () => {
                         </tbody>
                     </table>
                 </div>
-
-                {/* Mobile Card View */}
-                <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
-                    {isLoading ? (
-                        <div className="p-12 text-center">
-                            <div className="inline-flex items-center space-x-2">
-                                <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                <span className="font-bold text-slate-500 uppercase tracking-widest text-xs">Memuat...</span>
-                            </div>
-                        </div>
-                    ) : filteredSiswa.length === 0 ? (
-                        <div className="p-12 text-center font-bold text-slate-500 uppercase tracking-widest text-xs">
-                            {searchTerm ? "Data tidak ditemukan." : "Belum ada siswa."}
-                        </div>
-                    ) : filteredSiswa.map((item) => (
-                        <div key={item.id} className="p-6 space-y-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all">
-                            {/* Card Header: Profile & Gender */}
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-600/20">
-                                        {item.nama_lengkap?.[0] || 'S'}
-                                    </div>
-                                    <div>
-                                        <h4 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">{item.nama_lengkap}</h4>
-                                        <p className="text-xs text-slate-400 font-bold tracking-widest uppercase">@{item.username}</p>
-                                    </div>
-                                </div>
-                                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                    {item.jenis_kelamin === 'L' ? 'L' : 'P'}
-                                </span>
-                            </div>
-
-                            {/* Card Body: Identitas & Kontak */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">NISN / NIK</p>
-                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.nisn_nik || '-'}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</p>
-                                    <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{item.wa_number || '-'}</p>
-                                </div>
-                                <div className="col-span-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Alamat Email</p>
-                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{item.email || '-'}</p>
-                                </div>
-                            </div>
-
-                            {/* Card Footer: Date & Actions */}
-                            <div className="flex justify-between items-center pt-2">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Terdaftar Sejak</span>
-                                    <span className="text-xs font-bold text-slate-500">{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <button
-                                        onClick={() => handleEdit(item)}
-                                        className="p-3 bg-white dark:bg-slate-800 text-slate-400 hover:text-indigo-600 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
-                                    >
-                                        <FaEdit size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(item.id, item.nama_lengkap)}
-                                        className="p-3 bg-white dark:bg-slate-800 text-slate-400 hover:text-red-600 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
-                                    >
-                                        <FaTrash size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
             </div>
 
             {/* Modal Tambah/Edit */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-                    <div className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-8">
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
-                                {isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
-                            </h2>
+                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl overflow-y-auto m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        <div className="p-6 sm:p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                    {isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
+                                </h2>
+                                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                            </div>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
