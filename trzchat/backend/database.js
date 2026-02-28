@@ -188,6 +188,20 @@ async function initDB() {
     }
 
 
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS calls (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        caller_id INT,
+        receiver_id INT,
+        type ENUM('audio', 'video') DEFAULT 'audio',
+        status ENUM('missed', 'completed', 'rejected', 'busy') DEFAULT 'missed',
+        duration INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (caller_id) REFERENCES users(id),
+        FOREIGN KEY (receiver_id) REFERENCES users(id)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+
     connection.release();
     console.log('Database tables initialized');
   } catch (error) {

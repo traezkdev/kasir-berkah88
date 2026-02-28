@@ -48,6 +48,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import { getToken } from '../utils/auth';
+import { useCall } from '../context/CallContext';
 
 // --- Komponen Pembantu di Luar (Untuk Optimasi Performa) ---
 
@@ -334,6 +335,7 @@ const ChatDetailScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { chat } = route.params;
+    const { startCall } = useCall();
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1739,10 +1741,10 @@ const ChatDetailScreen = () => {
                             </TouchableOpacity>
                         </View>
                         <View style={styles.headerRight}>
-                            <TouchableOpacity style={styles.headerIcon}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, 'video')}>
                                 <VideoIcon size={22} color="#1F2937" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.headerIcon}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, 'audio')}>
                                 <Phone size={22} color="#1F2937" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.headerIcon}>

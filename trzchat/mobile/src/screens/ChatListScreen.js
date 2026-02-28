@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager, Alert, Modal, Platform, SafeAreaView, StatusBar as NativeStatusBar } from 'react-native';
+import { View, Text, FlatList, ScrollView, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager, Alert, Modal, Platform, SafeAreaView, StatusBar as NativeStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions, useIsFocused } from '@react-navigation/native';
-import { Search, Menu, Send, MessageSquarePlus, MessageSquare, Trash2, AlertCircle, Camera, MoreVertical, Users, Phone, Bell, Archive, ShieldCheck, Circle, CheckCheck, CircleDashed, ArrowLeft, Check } from 'lucide-react-native';
+import {
+    Search, MoreVertical, MessageSquare, Phone, Users, CircleDashed,
+    Trash2, Archive, ShieldCheck, Check, CheckCheck, MessageSquarePlus,
+    Calendar, Grid, Heart, ArrowUpRight, ArrowDownLeft, Video, Plus, PhoneCall
+} from 'lucide-react-native';
 import axios from 'axios';
 import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import { getToken } from '../utils/auth';
@@ -32,6 +36,18 @@ const ChatListScreen = () => {
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState({});
     const [archivedCount, setArchivedCount] = useState(0);
+    const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'calls'
+
+    const callHistory = [
+        { id: '1', name: 'Teh Ika', time: 'Kemarin 22.26', type: 'audio', status: 'incoming', count: 0, avatar: 'https://i.pravatar.cc/150?u=ika' },
+        { id: '2', name: '❤️', time: 'Kemarin 20.35', type: 'video', status: 'outgoing', count: 3, avatar: 'https://i.pravatar.cc/150?u=heart' },
+        { id: '3', name: '❤️', time: '26 Februari 22.41', type: 'audio', status: 'outgoing', count: 0, avatar: 'https://i.pravatar.cc/150?u=heart2' },
+        { id: '4', name: 'Anomali Sandi', time: '26 Februari 20.58', type: 'audio', status: 'outgoing', count: 0, avatar: 'https://i.pravatar.cc/150?u=sandi' },
+        { id: '5', name: '❤️', time: '26 Februari 17.28', type: 'video', status: 'incoming', count: 0, avatar: 'https://i.pravatar.cc/150?u=heart3' },
+        { id: '6', name: '❤️', time: '26 Februari 02.53', type: 'audio', status: 'incoming', count: 0, avatar: 'https://i.pravatar.cc/150?u=heart4' },
+        { id: '7', name: '❤️', time: '25 Februari 20.58', type: 'video', status: 'outgoing', count: 5, avatar: 'https://i.pravatar.cc/150?u=heart5' },
+        { id: '8', name: '❤️', time: '24 Februari 22.29', type: 'video', status: 'outgoing', count: 2, avatar: 'https://i.pravatar.cc/150?u=heart6' },
+    ];
 
     const fetchChats = useCallback(async () => {
         try {
@@ -568,11 +584,11 @@ const ChatListScreen = () => {
 
     const renderBottomNav = () => (
         <View style={styles.waBottomNav}>
-            <TouchableOpacity style={styles.waNavItem}>
-                <View style={[styles.waIconContainer, styles.waNavItemIconActive]}>
-                    <MessageSquare size={22} color="#000" />
+            <TouchableOpacity style={styles.waNavItem} onPress={() => setActiveTab('chat')}>
+                <View style={[styles.waIconContainer, activeTab === 'chat' && styles.waNavItemIconActive]}>
+                    <MessageSquare size={22} color={activeTab === 'chat' ? "#000" : "#444"} />
                 </View>
-                <Text style={styles.waNavItemTextActive}>Chat</Text>
+                <Text style={activeTab === 'chat' ? styles.waNavItemTextActive : styles.waNavItemText}>Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.waNavItem}>
                 <View style={styles.waIconContainer}>
@@ -586,82 +602,195 @@ const ChatListScreen = () => {
                 </View>
                 <Text style={styles.waNavItemText}>Komunitas</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.waNavItem}>
-                <View style={styles.waIconContainer}>
-                    <Phone size={22} color="#444" />
+            <TouchableOpacity style={styles.waNavItem} onPress={() => setActiveTab('calls')}>
+                <View style={[styles.waIconContainer, activeTab === 'calls' && styles.waNavItemIconActive]}>
+                    <Phone size={22} color={activeTab === 'calls' ? "#000" : "#444"} />
                 </View>
-                <Text style={styles.waNavItemText}>Panggilan</Text>
+                <Text style={activeTab === 'calls' ? styles.waNavItemTextActive : styles.waNavItemText}>Panggilan</Text>
             </TouchableOpacity>
         </View>
     );
 
+    const renderCallsContent = () => {
+        const QuickAction = ({ icon: Icon, label }) => (
+            <TouchableOpacity style={styles.quickActionContainer}>
+                <View style={styles.quickActionCircle}>
+                    <Icon size={24} color="#444" />
+                </View>
+                <Text style={styles.quickActionLabel}>{label}</Text>
+            </TouchableOpacity>
+        );
+
+        const CallItem = ({ item }) => (
+            <View style={styles.callRow}>
+                <Image source={{ uri: item.avatar }} style={styles.callAvatar} />
+                <View style={styles.callInfo}>
+                    <Text style={styles.callName} numberOfLines={1}>
+                        {item.name} {item.count > 0 && `(${item.count})`}
+                    </Text>
+                    <View style={styles.callStatusRow}>
+                        {item.status === 'incoming' ? (
+                            <ArrowDownLeft size={16} color="#1DAB61" style={styles.callStatusIcon} />
+                        ) : (
+                            <ArrowUpRight size={16} color="#1DAB61" style={styles.callStatusIcon} />
+                        )}
+                        <Text style={styles.callTime}>{item.time}</Text>
+                    </View>
+                </View>
+                <TouchableOpacity style={styles.callActionBtn}>
+                    {item.type === 'video' ? (
+                        <Video size={24} color="#111B21" />
+                    ) : (
+                        <Phone size={24} color="#111B21" />
+                    )}
+                </TouchableOpacity>
+            </View>
+        );
+
+        return (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                <View style={styles.quickActionsRow}>
+                    <QuickAction icon={Phone} label="Telepon" />
+                    <QuickAction icon={Calendar} label="Jadwal" />
+                    <QuickAction icon={Grid} label="Keypad" />
+                    <QuickAction icon={Heart} label="Favorit" />
+                </View>
+                <Text style={styles.sectionTitle}>Terbaru</Text>
+                {callHistory.map(item => (
+                    <CallItem key={item.id} item={item} />
+                ))}
+
+                <TouchableOpacity style={styles.waFab}>
+                    <PhoneCall size={24} color="#fff" />
+                    <View style={styles.fabPlus}>
+                        <Plus size={12} color="#fff" />
+                    </View>
+                </TouchableOpacity>
+            </ScrollView>
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar style="dark" backgroundColor="#fff" />
-            {renderWhatsAppHeader()}
 
-            {loading ? (
-                <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#25D366" />
-                </View>
-            ) : isSearching && searchQuery.length > 0 ? (
-                <FlatList
-                    data={searchResults}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={renderSearchResult}
-                    contentContainerStyle={styles.resultsList}
-                    ListEmptyComponent={<Text style={styles.emptyResultsText}>User tidak ditemukan</Text>}
-                />
-            ) : (
-                <View style={{ flex: 1 }}>
-                    <FlatList
-                        data={chats}
-                        keyExtractor={(item) => `chat_${item.id}`}
-                        renderItem={renderItem}
-                        contentContainerStyle={styles.waChatListScroll}
-                        refreshControl={
-                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#25D366']} />
-                        }
-                        ListHeaderComponent={
-                            (chats.length > 0 || archivedCount > 0) && (
-                                <TouchableOpacity
-                                    style={styles.archiveRow}
-                                    onPress={() => navigation.navigate('ArchivedChats')}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.archiveIconWrapper}>
-                                        <Archive size={20} color="#444" />
-                                    </View>
-                                    <Text style={styles.archiveText}>Diarsipkan</Text>
-                                    <Text style={styles.archiveCount}>{archivedCount}</Text>
-                                </TouchableOpacity>
-                            )
-                        }
-                        ListFooterComponent={
-                            chats.length > 0 && (
-                                <View style={styles.footerInfo}>
-                                    <ShieldCheck size={16} color="#666" />
-                                    <Text style={styles.footerInfoText}>
-                                        Pesan pribadi Anda <Text style={{ color: '#008069', fontWeight: 'bold' }}>terenkripsi secara end-to-end</Text>
-                                    </Text>
-                                </View>
-                            )
-                        }
-                        ListEmptyComponent={
-                            <View style={styles.emptyStateContainer}>
-                                <MessageSquare size={60} color="#E5E7EB" />
-                                <Text style={styles.emptyTitle}>Belum Ada Percakapan</Text>
-                                <Text style={styles.emptySubtitle}>Cari teman Anda di atas untuk mulai chatting!</Text>
+            {/* Conditional Header Title */}
+            {selectionMode ? renderSelectionHeader() : (
+                <View style={styles.waHeader}>
+                    <View style={styles.waHeaderTop}>
+                        <Text style={styles.waLogoText}>
+                            {activeTab === 'chat' ? 'Vira chat' : 'Panggilan'}
+                        </Text>
+                        <View style={styles.waHeaderIcons}>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <Search size={24} color="#111B21" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.waHeaderIconBtn}>
+                                <MoreVertical size={24} color="#111B21" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {activeTab === 'chat' && (
+                        <View style={styles.waSearchBarSection}>
+                            <View style={styles.waSearchInputWrapper}>
+                                <Search size={18} color="#666" style={styles.waSearchIcon} />
+                                <TextInput
+                                    ref={searchInputRef}
+                                    style={styles.waSearchInputField}
+                                    placeholder="Cari..."
+                                    placeholderTextColor="#666"
+                                    value={searchQuery}
+                                    onChangeText={handleSearch}
+                                />
                             </View>
-                        }
-                    />
-
-
-
-                    <TouchableOpacity style={styles.waFab} onPress={() => searchInputRef.current?.focus()}>
-                        <MessageSquarePlus size={24} color="#fff" />
-                    </TouchableOpacity>
+                            <View style={styles.waFilterRow}>
+                                <FlatList
+                                    data={filters}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    keyExtractor={(item) => item}
+                                    contentContainerStyle={styles.waFilterList}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={[styles.waFilterChip, activeFilter === item && styles.waFilterChipActive]}
+                                            onPress={() => setActiveFilter(item)}
+                                        >
+                                            <Text style={[styles.waFilterChipText, activeFilter === item && styles.waFilterChipTextActive]}>
+                                                {item}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            </View>
+                        </View>
+                    )}
                 </View>
+            )}
+
+            {activeTab === 'chat' ? (
+                loading ? (
+                    <View style={styles.loaderContainer}>
+                        <ActivityIndicator size="large" color="#25D366" />
+                    </View>
+                ) : isSearching && searchQuery.length > 0 ? (
+                    <FlatList
+                        data={searchResults}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={renderSearchResult}
+                        contentContainerStyle={styles.resultsList}
+                        ListEmptyComponent={<Text style={styles.emptyResultsText}>User tidak ditemukan</Text>}
+                    />
+                ) : (
+                    <View style={{ flex: 1 }}>
+                        <FlatList
+                            data={chats}
+                            keyExtractor={(item) => `chat_${item.id}`}
+                            renderItem={renderItem}
+                            contentContainerStyle={styles.waChatListScroll}
+                            refreshControl={
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#25D366']} />
+                            }
+                            ListHeaderComponent={
+                                (chats.length > 0 || archivedCount > 0) && (
+                                    <TouchableOpacity
+                                        style={styles.archiveRow}
+                                        onPress={() => navigation.navigate('ArchivedChats')}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.archiveIconWrapper}>
+                                            <Archive size={20} color="#444" />
+                                        </View>
+                                        <Text style={styles.archiveText}>Diarsipkan</Text>
+                                        <Text style={styles.archiveCount}>{archivedCount}</Text>
+                                    </TouchableOpacity>
+                                )
+                            }
+                            ListFooterComponent={
+                                chats.length > 0 && (
+                                    <View style={styles.footerInfo}>
+                                        <ShieldCheck size={16} color="#666" />
+                                        <Text style={styles.footerInfoText}>
+                                            Pesan pribadi Anda <Text style={{ color: '#008069', fontWeight: 'bold' }}>terenkripsi secara end-to-end</Text>
+                                        </Text>
+                                    </View>
+                                )
+                            }
+                            ListEmptyComponent={
+                                <View style={styles.emptyStateContainer}>
+                                    <MessageSquare size={60} color="#E5E7EB" />
+                                    <Text style={styles.emptyTitle}>Belum Ada Percakapan</Text>
+                                    <Text style={styles.emptySubtitle}>Cari teman Anda di atas untuk mulai chatting!</Text>
+                                </View>
+                            }
+                        />
+                        <TouchableOpacity style={styles.waFab} onPress={() => searchInputRef.current?.focus()}>
+                            <MessageSquarePlus size={24} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                )
+            ) : (
+                renderCallsContent()
             )}
             {renderBottomNav()}
         </SafeAreaView>
@@ -1042,7 +1171,81 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 50,
         color: '#999',
-    }
+    },
+    // Calls View Styles
+    quickActionsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingVertical: verticalScale(20),
+        paddingHorizontal: scale(10),
+    },
+    quickActionContainer: {
+        alignItems: 'center',
+        width: scale(80),
+    },
+    quickActionCircle: {
+        width: scale(56),
+        height: scale(56),
+        borderRadius: scale(28),
+        backgroundColor: '#F0F2F5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(8),
+    },
+    quickActionLabel: {
+        fontSize: moderateScale(13),
+        color: '#666',
+    },
+    sectionTitle: {
+        fontSize: moderateScale(17),
+        fontWeight: 'bold',
+        color: '#111B21',
+        paddingHorizontal: scale(16),
+        marginTop: verticalScale(10),
+        marginBottom: verticalScale(15),
+    },
+    callRow: {
+        flexDirection: 'row',
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(12),
+        alignItems: 'center',
+    },
+    callAvatar: {
+        width: scale(52),
+        height: scale(52),
+        borderRadius: scale(26),
+        marginRight: scale(15),
+        backgroundColor: '#F0F2F5',
+    },
+    callInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    callName: {
+        fontSize: moderateScale(16),
+        fontWeight: '600',
+        color: '#111B21',
+        marginBottom: verticalScale(2),
+    },
+    callStatusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    callStatusIcon: {
+        marginRight: scale(4),
+    },
+    callTime: {
+        fontSize: moderateScale(14),
+        color: '#666',
+    },
+    callActionBtn: {
+        padding: scale(10),
+    },
+    fabPlus: {
+        position: 'absolute',
+        top: scale(10),
+        right: scale(10),
+    },
 });
 
 export default ChatListScreen;

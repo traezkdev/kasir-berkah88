@@ -55,7 +55,7 @@ io.use((socket, next) => {
             console.error(`Socket Auth Error: Invalid token from ${socket.id}`, err.message);
             return next(new Error('Authentication error: Invalid token'));
         }
-        socket.userId = decoded.id;
+        socket.userId = Number(decoded.id);
         next();
     });
 });
@@ -119,6 +119,72 @@ io.on('connection', async (socket) => {
 
     socket.on('error', (err) => {
         console.error(`Socket ${socket.id} error:`, err);
+    });
+
+    // --- WebRTC Signaling Events ---
+    socket.on('call-user', async ({ targetUserId, offer, type }) => {
+        const callerName = await getUserName(userId);
+        console.log(`[Call] User ${userId} (${callerName}) calling ${targetUserId} (${type})`);
+
+        // Pastikan targetUserId dikonversi ke tipe yang sesuai (Number) jika onlineUsers menggunakan Number
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+
+        if (recipientSockets && recipientSockets.size > 0) {
+            console.log(`[Call] Sending incoming-call to ${recipientSockets.size} sockets of User ${targetId}`);
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('incoming-call', {
+                    from: userId,
+                    offer,
+                    type,
+                    callerName: callerName
+                });
+            });
+        } else {
+            console.log(`[Call] Target user ${targetId} is offline or not found in onlineUsers`);
+            socket.emit('call-rejected', { reason: 'offline' });
+        }
+    });
+
+    socket.on('answer-call', ({ targetUserId, answer }) => {
+        const targetId = Number(targetUserId);
+        console.log(`[Call] User ${userId} answered call from ${targetId}`);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('call-answered', { from: userId, answer });
+            });
+        }
+    });
+
+    socket.on('ice-candidate', ({ targetUserId, candidate }) => {
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('ice-candidate', { from: userId, candidate });
+            });
+        }
+    });
+
+    socket.on('reject-call', ({ targetUserId }) => {
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('call-rejected', { from: userId });
+            });
+        }
+    });
+
+    socket.on('end-call', ({ targetUserId }) => {
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('call-ended', { from: userId });
+            });
+        }
     });
 
     socket.on('disconnect', async (reason) => {
