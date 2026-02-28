@@ -51,6 +51,8 @@ const InCallScreen = () => {
         incomingCall,
         isInCall,
         callType,
+        otherUserName,
+        callDuration,
         answerCall,
         rejectCall,
         endCall,
@@ -76,6 +78,12 @@ const InCallScreen = () => {
             });
             setIsVideoEnabled(!isVideoEnabled);
         }
+    };
+
+    const formatDuration = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     if (incomingCall) {
@@ -128,7 +136,10 @@ const InCallScreen = () => {
                     )}
 
                     <LinearGradient colors={['rgba(0,0,0,0.6)', 'transparent']} style={styles.videoTop}>
-                        <Text style={styles.videoName}>Memanggil...</Text>
+                        <Text style={styles.videoName}>{otherUserName || 'Seseorang'}</Text>
+                        <Text style={styles.videoStatus}>
+                            {isInCall ? formatDuration(callDuration) : 'Memanggil...'}
+                        </Text>
                     </LinearGradient>
                 </View>
             ) : (
@@ -136,11 +147,13 @@ const InCallScreen = () => {
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.gradient}>
                         <View style={styles.audioInfo}>
                             <Image
-                                source={{ uri: 'https://ui-avatars.com/api/?name=User' }}
+                                source={{ uri: 'https://ui-avatars.com/api/?name=' + (otherUserName || 'User') }}
                                 style={styles.audioAvatar}
                             />
-                            <Text style={styles.audioName}>Memanggil...</Text>
-                            <Text style={styles.audioStatus}>{isCalling ? 'Dering...' : 'Terhubung'}</Text>
+                            <Text style={styles.audioName}>{otherUserName || 'Seseorang'}</Text>
+                            <Text style={styles.audioStatus}>
+                                {isInCall ? formatDuration(callDuration) : (isCalling ? 'Dering...' : 'Menghubungkan...')}
+                            </Text>
                         </View>
                     </LinearGradient>
                 </View>

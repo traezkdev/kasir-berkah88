@@ -36,10 +36,13 @@ export const CallProvider = ({ children }) => {
     const [isCalling, setIsCalling] = useState(false); // Outgoing state
     const [incomingCall, setIncomingCall] = useState(null); // { from, type, offer, callerName }
     const [isInCall, setIsInCall] = useState(false);
-    const [callType, setCallType] = useState('audio'); // 'audio' or 'video'
+    const [callType, setCallType] = useState('audio'); // 'audio' or 'video')
     const [otherUserId, setOtherUserId] = useState(null);
+    const [otherUserName, setOtherUserName] = useState('');
     const otherUserIdRef = useRef(null);
     const [socket, setSocket] = useState(null);
+    const [callDuration, setCallDuration] = useState(0);
+    const timerRef = useRef(null);
 
     const pc = useRef(null);
 
@@ -50,6 +53,22 @@ export const CallProvider = ({ children }) => {
             { urls: 'stun:stun2.l.google.com:19302' },
         ],
     };
+
+    useEffect(() => {
+        if (isInCall) {
+            setCallDuration(0);
+            timerRef.current = setInterval(() => {
+                setCallDuration(prev => prev + 1);
+            }, 1000);
+        } else {
+            if (timerRef.current) clearInterval(timerRef.current);
+            setCallDuration(0);
+        }
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [isInCall]);
 
     useEffect(() => {
         let checkTokenInterval;
@@ -83,6 +102,7 @@ export const CallProvider = ({ children }) => {
             newSocket.on('incoming-call', (data) => {
                 console.log('[Call] Incoming call from', data.from);
                 setIncomingCall(data);
+                setOtherUserName(data.callerName || 'Seseorang');
                 otherUserIdRef.current = Number(data.from);
                 InCallManager.startRingtone('_BUNDLE_');
             });
@@ -93,6 +113,9 @@ export const CallProvider = ({ children }) => {
                     await pc.current.setRemoteDescription(new RTCSessionDescription(data.answer));
                     setIsInCall(true);
                     setIsCalling(false);
+                    // Hentikan nada dering/tunggu dan mulai sesi audio
+                    InCallManager.stop();
+                    InCallManager.start({ audio: 'speaker' });
                 }
             });
 
@@ -153,11 +176,12 @@ export const CallProvider = ({ children }) => {
         };
     };
 
-    const startCall = async (targetUserId, type = 'audio') => {
+    const startCall = async (targetUserId, targetUserName, type = 'audio') => {
         try {
             console.log('Starting call to:', targetUserId);
             setCallType(type);
             setOtherUserId(targetUserId);
+            setOtherUserName(targetUserName);
             otherUserIdRef.current = targetUserId;
             setIsCalling(true);
 
@@ -186,6 +210,7 @@ export const CallProvider = ({ children }) => {
             InCallManager.stopRingtone();
             setCallType(incomingCall.type);
             setOtherUserId(incomingCall.from);
+            setOtherUserName(incomingCall.callerName || 'Seseorang');
             setIsInCall(true);
 
             const stream = await mediaDevices.getUserMedia({
@@ -237,10 +262,16 @@ export const CallProvider = ({ children }) => {
             pc.current.close();
             pc.current = null;
         }
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
         setIsCalling(false);
         setIsInCall(false);
         setIncomingCall(null);
         setOtherUserId(null);
+        setOtherUserName('');
+        setCallDuration(0);
         InCallManager.stop();
         InCallManager.stopRingtone();
     };
@@ -261,6 +292,8 @@ export const CallProvider = ({ children }) => {
             incomingCall,
             isInCall,
             callType,
+            otherUserName,
+            callDuration,
             startCall,
             answerCall,
             rejectCall,
