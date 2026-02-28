@@ -12,6 +12,10 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 import DataSiswa from './pages/DataSiswa';
 import DataGuru from './pages/DataGuru';
+import DataMapel from './pages/DataMapel';
+import DataJadwal from './pages/DataJadwal';
+import DataKelas from './pages/DataKelas';
+import AdminSettings from './pages/AdminSettings';
 
 function App() {
   return (
@@ -46,12 +50,12 @@ function App() {
           } />
           <Route path="admin/mapel" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <div className="p-8 text-center"><h2 className="text-2xl font-bold">Mata Pelajaran</h2><p>Halaman dalam pengembangan</p></div>
+              <DataMapel />
             </ProtectedRoute>
           } />
           <Route path="admin/jadwal" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <div className="p-8 text-center"><h2 className="text-2xl font-bold">Jadwal Pelajaran</h2><p>Halaman dalam pengembangan</p></div>
+              <DataJadwal />
             </ProtectedRoute>
           } />
           <Route path="admin/nilai" element={
@@ -61,12 +65,12 @@ function App() {
           } />
           <Route path="admin/kelas" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <div className="p-8 text-center"><h2 className="text-2xl font-bold">Manajemen Kelas</h2><p>Halaman dalam pengembangan</p></div>
+              <DataKelas />
             </ProtectedRoute>
           } />
           <Route path="admin/settings" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <div className="p-8 text-center"><h2 className="text-2xl font-bold">Pengaturan</h2><p>Halaman dalam pengembangan</p></div>
+              <AdminSettings />
             </ProtectedRoute>
           } />
 

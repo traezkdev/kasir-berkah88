@@ -9,6 +9,26 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [siteSettings, setSiteSettings] = useState({
+        welcome_title: 'Pantau Akademik <br /><span className="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>',
+        welcome_subtitle: 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'
+    });
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+                const response = await fetch(`${apiUrl}/api/settings`);
+                const data = await response.json();
+                if (response.ok) {
+                    setSiteSettings(data);
+                }
+            } catch (err) {
+                console.error("Gagal memuat pengaturan site.");
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -64,12 +84,12 @@ const Login = () => {
                         </div>
 
                         <div className="max-w-md">
-                            <h2 className="text-5xl font-black leading-[1.1] mb-8">
-                                Pantau Akademik <br />
-                                <span className="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>
-                            </h2>
+                            <h2
+                                className="text-5xl font-black leading-[1.1] mb-8"
+                                dangerouslySetInnerHTML={{ __html: siteSettings.welcome_title }}
+                            />
                             <p className="text-xl text-indigo-100/70 leading-relaxed mb-12">
-                                Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.
+                                {siteSettings.welcome_subtitle}
                             </p>
                         </div>
                     </div>

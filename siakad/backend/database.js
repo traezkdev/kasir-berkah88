@@ -2,63 +2,85 @@ require('dotenv').config();
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    port: process.env.DB_PORT || 3306,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 const promisePool = pool.promise();
 
 const setupDatabase = async () => {
-    try {
-        const connection = await promisePool.getConnection();
-        console.log('Connected to MySQL Database (SIAKAD).');
+  try {
+    const connection = await promisePool.getConnection();
+    console.log('Connected to MySQL Database (SIAKAD).');
 
-        // 1. Create Users Table
-        const createUsersTable = `
+    // 1. Create Users Table
+    const createUsersTable = `
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(150) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         nama_lengkap VARCHAR(255),
         role ENUM('admin', 'guru', 'siswa') NOT NULL,
+        jenis_kelamin ENUM('L', 'P'),
         nisn_nik VARCHAR(50),
         email VARCHAR(255),
         wa_number VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
-        await connection.query(createUsersTable);
+    await connection.query(createUsersTable);
 
-        // 2. Create Kelas Table
-        const createKelasTable = `
+    // Tambahkan kolom jenis_kelamin jika belum ada (untuk database yang sudah terlanjur dibuat)
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN jenis_kelamin ENUM('L', 'P') AFTER role");
+    } catch (err) {
+      // Abaikan jika kolom sudah ada
+    }
+
+    // 2. Create Kelas Table
+    const createKelasTable = `
       CREATE TABLE IF NOT EXISTS kelas (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nama_kelas VARCHAR(50) NOT NULL,
+        tingkat VARCHAR(10),
         wali_kelas_id INT,
         FOREIGN KEY (wali_kelas_id) REFERENCES users(id) ON DELETE SET NULL
       );
     `;
-        await connection.query(createKelasTable);
+    await connection.query(createKelasTable);
 
-        // 3. Create Mata Pelajaran Table
-        const createMapelTable = `
+    // Tambahkan kolom tingkat jika belum ada
+    try {
+      await connection.query("ALTER TABLE kelas ADD COLUMN tingkat VARCHAR(10) AFTER nama_kelas");
+    } catch (err) { }
+
+    // 3. Create Mata Pelajaran Table
+    const createMapelTable = `
       CREATE TABLE IF NOT EXISTS mata_pelajaran (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        kode_mapel VARCHAR(20) UNIQUE,
         nama_mapel VARCHAR(100) NOT NULL,
+        kategori VARCHAR(50) DEFAULT 'Umum',
         guru_id INT,
         FOREIGN KEY (guru_id) REFERENCES users(id) ON DELETE SET NULL
       );
     `;
-        await connection.query(createMapelTable);
+    await connection.query(createMapelTable);
 
-        // 4. Create Presensi Table
-        const createPresensiTable = `
+    // Tambahkan kolom jika belum ada
+    try {
+      await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN kode_mapel VARCHAR(20) UNIQUE AFTER id");
+      await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN kategori VARCHAR(50) DEFAULT 'Umum' AFTER nama_mapel");
+    } catch (err) { }
+
+    // 4. Create Presensi Table
+    const createPresensiTable = `
       CREATE TABLE IF NOT EXISTS presensi (
         id INT AUTO_INCREMENT PRIMARY KEY,
         siswa_id INT NOT NULL,
@@ -73,10 +95,10 @@ const setupDatabase = async () => {
         FOREIGN KEY (guru_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `;
-        await connection.query(createPresensiTable);
+    await connection.query(createPresensiTable);
 
-        // 5. Create Jurnal KBM Table
-        const createJurnalTable = `
+    // 5. Create Jurnal KBM Table
+    const createJurnalTable = `
       CREATE TABLE IF NOT EXISTS jurnal_kbm (
         id INT AUTO_INCREMENT PRIMARY KEY,
         guru_id INT NOT NULL,
@@ -89,18 +111,55 @@ const setupDatabase = async () => {
         FOREIGN KEY (guru_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `;
-        await connection.query(createJurnalTable);
+    await connection.query(createJurnalTable);
 
-        console.log('Semua tabel database SIAS PRO siap digunakan.');
+    // 6. Create Jadwal Pelajaran Table
+    const createJadwalTable = `
+      CREATE TABLE IF NOT EXISTS jadwal_pelajaran (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        kelas_id INT NOT NULL,
+        mapel_id INT NOT NULL,
+        hari ENUM('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu') NOT NULL,
+        jam_mulai TIME NOT NULL,
+        jam_selesai TIME NOT NULL,
+        ruangan VARCHAR(50),
+        FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE CASCADE,
+        FOREIGN KEY (mapel_id) REFERENCES mata_pelajaran(id) ON DELETE CASCADE
+      );
+    `;
+    await connection.query(createJadwalTable);
 
-        connection.release();
-    } catch (err) {
-        if (err.code === 'ER_BAD_DB_ERROR') {
-            console.error('Database does not exist. Please create "siakad_db" manually in MySQL.');
-        } else {
-            console.error('Database connection error:', err.message);
-        }
+    // 7. Create Settings Table
+    const createSettingsTable = `
+      CREATE TABLE IF NOT EXISTS settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT
+      );
+    `;
+    await connection.query(createSettingsTable);
+
+    // Initial Data for Settings
+    const [settingsExist] = await connection.query("SELECT COUNT(*) as count FROM settings");
+    if (settingsExist[0].count === 0) {
+      const seedSettings = `
+        INSERT INTO settings (setting_key, setting_value) VALUES 
+        ('welcome_title', 'Pantau Akademik <br><span class="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>'),
+        ('welcome_subtitle', 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.')
+      `;
+      await connection.query(seedSettings);
     }
+
+    console.log('Semua tabel database SIAS PRO siap digunakan.');
+
+    connection.release();
+  } catch (err) {
+    if (err.code === 'ER_BAD_DB_ERROR') {
+      console.error('Database does not exist. Please create "siakad_db" manually in MySQL.');
+    } else {
+      console.error('Database connection error:', err.message);
+    }
+  }
 };
 
 setupDatabase();

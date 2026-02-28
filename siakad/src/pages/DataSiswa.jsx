@@ -8,11 +8,41 @@ const DataSiswa = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    // Modal state
+    const [showModal, setShowModal] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedId, setSelectedId] = useState(null);
+    const [formData, setFormData] = useState({
+        username: '',
+        password: '',
+        nama_lengkap: '',
+        jenis_kelamin: 'L',
+        nisn_nik: '',
+        email: '',
+        wa_number: '',
+        role: 'siswa'
+    });
+
+    const resetForm = () => {
+        setFormData({
+            username: '',
+            password: '',
+            nama_lengkap: '',
+            jenis_kelamin: 'L',
+            nisn_nik: '',
+            email: '',
+            wa_number: '',
+            role: 'siswa'
+        });
+        setSelectedId(null);
+        setIsEditMode(false);
+    };
+
     const fetchSiswa = async () => {
         setIsRefreshing(true);
         try {
             const token = localStorage.getItem('siakad_token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            const apiUrl = import.meta.env.VITE_API_URL;
             const response = await fetch(`${apiUrl}/api/admin/users?role=siswa`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -37,12 +67,68 @@ const DataSiswa = () => {
         fetchSiswa();
     }, []);
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('siakad_token');
+        const apiUrl = import.meta.env.VITE_API_URL;
+
+        try {
+            let response;
+            if (isEditMode) {
+                response = await fetch(`${apiUrl}/api/admin/users/${selectedId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                response = await fetch(`${apiUrl}/api/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+            }
+
+            const data = await response.json();
+            if (response.ok) {
+                toast.success(isEditMode ? "Data siswa diperbarui." : "Siswa berhasil ditambahkan.");
+                setShowModal(false);
+                resetForm();
+                fetchSiswa();
+            } else {
+                toast.error(data.error || "Gagal menyimpan data.");
+            }
+        } catch (err) {
+            toast.error("Terjadi kesalahan sistem.");
+        }
+    };
+
+    const handleEdit = (item) => {
+        setSelectedId(item.id);
+        setFormData({
+            username: item.username,
+            password: '',
+            nama_lengkap: item.nama_lengkap || '',
+            jenis_kelamin: item.jenis_kelamin || 'L',
+            nisn_nik: item.nisn_nik || '',
+            email: item.email || '',
+            wa_number: item.wa_number || '',
+            role: 'siswa'
+        });
+        setIsEditMode(true);
+        setShowModal(true);
+    };
+
     const handleDelete = async (id, nama) => {
         if (!window.confirm(`Apakah Anda yakin ingin menghapus siswa ${nama}?`)) return;
 
         try {
             const token = localStorage.getItem('siakad_token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            const apiUrl = import.meta.env.VITE_API_URL;
             const response = await fetch(`${apiUrl}/api/admin/users/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -67,6 +153,10 @@ const DataSiswa = () => {
         s.nisn_nik?.includes(searchTerm)
     );
 
+    // Hitung Statistik
+    const totalLaki = siswa.filter(s => s.jenis_kelamin === 'L').length;
+    const totalPerempuan = siswa.filter(s => s.jenis_kelamin === 'P').length;
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             {/* Header Section */}
@@ -83,7 +173,10 @@ const DataSiswa = () => {
                     >
                         <FaSyncAlt />
                     </button>
-                    <button className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/20 transform transition-all active:scale-95">
+                    <button
+                        onClick={() => { resetForm(); setShowModal(true); }}
+                        className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/20 transform transition-all active:scale-95"
+                    >
                         <FaPlus size={14} />
                         <span>Tambah Siswa</span>
                     </button>
@@ -93,7 +186,6 @@ const DataSiswa = () => {
             {/* Stats Cards Mini */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="relative group p-5 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 rounded-2xl text-white shadow-2xl shadow-indigo-600/30 overflow-hidden transform transition-all hover:scale-[1.02] hover:shadow-indigo-600/50">
-                    {/* Decorative Elements */}
                     <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
                     <div className="absolute bottom-0 left-0 translate-y-20 -translate-x-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl"></div>
 
@@ -115,7 +207,6 @@ const DataSiswa = () => {
                             </div>
                         </div>
                     </div>
-
                     <div className="relative z-10 mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-indigo-100/50">
                         <span>Akademik Aktif</span>
                         <div className="flex -space-x-1.5">
@@ -131,14 +222,14 @@ const DataSiswa = () => {
                 <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-between hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group">
                     <div>
                         <p className="text-slate-400 text-sm font-medium mb-1">Laki-laki</p>
-                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors">-</h3>
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{totalLaki}</h3>
                     </div>
                     <div className="text-indigo-500 font-black text-4xl opacity-[0.08] group-hover:opacity-20 transition-all pointer-events-none select-none">L</div>
                 </div>
                 <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-between hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group">
                     <div>
                         <p className="text-slate-400 text-sm font-medium mb-1">Perempuan</p>
-                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors">-</h3>
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{totalPerempuan}</h3>
                     </div>
                     <div className="text-indigo-500 font-black text-4xl opacity-[0.08] group-hover:opacity-20 transition-all pointer-events-none select-none">P</div>
                 </div>
@@ -146,7 +237,6 @@ const DataSiswa = () => {
 
             {/* Content Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
-                {/* Table Header / Toolbar */}
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="relative w-full sm:max-w-xs group">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
@@ -158,15 +248,8 @@ const DataSiswa = () => {
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
                         />
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button className="flex items-center space-x-2 px-4 py-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-300 transition-all">
-                            <FaFilter size={14} />
-                            <span>Filter</span>
-                        </button>
-                    </div>
                 </div>
 
-                {/* Table Body */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
@@ -208,6 +291,11 @@ const DataSiswa = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
+                                        <span className={`text-xs font-black px-2 py-1 rounded-lg ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                            {item.jenis_kelamin || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
                                         <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg">
                                             {item.nisn_nik || '-'}
                                         </span>
@@ -223,7 +311,10 @@ const DataSiswa = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all">
+                                            <button
+                                                onClick={() => handleEdit(item)}
+                                                className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all"
+                                            >
                                                 <FaEdit size={16} />
                                             </button>
                                             <button
@@ -232,9 +323,6 @@ const DataSiswa = () => {
                                             >
                                                 <FaTrash size={16} />
                                             </button>
-                                            <button className="p-2 text-slate-300 dark:text-slate-600">
-                                                <FaEllipsisV size={12} />
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -242,18 +330,122 @@ const DataSiswa = () => {
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                {/* Pagination Footer */}
-                <div className="p-6 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                        Menampilkan {filteredSiswa.length} Siswa
-                    </p>
-                    <div className="flex space-x-2">
-                        <button className="px-4 py-2 bg-slate-100 dark:bg-slate-900 text-slate-400 rounded-xl font-bold cursor-not-allowed">Sebelummya</button>
-                        <button className="px-4 py-2 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold">Selanjutnya</button>
+            {/* Modal Tambah/Edit */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-8">
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
+                                {isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
+                            </h2>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Username</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.username}
+                                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            placeholder="ex: siswa88"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Password</label>
+                                        <input
+                                            type="password"
+                                            required={!isEditMode}
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            placeholder={isEditMode ? "Kosongkan jika tidak diubah" : "••••••••"}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Nama Lengkap</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.nama_lengkap}
+                                            onChange={(e) => setFormData({ ...formData, nama_lengkap: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            placeholder="ex: Ahmad Subarjo"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Jenis Kelamin</label>
+                                        <div className="flex gap-4 p-1 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, jenis_kelamin: 'L' })}
+                                                className={`flex-1 py-2 rounded-lg font-bold transition-all ${formData.jenis_kelamin === 'L' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600' : 'text-slate-400'}`}
+                                            >
+                                                Laki-laki
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, jenis_kelamin: 'P' })}
+                                                className={`flex-1 py-2 rounded-lg font-bold transition-all ${formData.jenis_kelamin === 'P' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600' : 'text-slate-400'}`}
+                                            >
+                                                Perempuan
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">NISN / NIK</label>
+                                        <input
+                                            type="text"
+                                            value={formData.nisn_nik}
+                                            onChange={(e) => setFormData({ ...formData, nisn_nik: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            placeholder="ex: 0012345678"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Email</label>
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            placeholder="ex: siswa@sekolah.sch.id"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">No. WhatsApp</label>
+                                        <input
+                                            type="text"
+                                            value={formData.wa_number}
+                                            onChange={(e) => setFormData({ ...formData, wa_number: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            placeholder="ex: 081234567890"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end space-x-3 pt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all"
+                                    >
+                                        {isEditMode ? 'Simpan Perubahan' : 'Tambah Siswa'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
