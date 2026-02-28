@@ -489,6 +489,108 @@ app.delete('/api/admin/nilai/:id', authenticateToken, isAdmin, async (req, res) 
     }
 });
 
+// ==========================================
+// 9. DASHBOARD STATS
+// ==========================================
+
+app.get('/api/admin/dashboard-stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        // 1. Total Siswa
+        const [siswaRow] = await db.query("SELECT COUNT(*) as total FROM users WHERE role = 'siswa'");
+
+        // 2. Total Guru
+        const [guruRow] = await db.query("SELECT COUNT(*) as total FROM users WHERE role = 'guru'");
+
+        // 3. Mata Pelajaran
+        const [mapelRow] = await db.query("SELECT COUNT(*) as total FROM mata_pelajaran");
+
+        // 4. Pertemuan Hari Ini
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const today = days[new Date().getDay()];
+        const [jadwalRow] = await db.query("SELECT COUNT(*) as total FROM jadwal_pelajaran WHERE hari = ?", [today]);
+
+        // 5. Recent Siswa (Optional but good for completeness)
+        const [recentSiswa] = await db.query(`
+            SELECT nama_lengkap as name, 'X MIPA 1' as class, DATE_FORMAT(created_at, '%d %b %Y') as date 
+            FROM users 
+            WHERE role = 'siswa' 
+            ORDER BY created_at DESC 
+            LIMIT 5
+        `);
+
+        // 6. Recent Agenda (Upcoming)
+        const [recentAgenda] = await db.query(`
+            SELECT id, title, DATE_FORMAT(tanggal, '%d') as day, DATE_FORMAT(tanggal, '%b') as month, type 
+            FROM agenda 
+            WHERE tanggal >= CURDATE()
+            ORDER BY tanggal ASC 
+            LIMIT 3
+        `);
+
+        res.json({
+            totalSiswa: siswaRow[0].total,
+            totalGuru: guruRow[0].total,
+            totalMapel: mapelRow[0].total,
+            pertemuanHariIni: jadwalRow[0].total,
+            recentSiswa: recentSiswa,
+            recentAgenda: recentAgenda
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ==========================================
+// 10. AGENDA MANAGEMENT (ADMIN)
+// ==========================================
+
+// Get all agenda
+app.get('/api/admin/agenda', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM agenda ORDER BY tanggal ASC");
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add agenda
+app.post('/api/admin/agenda', authenticateToken, isAdmin, async (req, res) => {
+    const { title, tanggal, type, keterangan } = req.body;
+    try {
+        const sql = `INSERT INTO agenda (title, tanggal, type, keterangan) VALUES (?, ?, ?, ?)`;
+        await db.query(sql, [title, tanggal, type, keterangan]);
+        res.status(201).json({ message: "Agenda berhasil ditambahkan." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update agenda
+app.put('/api/admin/agenda/:id', authenticateToken, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { title, tanggal, type, keterangan } = req.body;
+    try {
+        const sql = `UPDATE agenda SET title = ?, tanggal = ?, type = ?, keterangan = ? WHERE id = ?`;
+        await db.query(sql, [title, tanggal, type, keterangan, id]);
+        res.status(200).json({ message: "Agenda berhasil diperbarui." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete agenda
+app.delete('/api/admin/agenda/:id', authenticateToken, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("DELETE FROM agenda WHERE id = ?", [id]);
+        res.status(200).json({ message: "Agenda berhasil dihapus." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`SIAS PRO Backend running on http://localhost:${PORT}`);
 });

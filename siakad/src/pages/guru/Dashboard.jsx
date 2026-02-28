@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaChalkboardTeacher, FaUsers, FaChartLine, FaCalendarAlt } from 'react-icons/fa';
-import StatCard from '../components/ui/StatCard';
+import StatCard from '../../components/ui/StatCard';
 
 const GuruDashboard = () => {
     return (

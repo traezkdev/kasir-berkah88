@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaGraduationCap, FaCalendarCheck, FaWallet, FaBookReader, FaClock } from 'react-icons/fa';
-import StatCard from '../components/ui/StatCard';
+import StatCard from '../../components/ui/StatCard';
 
 const SiswaDashboard = () => {
     return (

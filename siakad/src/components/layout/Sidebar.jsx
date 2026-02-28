@@ -143,6 +143,9 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'admin' }) => {
                 <MenuItem to="/admin/jadwal" icon={FaCalendarAlt} isCollapsed={isCollapsed} navLinkClasses={navLinkClasses} activeLinkClasses={activeLinkClasses} onClick={handleItemClick}>
                     Jadwal Pelajaran
                 </MenuItem>
+                <MenuItem to="/admin/agenda" icon={FaCalendarCheck} isCollapsed={isCollapsed} navLinkClasses={navLinkClasses} activeLinkClasses={activeLinkClasses} onClick={handleItemClick}>
+                    Agenda Sekolah
+                </MenuItem>
 
                 <div className={isCollapsed ? "mx-4 my-4 border-t-2 border-white/20" : groupTitleClasses}>
                     {!isCollapsed && "Laporan"}

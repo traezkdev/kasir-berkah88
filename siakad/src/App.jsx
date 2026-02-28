@@ -1,23 +1,24 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AdminLayout from './components/layout/AdminLayout';
-import Dashboard from './pages/Dashboard';
-import GuruDashboard from './pages/GuruDashboard';
-import SiswaDashboard from './pages/SiswaDashboard';
-import SiswaAbsensi from './pages/SiswaAbsensi';
-import PresensiSiswa from './pages/PresensiSiswa';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Dashboard from './pages/admin/Dashboard';
+import GuruDashboard from './pages/guru/Dashboard';
+import SiswaDashboard from './pages/siswa/Dashboard';
+import SiswaAbsensi from './pages/siswa/SiswaAbsensi';
+import PresensiSiswa from './pages/guru/PresensiSiswa';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
-import DataSiswa from './pages/DataSiswa';
-import DataGuru from './pages/DataGuru';
-import DataMapel from './pages/DataMapel';
-import DataJadwal from './pages/DataJadwal';
-import DataKelas from './pages/DataKelas';
-import AdminSettings from './pages/AdminSettings';
+import DataSiswa from './pages/admin/DataSiswa';
+import DataGuru from './pages/admin/DataGuru';
+import DataMapel from './pages/admin/DataMapel';
+import DataJadwal from './pages/admin/DataJadwal';
+import DataKelas from './pages/admin/DataKelas';
+import AdminSettings from './pages/admin/AdminSettings';
+import DataAgenda from './pages/admin/DataAgenda';
 
-import DataNilai from './pages/DataNilai';
+import DataNilai from './pages/admin/DataNilai';
 
 function App() {
   return (
@@ -73,6 +74,11 @@ function App() {
           <Route path="admin/settings" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminSettings />
+            </ProtectedRoute>
+          } />
+          <Route path="admin/agenda" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <DataAgenda />
             </ProtectedRoute>
           } />
 

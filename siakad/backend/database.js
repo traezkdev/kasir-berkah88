@@ -163,14 +163,28 @@ const setupDatabase = async () => {
     `;
     await connection.query(createNilaiTable);
 
+    // 9. Create Agenda Table
+    const createAgendaTable = `
+      CREATE TABLE IF NOT EXISTS agenda (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        tanggal DATE NOT NULL,
+        type ENUM('Akademik', 'Umum', 'Eskul') DEFAULT 'Umum',
+        keterangan TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await connection.query(createAgendaTable);
+
     // Initial Data for Settings
     const [settingsExist] = await connection.query("SELECT COUNT(*) as count FROM settings");
     if (settingsExist[0].count === 0) {
-      const seedSettings = `
-        INSERT INTO settings (setting_key, setting_value) VALUES 
+        INSERT INTO settings(setting_key, setting_value) VALUES
         ('welcome_title', 'Pantau Akademik <br><span class="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>'),
-        ('welcome_subtitle', 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.')
-      `;
+        ('welcome_subtitle', 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'),
+        ('register_title', 'Bangun Masa Depan <br><span class="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>'),
+        ('register_subtitle', 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.')
+          `;
       await connection.query(seedSettings);
     }
 
