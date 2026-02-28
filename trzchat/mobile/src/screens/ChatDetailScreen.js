@@ -1148,12 +1148,21 @@ const ChatDetailScreen = () => {
         }
     }, [sharedProgress]);
 
-    const toggleRecording = () => {
-        console.log('[Voice] toggleRecording called. Current isRecording:', isRecording);
+    const handlePressIn = () => {
+        if (!message.trim()) {
+            startRecording('hold');
+        }
+    };
+
+    const handlePressOut = () => {
         if (isRecording) {
-            stopRecordingAndSend();
-        } else {
-            startRecording('toggle');
+            // Jika sudah merekam lebih dari 0.5 detik, anggap user ingin kirim saat lepas
+            // Jika kurang dari itu, kita anggap user cuma 'tap' dan biarkan rekaman jalan terus (hands-free)
+            if (recordingDuration >= 1) {
+                stopRecordingAndSend();
+            } else {
+                console.log('[Voice] Sentuhan singkat, masuk mode hands-free');
+            }
         }
     };
 
@@ -1900,10 +1909,12 @@ const ChatDetailScreen = () => {
                                     onPress={() => {
                                         if (message.trim()) {
                                             sendMessage();
-                                        } else {
-                                            toggleRecording();
+                                        } else if (isRecording) {
+                                            stopRecordingAndSend();
                                         }
                                     }}
+                                    onPressIn={handlePressIn}
+                                    onPressOut={handlePressOut}
                                 >
                                     {message.trim() ? (
                                         <Send size={24} color="#fff" fill="#fff" />
