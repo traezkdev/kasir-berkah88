@@ -235,7 +235,8 @@ const DataMapel = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
@@ -278,12 +279,45 @@ const DataMapel = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                    {isLoading ? (
+                        <div className="p-12 text-center font-bold text-slate-500">Memuat data...</div>
+                    ) : filteredMapel.length === 0 ? (
+                        <div className="p-12 text-center font-bold text-slate-500">Data tidak ditemukan.</div>
+                    ) : filteredMapel.map((item) => (
+                        <div key={item.id} className="p-6 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block mb-1">{item.kode_mapel}</span>
+                                    <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">{item.nama_mapel}</h4>
+                                </div>
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${item.kategori === 'Umum' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                    {item.kategori}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Guru Pengajar</span>
+                                    <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                                        {item.nama_guru || <span className="text-red-400 opacity-50 italic">Belum diatur</span>}
+                                    </span>
+                                </div>
+                                <div className="flex items-center space-x-2 border-l border-slate-200 dark:border-slate-700 pl-3">
+                                    <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-emerald-600 rounded-xl transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700"><FaEdit size={14} /></button>
+                                    <button onClick={() => handleDelete(item.id, item.nama_mapel)} className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700"><FaTrash size={14} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
                     <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 p-8">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
                             {isEditMode ? 'Edit Mata Pelajaran' : 'Tambah Mapel Baru'}

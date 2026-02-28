@@ -275,7 +275,7 @@ const DataJadwal = () => {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
                     <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 p-8">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
                             {isEditMode ? 'Edit Jadwal' : 'Tambah Jadwal Baru'}

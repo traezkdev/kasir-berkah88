@@ -415,6 +415,78 @@ app.post('/api/admin/settings', authenticateToken, isAdmin, async (req, res) => 
     }
 });
 
+// ==========================================
+// 8. MANAJEMEN NILAI (ADMIN)
+// ==========================================
+
+// Get all nilai with details
+app.get('/api/admin/nilai', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT n.*, u.nama_lengkap as nama_siswa, mp.nama_mapel, k.nama_kelas, gu.nama_lengkap as nama_guru
+            FROM nilai n
+            JOIN users u ON n.siswa_id = u.id
+            JOIN mata_pelajaran mp ON n.mapel_id = mp.id
+            JOIN kelas k ON n.kelas_id = k.id
+            JOIN users gu ON n.guru_id = gu.id
+            ORDER BY k.tingkat ASC, k.nama_kelas ASC, u.nama_lengkap ASC
+        `);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add nilai
+app.post('/api/admin/nilai', authenticateToken, isAdmin, async (req, res) => {
+    const { siswa_id, mapel_id, guru_id, kelas_id, nilai_uh, nilai_uts, nilai_uas, semester, tahun_ajaran, keterangan } = req.body;
+
+    // Calculate nilai_akhir (simple average or weight)
+    const n_akhir = (parseFloat(nilai_uh || 0) + parseFloat(nilai_uts || 0) + parseFloat(nilai_uas || 0)) / 3;
+
+    try {
+        const sql = `
+            INSERT INTO nilai (siswa_id, mapel_id, guru_id, kelas_id, nilai_uh, nilai_uts, nilai_uas, nilai_akhir, semester, tahun_ajaran, keterangan)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        await db.query(sql, [siswa_id, mapel_id, guru_id, kelas_id, nilai_uh, nilai_uts, nilai_uas, n_akhir, semester, tahun_ajaran, keterangan]);
+        res.status(201).json({ message: "Nilai berhasil ditambahkan." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update nilai
+app.put('/api/admin/nilai/:id', authenticateToken, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { siswa_id, mapel_id, guru_id, kelas_id, nilai_uh, nilai_uts, nilai_uas, semester, tahun_ajaran, keterangan } = req.body;
+
+    const n_akhir = (parseFloat(nilai_uh || 0) + parseFloat(nilai_uts || 0) + parseFloat(nilai_uas || 0)) / 3;
+
+    try {
+        const sql = `
+            UPDATE nilai 
+            SET siswa_id = ?, mapel_id = ?, guru_id = ?, kelas_id = ?, nilai_uh = ?, nilai_uts = ?, nilai_uas = ?, nilai_akhir = ?, semester = ?, tahun_ajaran = ?, keterangan = ?
+            WHERE id = ?
+        `;
+        await db.query(sql, [siswa_id, mapel_id, guru_id, kelas_id, nilai_uh, nilai_uts, nilai_uas, n_akhir, semester, tahun_ajaran, keterangan, id]);
+        res.status(200).json({ message: "Nilai berhasil diperbarui." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete nilai
+app.delete('/api/admin/nilai/:id', authenticateToken, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("DELETE FROM nilai WHERE id = ?", [id]);
+        res.status(200).json({ message: "Nilai berhasil dihapus." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`SIAS PRO Backend running on http://localhost:${PORT}`);
 });

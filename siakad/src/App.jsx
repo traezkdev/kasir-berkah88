@@ -17,6 +17,8 @@ import DataJadwal from './pages/DataJadwal';
 import DataKelas from './pages/DataKelas';
 import AdminSettings from './pages/AdminSettings';
 
+import DataNilai from './pages/DataNilai';
+
 function App() {
   return (
     <Router>
@@ -60,7 +62,7 @@ function App() {
           } />
           <Route path="admin/nilai" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <div className="p-8 text-center"><h2 className="text-2xl font-bold">Rekap Nilai</h2><p>Halaman dalam pengembangan</p></div>
+              <DataNilai />
             </ProtectedRoute>
           } />
           <Route path="admin/kelas" element={

@@ -250,14 +250,15 @@ const DataSiswa = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
                                 <th className="px-6 py-4">Siswa</th>
-                                <th className="px-6 py-4">NISN / Identitas</th>
+                                <th className="px-6 py-4">Identitas</th>
                                 <th className="px-6 py-4">Kontak</th>
-                                <th className="px-6 py-4">Tgl Terdaftar</th>
+                                <th className="px-6 py-4 text-center">Tgl Terdaftar</th>
                                 <th className="px-6 py-4 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -291,20 +292,20 @@ const DataSiswa = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`text-xs font-black px-2 py-1 rounded-lg ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                            {item.jenis_kelamin || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg">
-                                            {item.nisn_nik || '-'}
-                                        </span>
+                                        <div className="flex flex-col space-y-1">
+                                            <span className={`w-fit text-[10px] font-black px-2 py-0.5 rounded-lg ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                                {item.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                                            </span>
+                                            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                                                {item.nisn_nik || '-'}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{item.email || '-'}</p>
                                         <p className="text-xs text-indigo-500 font-bold">{item.wa_number || '-'}</p>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-center">
                                         <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase text-xs tracking-tighter">
                                             {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </p>
@@ -330,12 +331,84 @@ const DataSiswa = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                    {isLoading ? (
+                        <div className="p-12 text-center">
+                            <div className="inline-flex items-center space-x-2">
+                                <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                <span className="font-bold text-slate-500 uppercase tracking-widest text-xs">Memuat...</span>
+                            </div>
+                        </div>
+                    ) : filteredSiswa.length === 0 ? (
+                        <div className="p-12 text-center font-bold text-slate-500 uppercase tracking-widest text-xs">
+                            {searchTerm ? "Data tidak ditemukan." : "Belum ada siswa."}
+                        </div>
+                    ) : filteredSiswa.map((item) => (
+                        <div key={item.id} className="p-6 space-y-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all">
+                            {/* Card Header: Profile & Gender */}
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-600/20">
+                                        {item.nama_lengkap?.[0] || 'S'}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">{item.nama_lengkap}</h4>
+                                        <p className="text-xs text-slate-400 font-bold tracking-widest uppercase">@{item.username}</p>
+                                    </div>
+                                </div>
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                    {item.jenis_kelamin === 'L' ? 'L' : 'P'}
+                                </span>
+                            </div>
+
+                            {/* Card Body: Identitas & Kontak */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">NISN / NIK</p>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.nisn_nik || '-'}</p>
+                                </div>
+                                <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</p>
+                                    <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{item.wa_number || '-'}</p>
+                                </div>
+                                <div className="col-span-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Alamat Email</p>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{item.email || '-'}</p>
+                                </div>
+                            </div>
+
+                            {/* Card Footer: Date & Actions */}
+                            <div className="flex justify-between items-center pt-2">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Terdaftar Sejak</span>
+                                    <span className="text-xs font-bold text-slate-500">{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => handleEdit(item)}
+                                        className="p-3 bg-white dark:bg-slate-800 text-slate-400 hover:text-indigo-600 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                                    >
+                                        <FaEdit size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(item.id, item.nama_lengkap)}
+                                        className="p-3 bg-white dark:bg-slate-800 text-slate-400 hover:text-red-600 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                                    >
+                                        <FaTrash size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modal Tambah/Edit */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
                     <div className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="p-8">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">

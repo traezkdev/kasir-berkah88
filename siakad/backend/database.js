@@ -139,6 +139,30 @@ const setupDatabase = async () => {
     `;
     await connection.query(createSettingsTable);
 
+    // 8. Create Nilai Table
+    const createNilaiTable = `
+      CREATE TABLE IF NOT EXISTS nilai (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        siswa_id INT NOT NULL,
+        mapel_id INT NOT NULL,
+        guru_id INT NOT NULL,
+        kelas_id INT NOT NULL,
+        nilai_uh FLOAT DEFAULT 0,
+        nilai_uts FLOAT DEFAULT 0,
+        nilai_uas FLOAT DEFAULT 0,
+        nilai_akhir FLOAT DEFAULT 0,
+        semester ENUM('Ganjil', 'Genap') NOT NULL,
+        tahun_ajaran VARCHAR(20) NOT NULL,
+        keterangan TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (siswa_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (mapel_id) REFERENCES mata_pelajaran(id) ON DELETE CASCADE,
+        FOREIGN KEY (guru_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE CASCADE
+      );
+    `;
+    await connection.query(createNilaiTable);
+
     // Initial Data for Settings
     const [settingsExist] = await connection.query("SELECT COUNT(*) as count FROM settings");
     if (settingsExist[0].count === 0) {
