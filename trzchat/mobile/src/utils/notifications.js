@@ -6,34 +6,75 @@ import Constants from 'expo-constants';
 import { API_URL } from '../config/api';
 import { getToken } from './auth';
 
-// Konfigurasi bagaimana notifikasi ditampilkan saat aplikasi terbuka (foreground)
+// Konfigurasi tampilan notifikasi saat aplikasi terbuka (foreground)
 Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-    }),
+    handleNotification: async (notification) => {
+        const data = notification.request.content.data;
+        // Panggilan masuk: tampilkan selalu, termasuk saat app aktif
+        const isCall = data?.channelId === 'calls' || data?.type === 'incoming_call';
+        return {
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: true,
+            shouldSetBadge: !isCall, // Badge hanya untuk pesan
+            shouldShowAlert: true,   // Tambahan: force alert di iOS
+        };
+    },
 });
 
-// Fungsi pembantu untuk cek dukungan platform
-const isSupported = () => {
-    return Platform.OS !== 'web';
+// Helper: cek apakah platform didukung (tidak web)
+const isSupported = () => Platform.OS !== 'web';
+
+// Daftarkan dan buat semua channel notifikasi Android
+const setupAndroidChannels = async () => {
+    if (Platform.OS !== 'android') return;
+
+    // Channel untuk pesan masuk
+    await Notifications.setNotificationChannelAsync('messages', {
+        name: 'Pesan Masuk',
+        description: 'Notifikasi untuk pesan chat baru',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#6366F1',
+        enableVibrate: true,
+        showBadge: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        sound: 'default',
+    });
+
+    // Channel khusus panggilan - Prioritas MAXIMUM agar muncul di lockscreen
+    await Notifications.setNotificationChannelAsync('calls', {
+        name: 'Panggilan Masuk',
+        description: 'Notifikasi untuk panggilan suara dan video masuk',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 500, 500, 500, 500],
+        lightColor: '#25D366',
+        enableVibrate: true,
+        showBadge: false,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        sound: 'default',
+        enableLights: true,
+        bypassDnd: true, // Lewati mode senyap untuk panggilan
+    });
+
+    // Pertahankan channel 'default' untuk kompatibilitas mundur
+    await Notifications.setNotificationChannelAsync('default', {
+        name: 'Umum',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        showBadge: true,
+    });
+
+    console.log('[Notifications] Android channels berhasil dibuat.');
 };
 
 export const registerForPushNotificationsAsync = async () => {
     if (!isSupported()) {
-        console.log('[Notifications] Platform tidak didukung (Web), dilewati.');
+        console.log('[Notifications] Platform web tidak didukung, dilewati.');
         return null;
     }
 
     try {
         console.log('[Notifications] Memulai pendaftaran token...');
-
-        if (!Device.isDevice) {
-            console.log('[Notifications] Perhatian: Harus menggunakan perangkat fisik untuk push notifications.');
-            // Tetap lanjut untuk mencoba mendapatkan token jika ini adalah dev client di device
-        }
 
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
@@ -43,31 +84,18 @@ export const registerForPushNotificationsAsync = async () => {
         }
 
         if (finalStatus !== 'granted') {
-            console.log('[Notifications] Izin notifikasi ditolak oleh pengguna.');
+            console.log('[Notifications] Izin notifikasi ditolak pengguna.');
             return null;
         }
 
-        // Pastikan channel android sudah siap
-        if (Platform.OS === 'android') {
-            await Notifications.setNotificationChannelAsync('default', {
-                name: 'Pesan Masuk',
-                importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: [0, 250, 250, 250],
-                lightColor: '#6366F1',
-                enableVibrate: true,
-                showBadge: true,
-                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-            });
-        }
+        // Siapkan semua channel Android
+        await setupAndroidChannels();
 
-        // Dapatkan Project ID dari config untuk stabilitas di Expo Dev Client
-        const projectId = Constants?.expoConfig?.extra?.eas?.projectId || Constants?.easConfig?.projectId;
-
-        // Dapatkan Token FCM Asli untuk backend firebase-admin
+        // Dapatkan Token FCM perangkat
         const tokenResponse = await Notifications.getDevicePushTokenAsync();
         const token = tokenResponse.data;
 
-        console.log('[Notifications] Token FCM didapatkan:', token ? 'Berhasil' : 'Gagal');
+        console.log('[Notifications] Token FCM:', token ? 'Berhasil didapat' : 'Gagal');
 
         if (token) {
             await saveTokenToServer(token);
@@ -90,35 +118,50 @@ const saveTokenToServer = async (token) => {
         await axios.post(`${API_URL}/users/fcm-token`, { token }, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        console.log('[Notifications] Token FCM berhasil sinkron ke server');
+        console.log('[Notifications] Token FCM berhasil disinkron ke server');
     } catch (error) {
-        console.log('[Notifications] Gagal kirim token ke server:', error.message);
+        console.log('[Notifications] Gagal simpan token ke server:', error.message);
     }
 };
 
-export const setupNotificationListeners = () => {
+/**
+ * Setup listener notifikasi.
+ * @param {Function} onCallNotification - Callback dipanggil saat notifikasi panggilan masuk diklik.
+ *   Menerima payload: { callerId, callerName, callerAvatar, callType }
+ */
+export const setupNotificationListeners = (onCallNotification) => {
     if (!isSupported()) return null;
 
     try {
-        // Listener untuk notifikasi yang diklik (Saat aplikasi di background/killed dan dibuka via notif)
-        const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+        // Listener: User mengklik notifikasi (saat app di background/killed)
+        const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
-            console.log('[Notifications] Aktivitas: Notifikasi diklik', data);
+            console.log('[Notifications] Notifikasi diklik:', data);
+
+            // Jika notifikasi panggilan diklik, panggil callback untuk navigasi
+            if ((data?.type === 'incoming_call' || data?.channelId === 'calls') && onCallNotification) {
+                onCallNotification({
+                    callerId: data.callerId,
+                    callerName: data.callerName,
+                    callerAvatar: data.callerAvatar,
+                    callType: data.callType || 'audio',
+                });
+            }
         });
 
-        if (Platform.OS === 'android') {
-            Notifications.setNotificationChannelAsync('default', {
-                name: 'Pesan Masuk',
-                importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: [0, 250, 250, 250],
-                lightColor: '#6366F1',
-                enableVibrate: true,
-                showBadge: true,
-                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-            }).catch(err => console.log('[Notifications] Gagal buat channel:', err.message));
-        }
+        // Listener: Notifikasi diterima saat app aktif di foreground
+        const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+            const data = notification.request.content.data;
+            console.log('[Notifications] Notifikasi diterima di foreground:', data?.type);
+        });
 
-        return subscription;
+        console.log('[Notifications] Listeners berhasil dipasang.');
+
+        // Kembalikan fungsi cleanup untuk dipanggil di useEffect
+        return () => {
+            responseSubscription.remove();
+            foregroundSubscription.remove();
+        };
     } catch (error) {
         console.log('[Notifications] Error saat setup listener:', error.message);
         return null;

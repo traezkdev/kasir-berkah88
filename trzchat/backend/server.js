@@ -127,12 +127,11 @@ io.on('connection', async (socket) => {
         const callerAvatar = await getUserAvatar(userId);
         console.log(`[Call] User ${userId} (${callerName}) calling ${targetUserId} (${type})`);
 
-        // Pastikan targetUserId dikonversi ke tipe yang sesuai (Number) jika onlineUsers menggunakan Number
         const targetId = Number(targetUserId);
         const recipientSockets = onlineUsers.get(targetId);
 
         if (recipientSockets && recipientSockets.size > 0) {
-            console.log(`[Call] Sending incoming-call to ${recipientSockets.size} sockets of User ${targetId}`);
+            console.log(`[Call] Sending incoming-call via socket ke ${recipientSockets.size} soket User ${targetId}`);
             recipientSockets.forEach(sid => {
                 io.to(sid).emit('incoming-call', {
                     from: userId,
@@ -143,9 +142,28 @@ io.on('connection', async (socket) => {
                 });
             });
         } else {
-            console.log(`[Call] Target user ${targetId} is offline or not found in onlineUsers`);
+            console.log(`[Call] Target user ${targetId} offline, mengirim FCM panggilan...`);
             socket.emit('call-rejected', { reason: 'offline' });
         }
+
+        // Selalu kirim FCM untuk panggilan – agar muncul meski app sedang di-background/killed
+        sendPushNotification(
+            targetId,
+            `📞 Panggilan ${type === 'video' ? 'Video' : 'Suara'} Masuk`,
+            `${callerName} sedang menghubungi Anda`,
+            {
+                type: 'incoming_call',
+                callType: type,
+                callerId: String(userId),
+                callerName: callerName,
+                callerAvatar: callerAvatar || '',
+            },
+            {
+                channelId: 'calls',   // Channel khusus panggilan
+                ttl: 30,              // Kedaluwarsa 30 detik – tidak ada gunanya setelah itu
+                priority: 'high',
+            }
+        );
     });
 
     socket.on('answer-call', ({ targetUserId, answer }) => {
@@ -481,12 +499,16 @@ app.post('/api/users/upload-avatar', authenticateToken, upload.single('avatar'),
 });
 
 // Helper function to send push notifications
-const sendPushNotification = async (targetUserId, title, body, data = {}) => {
+const sendPushNotification = async (targetUserId, title, body, data = {}, options = {}) => {
     try {
         const [users] = await pool.query('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
         if (users.length > 0 && users[0].fcm_token) {
             const token = users[0].fcm_token;
-            console.log(`[Push] Menyiapkan pengiriman ke User ${targetUserId}...`);
+            const channelId = options.channelId || 'messages';
+            const ttl = options.ttl !== undefined ? options.ttl : 86400; // Default: 24 jam
+            const priority = options.priority || 'high';
+
+            console.log(`[Push] Mengirim notifikasi ke User ${targetUserId} via channel '${channelId}'...`);
 
             const senderAvatar = data.senderAvatar && data.senderAvatar.startsWith('http') ? data.senderAvatar : null;
 
@@ -496,20 +518,22 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
                     body: body,
                 },
                 android: {
-                    priority: 'high',
-                    ttl: 0, // 0 = Deliver immediately
+                    priority: priority,
+                    ttl: ttl * 1000, // Dikonversi ke milidetik
                     notification: {
-                        channelId: 'default',
-                        sound: 'default',
+                        channelId: channelId,
+                        sound: channelId === 'calls' ? 'ringtone' : 'default',
                         priority: 'max',
                         visibility: 'public',
                         imageUrl: senderAvatar || undefined,
+                        tag: channelId === 'calls' ? `call_${data.callerId || 'unknown'}` : undefined,
                     }
                 },
                 apns: {
                     headers: {
                         'apns-priority': '10',
                         'apns-push-type': 'alert',
+                        'apns-expiration': ttl === 0 ? '0' : String(Math.floor(Date.now() / 1000) + ttl),
                     },
                     payload: {
                         aps: {
@@ -523,11 +547,10 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
                     }
                 },
                 data: {
-                    ...data,
-                    chatId: String(data.chatId),
-                    senderName: String(title),
-                    senderAvatar: String(senderAvatar || ''),
-                    type: String(data.type || 'text'),
+                    ...Object.fromEntries(
+                        Object.entries(data).map(([k, v]) => [k, String(v ?? '')])
+                    ),
+                    channelId: channelId,
                 },
                 token: token,
             };
@@ -540,6 +563,12 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
         }
     } catch (error) {
         console.error(`[Push] GAGAL mengirim ke User ${targetUserId}:`, error.message);
+        // Jika token tidak valid, hapus dari database
+        if (error.code === 'messaging/registration-token-not-registered' ||
+            error.code === 'messaging/invalid-registration-token') {
+            console.log(`[Push] Token tidak valid untuk User ${targetUserId}, menghapus dari DB...`);
+            await pool.query('UPDATE users SET fcm_token = NULL WHERE id = ?', [targetUserId]).catch(() => { });
+        }
     }
 };
 
