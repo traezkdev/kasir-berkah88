@@ -7,6 +7,9 @@ const DataNilai = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [filterKelas, setFilterKelas] = useState('All');
+    const [filterSemester, setFilterSemester] = useState('All');
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
     // Form options
     const [siswaList, setSiswaList] = useState([]);
@@ -170,11 +173,16 @@ const DataNilai = () => {
         }
     };
 
-    const filteredNilai = nilaiData.filter(n =>
-        n.nama_siswa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        n.nama_mapel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        n.nama_kelas?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredNilai = nilaiData.filter(n => {
+        const matchesSearch = n.nama_siswa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            n.nama_mapel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            n.nama_kelas?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesKelas = filterKelas === 'All' || n.nama_kelas === filterKelas;
+        const matchesSemester = filterSemester === 'All' || n.semester === filterSemester;
+
+        return matchesSearch && matchesKelas && matchesSemester;
+    });
 
     const getGradeColor = (nilai) => {
         if (nilai >= 85) return 'text-emerald-600 bg-emerald-100';
@@ -213,15 +221,71 @@ const DataNilai = () => {
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
                 {/* Search Bar */}
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-                    <div className="relative w-full sm:max-w-xs group">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Cari siswa, mapel, atau kelas..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
-                        />
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                        <div className="relative w-full sm:max-w-xs group">
+                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Cari siswa, mapel, atau kelas..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                            />
+                        </div>
+
+                        <div className="flex items-center space-x-2 relative w-full sm:w-auto">
+                            <button
+                                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                                className={`flex items-center justify-center space-x-2 px-4 py-3 border rounded-2xl font-bold transition-all w-full sm:w-auto ${(filterKelas !== 'All' || filterSemester !== 'All')
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
+                                        : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                    }`}
+                            >
+                                <FaFilter size={14} />
+                                <span>Filter {(filterKelas !== 'All' || filterSemester !== 'All') && '(Aktif)'}</span>
+                            </button>
+
+                            {showFilterDropdown && (
+                                <>
+                                    <div className="fixed inset-0 z-[60]" onClick={() => setShowFilterDropdown(false)}></div>
+                                    <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-4 z-[70] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Filter Kelas</p>
+                                                <select
+                                                    value={filterKelas}
+                                                    onChange={(e) => setFilterKelas(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-indigo-500"
+                                                >
+                                                    <option value="All">Semua Kelas</option>
+                                                    {kelasList.map(k => (
+                                                        <option key={k.id} value={k.nama_kelas}>{k.nama_kelas}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Filter Semester</p>
+                                                <select
+                                                    value={filterSemester}
+                                                    onChange={(e) => setFilterSemester(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-indigo-500"
+                                                >
+                                                    <option value="All">Semua Semester</option>
+                                                    <option value="Ganjil">Ganjil</option>
+                                                    <option value="Genap">Genap</option>
+                                                </select>
+                                            </div>
+                                            <button
+                                                onClick={() => { setFilterKelas('All'); setFilterSemester('All'); setShowFilterDropdown(false); }}
+                                                className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
+                                            >
+                                                Reset Filter
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 

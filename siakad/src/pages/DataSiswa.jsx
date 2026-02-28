@@ -10,6 +10,10 @@ const DataSiswa = () => {
     const [filterGender, setFilterGender] = useState('All');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
+    // Detail modal state
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedSiswa, setSelectedSiswa] = useState(null);
+
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -251,12 +255,12 @@ const DataSiswa = () => {
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
                         />
                     </div>
-                    <div className="flex items-center space-x-2 relative">
+                    <div className="flex items-center space-x-2 relative w-full sm:w-auto">
                         <button
                             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                            className={`flex items-center space-x-2 px-4 py-3 border rounded-2xl font-bold transition-all ${filterGender !== 'All'
-                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
-                                    : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                            className={`flex items-center justify-center space-x-2 px-6 py-3 border rounded-2xl font-bold transition-all w-full sm:w-auto ${filterGender !== 'All'
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
+                                : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                 }`}
                         >
                             <FaFilter size={14} />
@@ -317,7 +321,11 @@ const DataSiswa = () => {
                                     <td colSpan="5" className="p-12 text-center font-bold text-slate-500 italic">Data siswa tidak ditemukan.</td>
                                 </tr>
                             ) : filteredSiswa.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                                <tr
+                                    key={item.id}
+                                    onClick={() => { setSelectedSiswa(item); setShowDetailModal(true); }}
+                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer"
+                                >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-3">
                                             <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center font-black">
@@ -345,10 +353,16 @@ const DataSiswa = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all"
+                                            >
                                                 <FaEdit size={16} />
                                             </button>
-                                            <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_lengkap); }}
+                                                className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all"
+                                            >
                                                 <FaTrash size={16} />
                                             </button>
                                         </div>
@@ -366,7 +380,11 @@ const DataSiswa = () => {
                     ) : filteredSiswa.length === 0 ? (
                         <div className="p-12 text-center font-bold text-slate-500 italic">Data siswa tidak ditemukan.</div>
                     ) : filteredSiswa.map((item) => (
-                        <div key={item.id} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                        <div
+                            key={item.id}
+                            onClick={() => { setSelectedSiswa(item); setShowDetailModal(true); }}
+                            className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer active:scale-[0.98]"
+                        >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center text-xl font-black">
@@ -378,10 +396,16 @@ const DataSiswa = () => {
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
-                                    <button onClick={() => handleEdit(item)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                        className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700"
+                                    >
                                         <FaEdit size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_lengkap); }}
+                                        className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700"
+                                    >
                                         <FaTrash size={16} />
                                     </button>
                                 </div>
@@ -418,7 +442,7 @@ const DataSiswa = () => {
             {/* Modal Tambah/Edit */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
                     <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
                         {/* Modal Header */}
                         <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -536,6 +560,87 @@ const DataSiswa = () => {
                                     {isEditMode ? 'Simpan Perubahan' : 'Tambah Siswa'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detail Siswa */}
+            {showDetailModal && selectedSiswa && (
+                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Header Detail */}
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Detail Informasi Siswa</h2>
+                            <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                        </div>
+
+                        {/* Body Detail */}
+                        <div className="flex-1 overflow-y-auto p-8">
+                            <div className="flex flex-col items-center text-center space-y-4 mb-8">
+                                <div className="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center text-4xl font-black shadow-inner">
+                                    {selectedSiswa.nama_lengkap?.[0] || 'S'}
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">{selectedSiswa.nama_lengkap}</h3>
+                                    <p className="text-sm font-bold text-indigo-500 uppercase tracking-widest">@{selectedSiswa.username}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Identitas & Status</p>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500">NISN / NIK</span>
+                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{selectedSiswa.nisn_nik || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500">Jenis Kelamin</span>
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${selectedSiswa.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                                {selectedSiswa.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500">Tgl Terdaftar</span>
+                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">
+                                                {new Date(selectedSiswa.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-2">Kontak Penghubung</p>
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Email Address</span>
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{selectedSiswa.email || '-'}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">WhatsApp / No. HP</span>
+                                            <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">{selectedSiswa.wa_number || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Detail */}
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex sm:justify-end gap-3 shrink-0">
+                            <button
+                                onClick={() => setShowDetailModal(false)}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 transition-all active:scale-95"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                onClick={(e) => { setShowDetailModal(false); handleEdit(selectedSiswa); }}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                            >
+                                Edit Data
+                            </button>
                         </div>
                     </div>
                 </div>

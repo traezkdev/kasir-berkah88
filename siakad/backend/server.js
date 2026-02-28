@@ -221,10 +221,11 @@ app.get('/api/admin/guru-list', authenticateToken, isAdmin, async (req, res) => 
 
 // Add mapel
 app.post('/api/admin/mapel', authenticateToken, isAdmin, async (req, res) => {
-    const { kode_mapel, nama_mapel, kategori, guru_id } = req.body;
+    let { kode_mapel, nama_mapel, kategori, guru_id, deskripsi } = req.body;
+    if (guru_id === '') guru_id = null;
     try {
-        const sql = `INSERT INTO mata_pelajaran (kode_mapel, nama_mapel, kategori, guru_id) VALUES (?, ?, ?, ?)`;
-        await db.query(sql, [kode_mapel, nama_mapel, kategori, guru_id]);
+        const sql = `INSERT INTO mata_pelajaran (kode_mapel, nama_mapel, kategori, guru_id, deskripsi) VALUES (?, ?, ?, ?, ?)`;
+        await db.query(sql, [kode_mapel, nama_mapel, kategori, guru_id, deskripsi]);
         res.status(201).json({ message: "Mata pelajaran berhasil ditambahkan." });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -237,10 +238,11 @@ app.post('/api/admin/mapel', authenticateToken, isAdmin, async (req, res) => {
 // Update mapel
 app.put('/api/admin/mapel/:id', authenticateToken, isAdmin, async (req, res) => {
     const { id } = req.params;
-    const { kode_mapel, nama_mapel, kategori, guru_id } = req.body;
+    let { kode_mapel, nama_mapel, kategori, guru_id, deskripsi } = req.body;
+    if (guru_id === '') guru_id = null;
     try {
-        const sql = `UPDATE mata_pelajaran SET kode_mapel = ?, nama_mapel = ?, kategori = ?, guru_id = ? WHERE id = ?`;
-        await db.query(sql, [kode_mapel, nama_mapel, kategori, guru_id, id]);
+        const sql = `UPDATE mata_pelajaran SET kode_mapel = ?, nama_mapel = ?, kategori = ?, guru_id = ?, deskripsi = ? WHERE id = ?`;
+        await db.query(sql, [kode_mapel, nama_mapel, kategori, guru_id, deskripsi, id]);
         res.status(200).json({ message: "Mata pelajaran berhasil diperbarui." });
     } catch (err) {
         res.status(500).json({ error: err.message });

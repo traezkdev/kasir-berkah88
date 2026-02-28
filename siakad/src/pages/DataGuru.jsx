@@ -7,6 +7,12 @@ const DataGuru = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [filterGender, setFilterGender] = useState('All');
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+    // Detail modal state
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedGuru, setSelectedGuru] = useState(null);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -147,11 +153,15 @@ const DataGuru = () => {
         }
     };
 
-    const filteredGuru = guru.filter(g =>
-        g.nama_lengkap?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        g.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        g.nisn_nik?.includes(searchTerm)
-    );
+    const filteredGuru = guru.filter(g => {
+        const matchesSearch = g.nama_lengkap?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            g.nisn_nik?.includes(searchTerm) ||
+            g.username?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesGender = filterGender === 'All' || g.jenis_kelamin === filterGender;
+
+        return matchesSearch && matchesGender;
+    });
 
     // Hitung Statistik
     const totalLaki = guru.filter(g => g.jenis_kelamin === 'L').length;
@@ -237,6 +247,49 @@ const DataGuru = () => {
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-medium text-slate-700 dark:text-slate-200"
                         />
                     </div>
+
+                    <div className="flex items-center space-x-2 relative w-full sm:w-auto">
+                        <button
+                            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                            className={`flex items-center justify-center space-x-2 px-6 py-3 border rounded-2xl font-bold transition-all w-full sm:w-auto ${filterGender !== 'All'
+                                ? 'bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-600/20'
+                                : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                }`}
+                        >
+                            <FaFilter size={14} />
+                            <span>{filterGender === 'All' ? 'Filter' : `Gender: ${filterGender}`}</span>
+                        </button>
+
+                        {/* Dropdown Filter */}
+                        {showFilterDropdown && (
+                            <>
+                                <div className="fixed inset-0 z-[60]" onClick={() => setShowFilterDropdown(false)}></div>
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-[70] animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="px-4 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter Kelamin</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { setFilterGender('All'); setShowFilterDropdown(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterGender === 'All' ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                    >
+                                        Semua Gender
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilterGender('L'); setShowFilterDropdown(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterGender === 'L' ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                    >
+                                        Laki-laki
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilterGender('P'); setShowFilterDropdown(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterGender === 'P' ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                    >
+                                        Perempuan
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Desktop Table View */}
@@ -261,7 +314,11 @@ const DataGuru = () => {
                                     <td colSpan="5" className="p-12 text-center font-bold text-slate-500 italic">Data guru tidak ditemukan.</td>
                                 </tr>
                             ) : filteredGuru.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                                <tr
+                                    key={item.id}
+                                    onClick={() => { setSelectedGuru(item); setShowDetailModal(true); }}
+                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer"
+                                >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-3">
                                             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center font-black">
@@ -289,10 +346,16 @@ const DataGuru = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                className="p-2 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all"
+                                            >
                                                 <FaEdit size={16} />
                                             </button>
-                                            <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_lengkap); }}
+                                                className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all"
+                                            >
                                                 <FaTrash size={16} />
                                             </button>
                                         </div>
@@ -310,7 +373,11 @@ const DataGuru = () => {
                     ) : filteredGuru.length === 0 ? (
                         <div className="p-12 text-center font-bold text-slate-500 italic">Data guru tidak ditemukan.</div>
                     ) : filteredGuru.map((item) => (
-                        <div key={item.id} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                        <div
+                            key={item.id}
+                            onClick={() => { setSelectedGuru(item); setShowDetailModal(true); }}
+                            className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer active:scale-[0.98]"
+                        >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center text-xl font-black">
@@ -322,10 +389,16 @@ const DataGuru = () => {
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
-                                    <button onClick={() => handleEdit(item)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                        className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700"
+                                    >
                                         <FaEdit size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_lengkap); }}
+                                        className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700"
+                                    >
                                         <FaTrash size={16} />
                                     </button>
                                 </div>
@@ -364,7 +437,7 @@ const DataGuru = () => {
             {/* Modal Tambah/Edit */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
                     <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
                         {/* Modal Header */}
                         <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -482,6 +555,85 @@ const DataGuru = () => {
                                     {isEditMode ? 'Simpan Perubahan' : 'Tambah Guru'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detail Guru */}
+            {showDetailModal && selectedGuru && (
+                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Header Detail */}
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Detail Informasi Guru</h2>
+                            <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                        </div>
+
+                        {/* Body Detail */}
+                        <div className="flex-1 overflow-y-auto p-8">
+                            <div className="flex flex-col items-center text-center space-y-4 mb-8">
+                                <div className="w-24 h-24 bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-3xl flex items-center justify-center text-4xl font-black shadow-inner">
+                                    {selectedGuru.nama_lengkap?.[0] || 'G'}
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">{selectedGuru.nama_lengkap}</h3>
+                                    <p className="text-sm font-bold text-purple-500 uppercase tracking-widest">@{selectedGuru.username}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Identitas & Jabatan</p>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500">NIP / Identitas</span>
+                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{selectedGuru.nisn_nik || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500">Jenis Kelamin</span>
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${selectedGuru.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                                {selectedGuru.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500">Status Akun</span>
+                                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-lg uppercase">Aktif</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-purple-50/30 dark:bg-purple-900/10 rounded-2xl border border-purple-100/50 dark:border-purple-900/30">
+                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-2">Kontak Guru</p>
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Email Resmi</span>
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{selectedGuru.email || '-'}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">WhatsApp Business</span>
+                                            <span className="text-lg font-black text-purple-600 dark:text-purple-400">{selectedGuru.wa_number || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Detail */}
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex sm:justify-end gap-3 shrink-0">
+                            <button
+                                onClick={() => setShowDetailModal(false)}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 transition-all active:scale-95"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                onClick={(e) => { setShowDetailModal(false); handleEdit(selectedGuru); }}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all active:scale-95"
+                            >
+                                Edit Profil
+                            </button>
                         </div>
                     </div>
                 </div>

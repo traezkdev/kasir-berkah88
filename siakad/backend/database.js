@@ -67,6 +67,7 @@ const setupDatabase = async () => {
         kode_mapel VARCHAR(20) UNIQUE,
         nama_mapel VARCHAR(100) NOT NULL,
         kategori VARCHAR(50) DEFAULT 'Umum',
+        deskripsi TEXT,
         guru_id INT,
         FOREIGN KEY (guru_id) REFERENCES users(id) ON DELETE SET NULL
       );
@@ -74,10 +75,9 @@ const setupDatabase = async () => {
     await connection.query(createMapelTable);
 
     // Tambahkan kolom jika belum ada
-    try {
-      await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN kode_mapel VARCHAR(20) UNIQUE AFTER id");
-      await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN kategori VARCHAR(50) DEFAULT 'Umum' AFTER nama_mapel");
-    } catch (err) { }
+    try { await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN kode_mapel VARCHAR(20) UNIQUE AFTER id"); } catch (err) { }
+    try { await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN kategori VARCHAR(50) DEFAULT 'Umum' AFTER nama_mapel"); } catch (err) { }
+    try { await connection.query("ALTER TABLE mata_pelajaran ADD COLUMN deskripsi TEXT AFTER kategori"); } catch (err) { }
 
     // 4. Create Presensi Table
     const createPresensiTable = `

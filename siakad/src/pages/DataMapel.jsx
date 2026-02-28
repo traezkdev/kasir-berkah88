@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaBook, FaSearch, FaTrash, FaEdit, FaPlus, FaSyncAlt, FaLayerGroup } from 'react-icons/fa';
+import { FaBook, FaSearch, FaTrash, FaEdit, FaPlus, FaSyncAlt, FaLayerGroup, FaFilter } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 
 const DataMapel = () => {
@@ -8,6 +8,12 @@ const DataMapel = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [filterKategori, setFilterKategori] = useState('All');
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+    // Detail modal state
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedMapel, setSelectedMapel] = useState(null);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -17,7 +23,8 @@ const DataMapel = () => {
         kode_mapel: '',
         nama_mapel: '',
         kategori: 'Umum',
-        guru_id: ''
+        guru_id: '',
+        deskripsi: ''
     });
 
     const resetForm = () => {
@@ -25,7 +32,8 @@ const DataMapel = () => {
             kode_mapel: '',
             nama_mapel: '',
             kategori: 'Umum',
-            guru_id: ''
+            guru_id: '',
+            deskripsi: ''
         });
         setSelectedId(null);
         setIsEditMode(false);
@@ -121,7 +129,8 @@ const DataMapel = () => {
             kode_mapel: item.kode_mapel || '',
             nama_mapel: item.nama_mapel || '',
             kategori: item.kategori || 'Umum',
-            guru_id: item.guru_id || ''
+            guru_id: item.guru_id || '',
+            deskripsi: item.deskripsi || ''
         });
         setIsEditMode(true);
         setShowModal(true);
@@ -148,11 +157,15 @@ const DataMapel = () => {
         }
     };
 
-    const filteredMapel = mapel.filter(m =>
-        m.nama_mapel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.kode_mapel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.nama_guru?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredMapel = mapel.filter(m => {
+        const matchesSearch = m.nama_mapel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.kode_mapel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.nama_guru?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesKategori = filterKategori === 'All' || m.kategori === filterKategori;
+
+        return matchesSearch && matchesKategori;
+    });
 
     // Statistik
     const totalUmum = mapel.filter(m => m.kategori === 'Umum').length;
@@ -223,15 +236,51 @@ const DataMapel = () => {
             {/* Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-                    <div className="relative w-full sm:max-w-xs group">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Cari mapel, kode, atau guru..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700 dark:text-slate-200"
-                        />
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                        <div className="relative w-full sm:max-w-xs group">
+                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Cari mapel, kode, atau guru..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                            />
+                        </div>
+
+                        <div className="flex items-center space-x-2 relative w-full sm:w-auto">
+                            <button
+                                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                                className={`flex items-center justify-center space-x-2 px-4 py-3 border rounded-2xl font-bold transition-all w-full sm:w-auto ${filterKategori !== 'All'
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20'
+                                    : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                    }`}
+                            >
+                                <FaFilter size={14} />
+                                <span>{filterKategori === 'All' ? 'Filter' : `Kategori: ${filterKategori}`}</span>
+                            </button>
+
+                            {/* Dropdown Filter */}
+                            {showFilterDropdown && (
+                                <>
+                                    <div className="fixed inset-0 z-[60]" onClick={() => setShowFilterDropdown(false)}></div>
+                                    <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-[70] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="px-4 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter Kategori</p>
+                                        </div>
+                                        {['All', 'Umum', 'Peminatan', 'Kejuruan'].map((kat) => (
+                                            <button
+                                                key={kat}
+                                                onClick={() => { setFilterKategori(kat); setShowFilterDropdown(false); }}
+                                                className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterKategori === kat ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                            >
+                                                {kat === 'All' ? 'Semua Kategori' : kat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -257,7 +306,11 @@ const DataMapel = () => {
                                     <td colSpan="5" className="p-12 text-center font-bold text-slate-500">Data tidak ditemukan.</td>
                                 </tr>
                             ) : filteredMapel.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                                <tr
+                                    key={item.id}
+                                    onClick={() => { setSelectedMapel(item); setShowDetailModal(true); }}
+                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer"
+                                >
                                     <td className="px-6 py-4 font-black text-indigo-600 dark:text-indigo-400 text-sm tracking-widest">{item.kode_mapel}</td>
                                     <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{item.nama_mapel}</td>
                                     <td className="px-6 py-4">
@@ -270,8 +323,18 @@ const DataMapel = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-emerald-600 rounded-xl transition-all"><FaEdit size={16} /></button>
-                                            <button onClick={() => handleDelete(item.id, item.nama_mapel)} className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-all"><FaTrash size={16} /></button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                className="p-2 text-slate-400 hover:text-emerald-600 rounded-xl transition-all"
+                                            >
+                                                <FaEdit size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_mapel); }}
+                                                className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-all"
+                                            >
+                                                <FaTrash size={16} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -287,7 +350,11 @@ const DataMapel = () => {
                     ) : filteredMapel.length === 0 ? (
                         <div className="p-12 text-center font-bold text-slate-500">Data tidak ditemukan.</div>
                     ) : filteredMapel.map((item) => (
-                        <div key={item.id} className="p-6 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all">
+                        <div
+                            key={item.id}
+                            onClick={() => { setSelectedMapel(item); setShowDetailModal(true); }}
+                            className="p-6 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all cursor-pointer active:scale-[0.98]"
+                        >
                             <div className="flex justify-between items-start">
                                 <div>
                                     <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block mb-1">{item.kode_mapel}</span>
@@ -305,8 +372,18 @@ const DataMapel = () => {
                                     </span>
                                 </div>
                                 <div className="flex items-center space-x-2 border-l border-slate-200 dark:border-slate-700 pl-3">
-                                    <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-emerald-600 rounded-xl transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700"><FaEdit size={14} /></button>
-                                    <button onClick={() => handleDelete(item.id, item.nama_mapel)} className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700"><FaTrash size={14} /></button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                        className="p-2 text-slate-400 hover:text-emerald-600 rounded-xl transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700"
+                                    >
+                                        <FaEdit size={14} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_mapel); }}
+                                        className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700"
+                                    >
+                                        <FaTrash size={14} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -317,7 +394,7 @@ const DataMapel = () => {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
                     <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
                         {/* Modal Header */}
                         <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -376,6 +453,15 @@ const DataMapel = () => {
                                         </select>
                                     </div>
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Deskripsi & Catatan</label>
+                                    <textarea
+                                        value={formData.deskripsi}
+                                        onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all min-h-[100px] resize-none"
+                                        placeholder="Tambahkan deskripsi mengenai mata pelajaran ini..."
+                                    />
+                                </div>
                             </form>
                         </div>
 
@@ -387,6 +473,76 @@ const DataMapel = () => {
                                     {isEditMode ? 'Simpan' : 'Tambah'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detail Mapel */}
+            {showDetailModal && selectedMapel && (
+                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Header Detail */}
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Detail Mata Pelajaran</h2>
+                            <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                        </div>
+
+                        {/* Body Detail */}
+                        <div className="flex-1 overflow-y-auto p-8">
+                            <div className="flex flex-col items-center text-center space-y-4 mb-8">
+                                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center text-4xl font-black shadow-inner">
+                                    <FaLayerGroup />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-tight">{selectedMapel.nama_mapel}</h3>
+                                    <p className="text-sm font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">{selectedMapel.kode_mapel}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 group transition-all hover:border-emerald-200">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Informasi Utama</p>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500 italic">Kategori</span>
+                                            <span className={`text-[10px] font-black px-3 py-1 rounded-lg ${selectedMapel.kategori === 'Umum' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                                {selectedMapel.kategori.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs font-bold text-slate-500 italic shrink-0">Guru Pengajar</span>
+                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200 text-right">
+                                                {selectedMapel.nama_guru || <span className="text-rose-400 italic font-medium">Belum Ditentukan</span>}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/30">
+                                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2 italic">Deskripsi & Catatan</p>
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                                        {selectedMapel.deskripsi ? selectedMapel.deskripsi : `Mata pelajaran ini merupakan bagian dari kurikulum ${selectedMapel.kategori} yang diajarkan untuk meningkatkan kompetensi akademik siswa di bidang ${selectedMapel.nama_mapel}.`}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Detail */}
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex sm:justify-end gap-3 shrink-0">
+                            <button
+                                onClick={() => setShowDetailModal(false)}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 transition-all active:scale-95"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowDetailModal(false); handleEdit(selectedMapel); }}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                            >
+                                Edit Mapel
+                            </button>
                         </div>
                     </div>
                 </div>
