@@ -7,6 +7,8 @@ const DataSiswa = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [filterGender, setFilterGender] = useState('All');
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -146,11 +148,15 @@ const DataSiswa = () => {
         }
     };
 
-    const filteredSiswa = siswa.filter(s =>
-        s.nama_lengkap?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.nisn_nik?.includes(searchTerm)
-    );
+    const filteredSiswa = siswa.filter(s => {
+        const matchesSearch = s.nama_lengkap?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.nisn_nik?.includes(searchTerm) ||
+            s.username?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesGender = filterGender === 'All' || s.jenis_kelamin === filterGender;
+
+        return matchesSearch && matchesGender;
+    });
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -245,15 +251,52 @@ const DataSiswa = () => {
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
                         />
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button className="flex items-center space-x-2 px-4 py-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-300 transition-all">
+                    <div className="flex items-center space-x-2 relative">
+                        <button
+                            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                            className={`flex items-center space-x-2 px-4 py-3 border rounded-2xl font-bold transition-all ${filterGender !== 'All'
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
+                                    : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                }`}
+                        >
                             <FaFilter size={14} />
-                            <span>Filter</span>
+                            <span>{filterGender === 'All' ? 'Filter' : `Gender: ${filterGender}`}</span>
                         </button>
+
+                        {/* Dropdown Filter */}
+                        {showFilterDropdown && (
+                            <>
+                                <div className="fixed inset-0 z-[60]" onClick={() => setShowFilterDropdown(false)}></div>
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-[70] animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="px-4 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter Kelamin</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { setFilterGender('All'); setShowFilterDropdown(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterGender === 'All' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                    >
+                                        Semua Gender
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilterGender('L'); setShowFilterDropdown(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterGender === 'L' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                    >
+                                        Laki-laki
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilterGender('P'); setShowFilterDropdown(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors ${filterGender === 'P' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                                    >
+                                        Perempuan
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
@@ -315,21 +358,79 @@ const DataSiswa = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                    {isLoading ? (
+                        <div className="p-12 text-center text-slate-500 font-bold animate-pulse">Memuat data...</div>
+                    ) : filteredSiswa.length === 0 ? (
+                        <div className="p-12 text-center font-bold text-slate-500 italic">Data siswa tidak ditemukan.</div>
+                    ) : filteredSiswa.map((item) => (
+                        <div key={item.id} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center text-xl font-black">
+                                        {item.nama_lengkap?.[0] || 'S'}
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{item.nama_lengkap}</p>
+                                        <p className="text-xs text-slate-400 font-medium tracking-wide">@{item.username}</p>
+                                    </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button onClick={() => handleEdit(item)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                        <FaEdit size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                        <FaTrash size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NISN / Identitas</p>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                        <span className="bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-md">
+                                            {item.nisn_nik || '-'}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div className="space-y-1 text-right">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Terdaftar</p>
+                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </p>
+                                </div>
+                                <div className="col-span-2 space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kontak & Email</p>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{item.email || '-'}</p>
+                                        <div className="w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                                        <p className="text-sm font-bold text-indigo-500">{item.wa_number || '-'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modal Tambah/Edit */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl overflow-y-auto m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
-                        <div className="p-6 sm:p-8">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    {isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
-                                </h2>
-                                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
-                            </div>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                {isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
+                            </h2>
+                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                        </div>
+
+                        {/* Modal Body (Scrollable) */}
+                        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+                            <form id="siswaForm" onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Username</label>
@@ -414,22 +515,27 @@ const DataSiswa = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex justify-end space-x-3 pt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all"
-                                    >
-                                        {isEditMode ? 'Simpan Perubahan' : 'Tambah Siswa'}
-                                    </button>
-                                </div>
                             </form>
+                        </div>
+
+                        {/* Modal Footer (Fixed at Bottom) */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    form="siswaForm"
+                                    className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all"
+                                >
+                                    {isEditMode ? 'Simpan Perubahan' : 'Tambah Siswa'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

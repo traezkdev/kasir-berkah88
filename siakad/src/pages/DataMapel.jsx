@@ -236,7 +236,7 @@ const DataMapel = () => {
                 </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
@@ -281,7 +281,7 @@ const DataMapel = () => {
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-700">
                     {isLoading ? (
                         <div className="p-12 text-center font-bold text-slate-500">Memuat data...</div>
                     ) : filteredMapel.length === 0 ? (
@@ -318,67 +318,76 @@ const DataMapel = () => {
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl overflow-y-auto m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300 p-6 sm:p-8">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {isEditMode ? 'Edit Mata Pelajaran' : 'Tambah Mapel Baru'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kode Mapel</label>
-                                <input
-                                    type="text" required
-                                    value={formData.kode_mapel}
-                                    onChange={(e) => setFormData({ ...formData, kode_mapel: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all font-black uppercase placeholder:normal-case"
-                                    placeholder="ex: MTK-10"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Nama Mata Pelajaran</label>
-                                <input
-                                    type="text" required
-                                    value={formData.nama_mapel}
-                                    onChange={(e) => setFormData({ ...formData, nama_mapel: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all"
-                                    placeholder="ex: Matematika"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+
+                        {/* Modal Body (Scrollable) */}
+                        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+                            <form id="mapelForm" onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kategori</label>
-                                    <select
-                                        value={formData.kategori}
-                                        onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all font-bold"
-                                    >
-                                        <option value="Umum">Umum</option>
-                                        <option value="Peminatan">Peminatan</option>
-                                    </select>
+                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kode Mapel</label>
+                                    <input
+                                        type="text" required
+                                        value={formData.kode_mapel}
+                                        onChange={(e) => setFormData({ ...formData, kode_mapel: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all font-black uppercase placeholder:normal-case"
+                                        placeholder="ex: MTK-10"
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Guru Pengajar</label>
-                                    <select
-                                        value={formData.guru_id}
-                                        onChange={(e) => setFormData({ ...formData, guru_id: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all font-bold"
-                                    >
-                                        <option value="">Pilih Guru</option>
-                                        {guruList.map(g => (
-                                            <option key={g.id} value={g.id}>{g.nama_lengkap}</option>
-                                        ))}
-                                    </select>
+                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Nama Mata Pelajaran</label>
+                                    <input
+                                        type="text" required
+                                        value={formData.nama_mapel}
+                                        onChange={(e) => setFormData({ ...formData, nama_mapel: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all"
+                                        placeholder="ex: Matematika"
+                                    />
                                 </div>
-                            </div>
-                            <div className="flex justify-end space-x-3 pt-6">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 rounded-xl font-bold">Batal</button>
-                                <button type="submit" className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kategori</label>
+                                        <select
+                                            value={formData.kategori}
+                                            onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all font-bold"
+                                        >
+                                            <option value="Umum">Umum</option>
+                                            <option value="Peminatan">Peminatan</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Guru Pengajar</label>
+                                        <select
+                                            value={formData.guru_id}
+                                            onChange={(e) => setFormData({ ...formData, guru_id: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 transition-all font-bold"
+                                        >
+                                            <option value="">Pilih Guru</option>
+                                            {guruList.map(g => (
+                                                <option key={g.id} value={g.id}>{g.nama_lengkap}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Modal Footer (Fixed at Bottom) */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="flex justify-end space-x-3">
+                                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">Batal</button>
+                                <button type="submit" form="mapelForm" className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all">
                                     {isEditMode ? 'Simpan' : 'Tambah'}
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}

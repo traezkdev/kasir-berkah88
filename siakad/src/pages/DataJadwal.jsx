@@ -276,89 +276,98 @@ const DataJadwal = () => {
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl overflow-y-auto m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300 p-6 sm:p-8">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {isEditMode ? 'Edit Jadwal' : 'Tambah Jadwal Baru'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Hari</label>
-                                    <select
-                                        value={formData.hari}
-                                        onChange={(e) => setFormData({ ...formData, hari: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
-                                    >
-                                        {days.map(d => <option key={d} value={d}>{d}</option>)}
-                                    </select>
+
+                        {/* Modal Body (Scrollable) */}
+                        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+                            <form id="jadwalForm" onSubmit={handleSubmit} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Hari</label>
+                                        <select
+                                            value={formData.hari}
+                                            onChange={(e) => setFormData({ ...formData, hari: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
+                                        >
+                                            {days.map(d => <option key={d} value={d}>{d}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kelas</label>
+                                        <select
+                                            required
+                                            value={formData.kelas_id}
+                                            onChange={(e) => setFormData({ ...formData, kelas_id: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
+                                        >
+                                            <option value="">Pilih Kelas</option>
+                                            {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kelas</label>
+                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Mata Pelajaran</label>
                                     <select
                                         required
-                                        value={formData.kelas_id}
-                                        onChange={(e) => setFormData({ ...formData, kelas_id: e.target.value })}
+                                        value={formData.mapel_id}
+                                        onChange={(e) => setFormData({ ...formData, mapel_id: e.target.value })}
                                         className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
                                     >
-                                        <option value="">Pilih Kelas</option>
-                                        {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
+                                        <option value="">Pilih Mapel</option>
+                                        {mapelList.map(m => (
+                                            <option key={m.id} value={m.id}>{m.nama_mapel} - {m.nama_guru || 'Tanpa Guru'}</option>
+                                        ))}
                                     </select>
                                 </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Mata Pelajaran</label>
-                                <select
-                                    required
-                                    value={formData.mapel_id}
-                                    onChange={(e) => setFormData({ ...formData, mapel_id: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
-                                >
-                                    <option value="">Pilih Mapel</option>
-                                    {mapelList.map(m => (
-                                        <option key={m.id} value={m.id}>{m.nama_mapel} - {m.nama_guru || 'Tanpa Guru'}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Jam Mulai</label>
-                                    <input
-                                        type="time" required
-                                        value={formData.jam_mulai}
-                                        onChange={(e) => setFormData({ ...formData, jam_mulai: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Jam Mulai</label>
+                                        <input
+                                            type="time" required
+                                            value={formData.jam_mulai}
+                                            onChange={(e) => setFormData({ ...formData, jam_mulai: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Jam Selesai</label>
+                                        <input
+                                            type="time" required
+                                            value={formData.jam_selesai}
+                                            onChange={(e) => setFormData({ ...formData, jam_selesai: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Jam Selesai</label>
+                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Ruangan (Opsional)</label>
                                     <input
-                                        type="time" required
-                                        value={formData.jam_selesai}
-                                        onChange={(e) => setFormData({ ...formData, jam_selesai: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
+                                        type="text"
+                                        value={formData.ruangan}
+                                        onChange={(e) => setFormData({ ...formData, ruangan: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all"
+                                        placeholder="ex: Lab Komputer 1 / Kelas X-A"
                                     />
                                 </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Ruangan (Opsional)</label>
-                                <input
-                                    type="text"
-                                    value={formData.ruangan}
-                                    onChange={(e) => setFormData({ ...formData, ruangan: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all"
-                                    placeholder="ex: Lab Komputer 1 / Kelas X-A"
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-3 pt-6">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 rounded-xl font-bold">Batal</button>
-                                <button type="submit" className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 shadow-lg shadow-amber-600/20 transition-all">
+                            </form>
+                        </div>
+
+                        {/* Modal Footer (Fixed at Bottom) */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="flex justify-end space-x-3">
+                                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">Batal</button>
+                                <button type="submit" form="jadwalForm" className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 shadow-lg shadow-amber-600/20 transition-all">
                                     {isEditMode ? 'Simpan' : 'Tambah Jadwal'}
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}

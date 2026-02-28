@@ -147,7 +147,8 @@ const PresensiSiswa = () => {
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-100 dark:border-slate-700">
                                     <tr>
@@ -176,8 +177,8 @@ const PresensiSiswa = () => {
                                                             key={s}
                                                             onClick={() => handleStatusChange(student.id, s)}
                                                             className={`w-10 h-10 rounded-xl font-bold text-xs transition-all flex items-center justify-center ${student.status === s
-                                                                    ? getStatusColor(s) + ' shadow-lg shadow-current/20 scale-110'
-                                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                                                ? getStatusColor(s) + ' shadow-lg shadow-current/20 scale-110'
+                                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                                 }`}
                                                             title={statusLabels[s]}
                                                         >
@@ -190,6 +191,38 @@ const PresensiSiswa = () => {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="sm:hidden divide-y divide-gray-100 dark:divide-slate-700">
+                            {students.map((student) => (
+                                <div key={student.id} className="p-5 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm">
+                                            {student.nama[0]}
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-gray-900 dark:text-white text-sm uppercase tracking-tight">{student.nama}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">NISN: {student.nisn}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {['H', 'I', 'S', 'A'].map((s) => (
+                                            <button
+                                                key={s}
+                                                onClick={() => handleStatusChange(student.id, s)}
+                                                className={`py-3 rounded-2xl font-black text-sm transition-all flex flex-col items-center justify-center gap-1 ${student.status === s
+                                                    ? getStatusColor(s) + ' shadow-lg shadow-current/20'
+                                                    : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border border-slate-100 dark:border-slate-700'
+                                                    }`}
+                                            >
+                                                <span>{s}</span>
+                                                <span className="text-[8px] uppercase tracking-tighter opacity-80">{statusLabels[s]}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="p-6 bg-slate-50/50 dark:bg-slate-900/30 border-t border-gray-100 dark:border-slate-700">

@@ -225,7 +225,8 @@ const DataKelas = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
@@ -238,11 +239,11 @@ const DataKelas = () => {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="4" className="p-12 text-center font-bold text-slate-400 animate-pulse uppercase tracking-widest text-xs">Memuat data kelas...</td>
+                                    <td colSpan="4" className="p-12 text-center text-slate-500 font-bold animate-pulse">Memuat data kelas...</td>
                                 </tr>
                             ) : filteredKelas.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="p-12 text-center font-bold text-slate-400 italic">Data kelas masih kosong.</td>
+                                    <td colSpan="4" className="p-12 text-center font-bold text-slate-500 italic">Data kelas masih kosong.</td>
                                 </tr>
                             ) : filteredKelas.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
@@ -265,8 +266,12 @@ const DataKelas = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button onClick={() => handleEdit(item)} className="p-2.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-xl transition-all"><FaEdit size={16} /></button>
-                                            <button onClick={() => handleDelete(item.id, item.nama_kelas)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"><FaTrash size={16} /></button>
+                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-xl transition-all">
+                                                <FaEdit size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(item.id, item.nama_kelas)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
+                                                <FaTrash size={16} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -274,66 +279,122 @@ const DataKelas = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                    {isLoading ? (
+                        <div className="p-12 text-center text-slate-500 font-bold animate-pulse text-xs uppercase tracking-widest">Memuat data kelas...</div>
+                    ) : filteredKelas.length === 0 ? (
+                        <div className="p-12 text-center font-bold text-slate-500 italic">Data kelas masih kosong.</div>
+                    ) : filteredKelas.map((item) => (
+                        <div key={item.id} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-12 h-12 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center text-xl font-black">
+                                        {item.nama_kelas?.[0] || 'K'}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="px-1.5 py-0.5 bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 rounded text-[9px] font-black tracking-widest uppercase">
+                                                {item.tingkat}
+                                            </span>
+                                            <h4 className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">{item.nama_kelas}</h4>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ruang Kelas</p>
+                                    </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button onClick={() => handleEdit(item)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                        <FaEdit size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id, item.nama_kelas)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                        <FaTrash size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 font-black text-sm shadow-sm border border-slate-100 dark:border-slate-700">
+                                        {item.nama_wali?.[0] || '?'}
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Wali Kelas</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.nama_wali || 'Belum diatur'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl overflow-y-auto m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300 p-6 sm:p-8">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {isEditMode ? 'Edit Data Kelas' : 'Tambah Kelas Baru'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="grid grid-cols-2 gap-4">
+
+                        {/* Modal Body (Scrollable) */}
+                        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+                            <form id="kelasForm" onSubmit={handleSubmit} className="space-y-5">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tingkat</label>
+                                        <select
+                                            required
+                                            value={formData.tingkat}
+                                            onChange={(e) => setFormData({ ...formData, tingkat: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold"
+                                        >
+                                            <option value="X">Tingkat X</option>
+                                            <option value="XI">Tingkat XI</option>
+                                            <option value="XII">Tingkat XII</option>
+                                            <option value="Umum">Umum</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Nama Kelas</label>
+                                        <input
+                                            type="text" required
+                                            value={formData.nama_kelas}
+                                            onChange={(e) => setFormData({ ...formData, nama_kelas: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-sky-500 transition-all font-black uppercase"
+                                            placeholder="ex: X RPL 1"
+                                        />
+                                    </div>
+                                </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tingkat</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Wali Kelas</label>
                                     <select
-                                        required
-                                        value={formData.tingkat}
-                                        onChange={(e) => setFormData({ ...formData, tingkat: e.target.value })}
+                                        value={formData.wali_kelas_id}
+                                        onChange={(e) => setFormData({ ...formData, wali_kelas_id: e.target.value })}
                                         className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold"
                                     >
-                                        <option value="X">Tingkat X</option>
-                                        <option value="XI">Tingkat XI</option>
-                                        <option value="XII">Tingkat XII</option>
-                                        <option value="Umum">Umum</option>
+                                        <option value="">-- Pilih Guru --</option>
+                                        {guruList.map(g => (
+                                            <option key={g.id} value={g.id}>{g.nama_lengkap}</option>
+                                        ))}
                                     </select>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Nama Kelas</label>
-                                    <input
-                                        type="text" required
-                                        value={formData.nama_kelas}
-                                        onChange={(e) => setFormData({ ...formData, nama_kelas: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-sky-500 transition-all font-black uppercase"
-                                        placeholder="ex: X RPL 1"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Wali Kelas</label>
-                                <select
-                                    value={formData.wali_kelas_id}
-                                    onChange={(e) => setFormData({ ...formData, wali_kelas_id: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold"
-                                >
-                                    <option value="">-- Pilih Guru --</option>
-                                    {guruList.map(g => (
-                                        <option key={g.id} value={g.id}>{g.nama_lengkap}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex justify-end space-x-3 pt-6 border-t border-slate-100 dark:border-slate-700">
+                            </form>
+                        </div>
+
+                        {/* Modal Footer (Fixed at Bottom) */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="flex justify-end space-x-3">
                                 <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-500 rounded-2xl font-bold uppercase text-xs tracking-widest transition-all hover:bg-slate-200">Batal</button>
-                                <button type="submit" className="px-10 py-3 bg-sky-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-sky-600/20 hover:bg-sky-700 active:scale-95 uppercase text-xs tracking-widest">
+                                <button type="submit" form="kelasForm" className="px-10 py-3 bg-sky-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-sky-600/20 hover:bg-sky-700 active:scale-95 uppercase text-xs tracking-widest">
                                     {isEditMode ? 'Simpan Perubahan' : 'Buat Kelas'}
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}

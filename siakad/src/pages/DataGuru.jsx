@@ -239,7 +239,8 @@ const DataGuru = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 text-xs font-black uppercase tracking-widest">
@@ -253,18 +254,11 @@ const DataGuru = () => {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="p-12 text-center">
-                                        <div className="inline-flex items-center space-x-2">
-                                            <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                                            <span className="font-bold text-slate-500">Memuat data...</span>
-                                        </div>
-                                    </td>
+                                    <td colSpan="5" className="p-12 text-center text-slate-500 font-bold animate-pulse">Memuat data...</td>
                                 </tr>
                             ) : filteredGuru.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="p-12 text-center font-bold text-slate-500">
-                                        {searchTerm ? "Data guru tidak ditemukan." : "Belum ada guru terdaftar."}
-                                    </td>
+                                    <td colSpan="5" className="p-12 text-center font-bold text-slate-500 italic">Data guru tidak ditemukan.</td>
                                 </tr>
                             ) : filteredGuru.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
@@ -275,7 +269,7 @@ const DataGuru = () => {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-purple-600 transition-colors uppercase tracking-tight">{item.nama_lengkap}</p>
-                                                <p className="text-xs text-slate-400 font-medium">@{item.username}</p>
+                                                <p className="text-xs text-slate-400 font-medium tracking-wide">@{item.username}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -295,16 +289,10 @@ const DataGuru = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button
-                                                onClick={() => handleEdit(item)}
-                                                className="p-2 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all"
-                                            >
+                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all">
                                                 <FaEdit size={16} />
                                             </button>
-                                            <button
-                                                onClick={() => handleDelete(item.id, item.nama_lengkap)}
-                                                className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all"
-                                            >
+                                            <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
                                                 <FaTrash size={16} />
                                             </button>
                                         </div>
@@ -314,21 +302,81 @@ const DataGuru = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                    {isLoading ? (
+                        <div className="p-12 text-center text-slate-500 font-bold animate-pulse">Memuat data...</div>
+                    ) : filteredGuru.length === 0 ? (
+                        <div className="p-12 text-center font-bold text-slate-500 italic">Data guru tidak ditemukan.</div>
+                    ) : filteredGuru.map((item) => (
+                        <div key={item.id} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center text-xl font-black">
+                                        {item.nama_lengkap?.[0] || 'G'}
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-purple-600 transition-colors uppercase tracking-tight">{item.nama_lengkap}</p>
+                                        <p className="text-xs text-slate-400 font-medium tracking-wide">@{item.username}</p>
+                                    </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button onClick={() => handleEdit(item)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                        <FaEdit size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id, item.nama_lengkap)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                        <FaTrash size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identitas / NIP</p>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                        <span className="bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-md">
+                                            {item.nisn_nik || '-'}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div className="space-y-1 text-right">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Kelamin</p>
+                                    <p className="text-sm font-bold">
+                                        <span className={`px-2.5 py-1 rounded-md ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                            {item.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div className="col-span-2 space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kontak & Email</p>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{item.email || '-'}</p>
+                                        <div className="w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                                        <p className="text-sm font-bold text-purple-500">{item.wa_number || '-'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modal Tambah/Edit */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl overflow-y-auto m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
-                        <div className="p-6 sm:p-8">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    {isEditMode ? 'Edit Data Guru' : 'Tambah Guru Baru'}
-                                </h2>
-                                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
-                            </div>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                {isEditMode ? 'Edit Data Guru' : 'Tambah Guru Baru'}
+                            </h2>
+                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                        </div>
+
+                        {/* Modal Body (Scrollable) */}
+                        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+                            <form id="guruForm" onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Username</label>
@@ -413,22 +461,27 @@ const DataGuru = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex justify-end space-x-3 pt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all"
-                                    >
-                                        {isEditMode ? 'Simpan Perubahan' : 'Tambah Guru'}
-                                    </button>
-                                </div>
                             </form>
+                        </div>
+
+                        {/* Modal Footer (Fixed at Bottom) */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    form="guruForm"
+                                    className="px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all"
+                                >
+                                    {isEditMode ? 'Simpan Perubahan' : 'Tambah Guru'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
