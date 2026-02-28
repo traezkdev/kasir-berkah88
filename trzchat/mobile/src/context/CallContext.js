@@ -39,6 +39,7 @@ export const CallProvider = ({ children }) => {
     const [callType, setCallType] = useState('audio'); // 'audio' or 'video')
     const [otherUserId, setOtherUserId] = useState(null);
     const [otherUserName, setOtherUserName] = useState('');
+    const [otherUserAvatar, setOtherUserAvatar] = useState(null);
     const otherUserIdRef = useRef(null);
     const [socket, setSocket] = useState(null);
     const [callDuration, setCallDuration] = useState(0);
@@ -103,6 +104,7 @@ export const CallProvider = ({ children }) => {
                 console.log('[Call] Incoming call from', data.from);
                 setIncomingCall(data);
                 setOtherUserName(data.callerName || 'Seseorang');
+                setOtherUserAvatar(data.callerAvatar);
                 otherUserIdRef.current = Number(data.from);
                 InCallManager.startRingtone('_BUNDLE_');
             });
@@ -176,12 +178,13 @@ export const CallProvider = ({ children }) => {
         };
     };
 
-    const startCall = async (targetUserId, targetUserName, type = 'audio') => {
+    const startCall = async (targetUserId, targetUserName, targetAvatar, type = 'audio') => {
         try {
             console.log('Starting call to:', targetUserId);
             setCallType(type);
             setOtherUserId(targetUserId);
             setOtherUserName(targetUserName);
+            setOtherUserAvatar(targetAvatar);
             otherUserIdRef.current = targetUserId;
             setIsCalling(true);
 
@@ -189,6 +192,14 @@ export const CallProvider = ({ children }) => {
                 audio: true,
                 video: type === 'video'
             });
+
+            // Explicitly enable video tracks for Native (important for some Android devices)
+            if (type === 'video') {
+                stream.getVideoTracks().forEach(track => {
+                    track.enabled = true;
+                });
+            }
+
             setLocalStream(stream);
 
             await setupPeerConnection(stream);
@@ -211,12 +222,19 @@ export const CallProvider = ({ children }) => {
             setCallType(incomingCall.type);
             setOtherUserId(incomingCall.from);
             setOtherUserName(incomingCall.callerName || 'Seseorang');
+            setOtherUserAvatar(incomingCall.callerAvatar);
             setIsInCall(true);
 
             const stream = await mediaDevices.getUserMedia({
                 audio: true,
                 video: incomingCall.type === 'video'
             });
+
+            // Explicitly enable tracks for Native
+            stream.getTracks().forEach(track => {
+                track.enabled = true;
+            });
+
             setLocalStream(stream);
 
             await setupPeerConnection(stream);
@@ -251,27 +269,43 @@ export const CallProvider = ({ children }) => {
     };
 
     const cleanup = () => {
+        console.log('[Call] Cleaning up resources...');
+
+        // Stop all tracks explicitly for Web browser compatibility
         if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+            localStream.getTracks().forEach(track => {
+                track.stop();
+                console.log(`[Call] Stopped local track: ${track.kind}`);
+            });
             setLocalStream(null);
         }
+
         if (remoteStream) {
+            remoteStream.getTracks().forEach(track => {
+                track.stop();
+            });
             setRemoteStream(null);
         }
+
         if (pc.current) {
             pc.current.close();
             pc.current = null;
         }
+
         if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
         }
+
         setIsCalling(false);
         setIsInCall(false);
         setIncomingCall(null);
         setOtherUserId(null);
         setOtherUserName('');
+        setOtherUserAvatar(null);
         setCallDuration(0);
+
+        // Ensure audio manager stops
         InCallManager.stop();
         InCallManager.stopRingtone();
     };
@@ -293,6 +327,7 @@ export const CallProvider = ({ children }) => {
             isInCall,
             callType,
             otherUserName,
+            otherUserAvatar,
             callDuration,
             startCall,
             answerCall,

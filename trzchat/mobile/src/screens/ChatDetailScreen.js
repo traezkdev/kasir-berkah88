@@ -1741,10 +1741,10 @@ const ChatDetailScreen = () => {
                             </TouchableOpacity>
                         </View>
                         <View style={styles.headerRight}>
-                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, chat.name, 'video')}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, chat.name, fixUrl(chat.avatar || chat.otherUser?.avatar), 'video')}>
                                 <VideoIcon size={22} color="#1F2937" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, chat.name, 'audio')}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, chat.name, fixUrl(chat.avatar || chat.otherUser?.avatar), 'audio')}>
                                 <Phone size={22} color="#1F2937" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.headerIcon}>

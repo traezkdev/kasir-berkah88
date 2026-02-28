@@ -124,6 +124,7 @@ io.on('connection', async (socket) => {
     // --- WebRTC Signaling Events ---
     socket.on('call-user', async ({ targetUserId, offer, type }) => {
         const callerName = await getUserName(userId);
+        const callerAvatar = await getUserAvatar(userId);
         console.log(`[Call] User ${userId} (${callerName}) calling ${targetUserId} (${type})`);
 
         // Pastikan targetUserId dikonversi ke tipe yang sesuai (Number) jika onlineUsers menggunakan Number
@@ -137,7 +138,8 @@ io.on('connection', async (socket) => {
                     from: userId,
                     offer,
                     type,
-                    callerName: callerName
+                    callerName: callerName,
+                    callerAvatar: callerAvatar
                 });
             });
         } else {

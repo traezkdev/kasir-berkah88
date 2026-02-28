@@ -11,34 +11,43 @@ if (Platform.OS !== 'web') {
     RTCView = require('react-native-webrtc').RTCView;
 }
 
-const VideoView = ({ stream, style, objectFit }) => {
+const VideoView = ({ stream, style, objectFit, muted }) => {
+    const videoRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (Platform.OS === 'web' && videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [stream]);
+
     if (Platform.OS === 'web') {
         return (
             <View style={[style, { backgroundColor: '#000' }]}>
                 <video
+                    ref={videoRef}
                     autoPlay
                     playsInline
-                    ref={(el) => {
-                        if (el && stream) el.srcObject = stream;
-                    }}
+                    muted={muted}
                     style={{
                         width: '100%',
                         height: '100%',
                         objectFit: objectFit === 'cover' ? 'cover' : 'contain',
-                        transform: [{ scaleX: -1 }] // Mirror effect
+                        transform: [{ scaleX: -1 }] // Efek kaca (mirror) di Web
                     }}
                 />
             </View>
         );
     }
 
-    if (!RTCView) return <View style={style} />;
+    if (!RTCView || !stream) return <View style={style} />;
 
     return (
         <RTCView
             streamURL={stream.toURL()}
             style={style}
             objectFit={objectFit}
+            mirror={true} // Mengikuti sistem kasir: mirror true untuk semua aliran di Native
+            zOrder={muted ? 1 : 0}
         />
     );
 };
@@ -52,6 +61,7 @@ const InCallScreen = () => {
         isInCall,
         callType,
         otherUserName,
+        otherUserAvatar,
         callDuration,
         answerCall,
         rejectCall,
@@ -92,7 +102,7 @@ const InCallScreen = () => {
                 <LinearGradient colors={['#1F2937', '#111827']} style={styles.gradient}>
                     <View style={styles.callerInfo}>
                         <Image
-                            source={{ uri: 'https://ui-avatars.com/api/?name=' + (incomingCall.callerName || 'User') }}
+                            source={{ uri: (incomingCall.callerAvatar) ? incomingCall.callerAvatar : 'https://ui-avatars.com/api/?name=' + (incomingCall.callerName || 'User') }}
                             style={styles.incomingAvatar}
                         />
                         <Text style={styles.incomingName}>{incomingCall.callerName || 'Seseorang'}</Text>
@@ -123,6 +133,7 @@ const InCallScreen = () => {
                             stream={remoteStream}
                             style={styles.remoteVideo}
                             objectFit="cover"
+                            muted={false}
                         />
                     )}
                     {localStream && isVideoEnabled && (
@@ -131,6 +142,7 @@ const InCallScreen = () => {
                                 stream={localStream}
                                 style={styles.localVideo}
                                 objectFit="cover"
+                                muted={true}
                             />
                         </View>
                     )}
@@ -147,7 +159,7 @@ const InCallScreen = () => {
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.gradient}>
                         <View style={styles.audioInfo}>
                             <Image
-                                source={{ uri: 'https://ui-avatars.com/api/?name=' + (otherUserName || 'User') }}
+                                source={{ uri: (otherUserAvatar) ? otherUserAvatar : 'https://ui-avatars.com/api/?name=' + (otherUserName || 'User') }}
                                 style={styles.audioAvatar}
                             />
                             <Text style={styles.audioName}>{otherUserName || 'Seseorang'}</Text>
