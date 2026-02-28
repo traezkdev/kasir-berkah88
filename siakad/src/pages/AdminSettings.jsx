@@ -96,16 +96,16 @@ const AdminSettings = () => {
 
     return (
         <div className="p-4 sm:p-6 lg:p-10 max-w-6xl mx-auto space-y-10">
-            {/* Header Utama */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-8">
+            {/* Header Utama - Ukuran diperkecil untuk proporsi yang lebih baik */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-4">
-                        <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20">
-                            <FaCog className="text-white animate-[spin_10s_linear_infinite]" size={24} />
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center">
+                            <FaCog className="text-white animate-[spin_10s_linear_infinite]" size={20} />
                         </div>
                         Pusat Kontrol Sistem
                     </h1>
-                    <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium text-lg">Konfigurasi parameter dan identitas digital SIAS PRO.</p>
+                    <p className="mt-1 text-slate-500 dark:text-slate-400 font-medium text-sm">Konfigurasi parameter dan identitas digital SIAS PRO.</p>
                 </div>
             </div>
 
