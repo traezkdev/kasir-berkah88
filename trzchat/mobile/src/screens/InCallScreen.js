@@ -102,7 +102,7 @@ const InCallScreen = () => {
                 <LinearGradient colors={['#1F2937', '#111827']} style={styles.gradient}>
                     <View style={styles.callerInfo}>
                         <Image
-                            source={{ uri: (incomingCall.callerAvatar) ? incomingCall.callerAvatar : 'https://ui-avatars.com/api/?name=' + (incomingCall.callerName || 'User') }}
+                            source={{ uri: (incomingCall.callerAvatar && incomingCall.callerAvatar !== '') ? incomingCall.callerAvatar : 'https://ui-avatars.com/api/?name=' + (incomingCall.callerName || 'User') }}
                             style={styles.incomingAvatar}
                         />
                         <Text style={styles.incomingName}>{incomingCall.callerName || 'Seseorang'}</Text>
@@ -159,7 +159,7 @@ const InCallScreen = () => {
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.gradient}>
                         <View style={styles.audioInfo}>
                             <Image
-                                source={{ uri: (otherUserAvatar) ? otherUserAvatar : 'https://ui-avatars.com/api/?name=' + (otherUserName || 'User') }}
+                                source={{ uri: (otherUserAvatar && otherUserAvatar !== '') ? otherUserAvatar : 'https://ui-avatars.com/api/?name=' + (otherUserName || 'User') }}
                                 style={styles.audioAvatar}
                             />
                             <Text style={styles.audioName}>{otherUserName || 'Seseorang'}</Text>

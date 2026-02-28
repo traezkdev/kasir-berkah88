@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { View, Alert, Platform } from 'react-native';
 import io from 'socket.io-client';
-import { SOCKET_URL } from '../config/api';
+import { SOCKET_URL, fixUrl } from '../config/api';
 import { getToken } from '../utils/auth';
 
 // Kondisional Import untuk menghindari error di Web
@@ -102,9 +102,12 @@ export const CallProvider = ({ children }) => {
 
             newSocket.on('incoming-call', (data) => {
                 console.log('[Call] Incoming call from', data.from);
-                setIncomingCall(data);
+                setIncomingCall({
+                    ...data,
+                    callerAvatar: fixUrl(data.callerAvatar)
+                });
                 setOtherUserName(data.callerName || 'Seseorang');
-                setOtherUserAvatar(data.callerAvatar);
+                setOtherUserAvatar(fixUrl(data.callerAvatar));
                 otherUserIdRef.current = Number(data.from);
                 InCallManager.startRingtone('_BUNDLE_');
             });
@@ -184,7 +187,7 @@ export const CallProvider = ({ children }) => {
             setCallType(type);
             setOtherUserId(targetUserId);
             setOtherUserName(targetUserName);
-            setOtherUserAvatar(targetAvatar);
+            setOtherUserAvatar(fixUrl(targetAvatar));
             otherUserIdRef.current = targetUserId;
             setIsCalling(true);
 
@@ -222,7 +225,7 @@ export const CallProvider = ({ children }) => {
             setCallType(incomingCall.type);
             setOtherUserId(incomingCall.from);
             setOtherUserName(incomingCall.callerName || 'Seseorang');
-            setOtherUserAvatar(incomingCall.callerAvatar);
+            setOtherUserAvatar(fixUrl(incomingCall.callerAvatar));
             setIsInCall(true);
 
             const stream = await mediaDevices.getUserMedia({

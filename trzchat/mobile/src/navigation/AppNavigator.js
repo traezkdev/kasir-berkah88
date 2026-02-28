@@ -170,10 +170,14 @@ const AppNavigator = () => {
     const navigationRef = React.useRef();
 
     React.useEffect(() => {
-        // Inisialisasi listener dasar dan handler (Heads-up display)
-        setupNotificationListeners();
+        // Inisialisasi listener dasar dan handler (Heads-up display) hanya di Native
+        if (Platform.OS !== 'web') {
+            setupNotificationListeners();
+        }
 
         const setupNotifications = async () => {
+            if (Platform.OS === 'web') return null;
+
             const Notifications = require('expo-notifications');
 
             // Listener untuk notifikasi yang diklik
@@ -225,6 +229,7 @@ const AppNavigator = () => {
         });
 
         const checkLoggedIn = async () => {
+            if (Platform.OS === 'web') return;
             const { getToken } = require('../utils/auth');
             const token = await getToken();
             if (token) {
