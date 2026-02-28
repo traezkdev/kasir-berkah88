@@ -17,8 +17,9 @@ const MenuItem = ({ to, icon: Icon, children, isCollapsed, navLinkClasses, activ
     </NavLink>
 );
 
-const Sidebar = ({ isOpen, toggleSidebar, role = 'admin' }) => {
+const Sidebar = ({ isOpen, toggleSidebar, role = 'admin', sidebarName }) => {
     const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem('siakad_user') || '{}');
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const savedState = localStorage.getItem('sias_sidebar_collapsed');
         return savedState === 'true';
@@ -174,14 +175,17 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'admin' }) => {
                 <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-4'} h-20 border-b border-white/10`}>
                     {!isCollapsed && (
                         <div className="flex items-center space-x-3 overflow-hidden">
-                            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
                                 <FaGraduationCap className="text-white text-xl" />
                             </div>
-                            <h1 className="text-xl font-bold text-white whitespace-nowrap uppercase">SIAS {role}</h1>
+                            <h1 className="text-lg font-black text-white whitespace-nowrap uppercase tracking-tighter leading-none">
+                                {sidebarName} <br />
+                                <span className="text-[9px] font-bold text-white/40 opacity-50 block mt-0.5 tracking-[0.2em]">{role}</span>
+                            </h1>
                         </div>
                     )}
                     {isCollapsed && (
-                        <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
                             <FaGraduationCap className="text-white text-xl" />
                         </div>
                     )}

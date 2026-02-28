@@ -25,6 +25,8 @@ const AdminSettings = () => {
         welcome_subtitle: 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.',
         register_title: 'Bangun Masa Depan <br /><span class="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>',
         register_subtitle: 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.',
+        header_name: 'Sistem Informasi Akademik',
+        sidebar_name: 'SIAS PRO',
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -48,7 +50,9 @@ const AdminSettings = () => {
                     welcome_title: data.welcome_title || prev.welcome_title,
                     welcome_subtitle: data.welcome_subtitle || prev.welcome_subtitle,
                     register_title: data.register_title || prev.register_title,
-                    register_subtitle: data.register_subtitle || prev.register_subtitle
+                    register_subtitle: data.register_subtitle || prev.register_subtitle,
+                    header_name: data.header_name || prev.header_name,
+                    sidebar_name: data.sidebar_name || prev.sidebar_name
                 }));
             }
         } catch (err) {
@@ -124,7 +128,7 @@ const AdminSettings = () => {
                 {/* 1. Kategori: Tampilan Landing */}
                 <button
                     onClick={() => openEditor('tampilan')}
-                    className="group relative p-8 bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
+                    className="group relative p-8 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-500">
                         <FaDesktop size={80} />
@@ -140,17 +144,27 @@ const AdminSettings = () => {
                     </div>
                 </button>
 
-                {/* 2. Kategori: Identitas Sekolah (Placeholder untuk masa depan) */}
-                <button className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[2.5rem] border border-dashed border-slate-300 dark:border-slate-700 text-left opacity-60 cursor-not-allowed group">
-                    <div className="p-4 bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-2xl w-fit mb-6">
+                {/* 2. Kategori: Identitas Aplikasi */}
+                <button
+                    onClick={() => openEditor('identitas')}
+                    className="group relative p-8 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-500">
+                        <FaSchool size={80} />
+                    </div>
+                    <div className="p-4 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl w-fit mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
                         <FaSchool size={24} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-400 mb-2 uppercase tracking-tight">Profil Sekolah</h3>
-                    <p className="text-slate-400 text-sm font-medium italic">Fitur dalam pengembangan...</p>
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Identitas Aplikasi</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed mb-6">Sesuaikan nama platform, logo, dan identitas visual sistem pendidikan Anda.</p>
+                    <div className="flex items-center text-purple-600 dark:text-purple-400 font-black text-xs uppercase tracking-widest gap-2">
+                        <span>Konfigurasi Sekarang</span>
+                        <FaChevronRight size={10} className="group-hover:translate-x-2 transition-transform" />
+                    </div>
                 </button>
 
                 {/* 3. Kategori: Keamanan (Placeholder untuk masa depan) */}
-                <button className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[2.5rem] border border-dashed border-slate-300 dark:border-slate-700 text-left opacity-60 cursor-not-allowed group">
+                <button className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 text-left opacity-60 cursor-not-allowed group">
                     <div className="p-4 bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-2xl w-fit mb-6">
                         <FaShieldAlt size={24} />
                     </div>
@@ -169,8 +183,8 @@ const AdminSettings = () => {
                         onClick={() => setActiveCategory(null)}
                     ></div>
 
-                    {/* Card Modal: Benar-benar menempel di tepi layar pada Mobile (Fixed Inset-0) */}
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto sm:max-w-2xl bg-white dark:bg-slate-900 sm:rounded-[3rem] shadow-none sm:shadow-[0_0_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in fade-in duration-300 flex flex-col">
+                    {/* Card Modal: Sekarang Full Screen di Semua Ukuran Layar */}
+                    <div className="fixed inset-0 w-full h-full bg-white dark:bg-slate-900 overflow-hidden animate-in slide-in-from-bottom fade-in duration-300 flex flex-col z-[10000]">
 
                         {/* Modal Header: Benar-benar di posisi paling atas */}
                         <div className="p-6 sm:p-8 bg-indigo-600 text-white flex justify-between items-center shrink-0 border-none m-0">
@@ -182,7 +196,7 @@ const AdminSettings = () => {
                         </div>
 
                         {/* Modal Body: Render Form Based on Category */}
-                        <div className="p-10 flex-1 overflow-y-auto space-y-8">
+                        <div className="p-8 sm:p-12 lg:p-20 flex-1 overflow-y-auto space-y-12">
 
                             {activeCategory === 'tampilan' && (
                                 <>
@@ -239,7 +253,7 @@ const AdminSettings = () => {
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Live Preview</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             {/* Preview Login */}
-                                            <div className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+                                            <div className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-3xl text-white shadow-xl relative overflow-hidden group">
                                                 <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded">Login Page</span>
                                                 <div dangerouslySetInnerHTML={{ __html: tempSettings.welcome_title || 'Pantau Akademik <br /><span className="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>' }} className="text-xl font-black mb-3 leading-tight" />
                                                 <p className="text-indigo-100/70 text-[10px] leading-relaxed line-clamp-2">
@@ -247,7 +261,7 @@ const AdminSettings = () => {
                                                 </p>
                                             </div>
                                             {/* Preview Register */}
-                                            <div className="p-6 bg-gradient-to-br from-purple-600 to-indigo-900 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+                                            <div className="p-6 bg-gradient-to-br from-purple-600 to-indigo-900 rounded-3xl text-white shadow-xl relative overflow-hidden group">
                                                 <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded">Register Page</span>
                                                 <div dangerouslySetInnerHTML={{ __html: tempSettings.register_title || 'Bangun Masa Depan <br /><span className="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>' }} className="text-xl font-black mb-3 leading-tight" />
                                                 <p className="text-indigo-100/70 text-[10px] leading-relaxed line-clamp-2">
@@ -257,6 +271,44 @@ const AdminSettings = () => {
                                         </div>
                                     </div>
                                 </>
+                            )}
+
+                            {activeCategory === 'identitas' && (
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Nama Di Sidebar (Logo)</label>
+                                        <input
+                                            type="text"
+                                            value={tempSettings.sidebar_name}
+                                            onChange={(e) => setTempSettings({ ...tempSettings, sidebar_name: e.target.value })}
+                                            className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-white"
+                                            placeholder="Contoh: SIAS PRO, SIKAD..."
+                                        />
+                                        <p className="text-[10px] text-slate-400 italic ml-2">Muncul di samping logo pada menu samping.</p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Judul Di Header (Top Bar)</label>
+                                        <input
+                                            type="text"
+                                            value={tempSettings.header_name}
+                                            onChange={(e) => setTempSettings({ ...tempSettings, header_name: e.target.value })}
+                                            className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-white"
+                                            placeholder="Contoh: Sistem Informasi Akademik..."
+                                        />
+                                        <p className="text-[10px] text-slate-400 italic ml-2">Muncul di bagian atas halaman (Header).</p>
+                                    </div>
+
+                                    {/* Logo Placeholder (Visual Only for now) */}
+                                    <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
+                                        <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center mx-auto mb-4">
+                                            <FaSchool className="text-purple-600" size={32} />
+                                        </div>
+                                        <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tight text-sm">Logo Institusi</h4>
+                                        <p className="text-xs text-slate-400 mt-1 mb-4">Mendukung format PNG, JPG, SVG (Max 2MB)</p>
+                                        <button className="px-6 py-2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">Unggah Logo</button>
+                                    </div>
+                                </div>
                             )}
 
                         </div>

@@ -43,6 +43,13 @@ const setupDatabase = async () => {
       // Abaikan jika kolom sudah ada
     }
 
+    // Tambahkan kolom profile_photo jika belum ada
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) AFTER jenis_kelamin");
+    } catch (err) {
+      // Abaikan jika kolom sudah ada
+    }
+
     // 2. Create Kelas Table
     const createKelasTable = `
       CREATE TABLE IF NOT EXISTS kelas (
@@ -184,7 +191,9 @@ const setupDatabase = async () => {
         ('welcome_title', 'Pantau Akademik <br><span class="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>'),
         ('welcome_subtitle', 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'),
         ('register_title', 'Bangun Masa Depan <br><span class="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>'),
-        ('register_subtitle', 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.')
+        ('register_subtitle', 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.'),
+        ('header_name', 'Sistem Informasi Akademik'),
+        ('sidebar_name', 'SIAS PRO')
       `;
       await connection.query(seedSettings);
     }

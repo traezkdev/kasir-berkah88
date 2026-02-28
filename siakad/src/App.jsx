@@ -19,6 +19,9 @@ import AdminSettings from './pages/admin/AdminSettings';
 import DataAgenda from './pages/admin/DataAgenda';
 
 import DataNilai from './pages/admin/DataNilai';
+import AdminProfile from './pages/profile/AdminProfile';
+import GuruProfile from './pages/profile/GuruProfile';
+import SiswaProfile from './pages/profile/SiswaProfile';
 
 function App() {
   return (
@@ -81,6 +84,11 @@ function App() {
               <DataAgenda />
             </ProtectedRoute>
           } />
+          <Route path="admin/profile" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminProfile />
+            </ProtectedRoute>
+          } />
 
           {/* Guru Section */}
           <Route path="guru/dashboard" element={
@@ -123,6 +131,11 @@ function App() {
               <div className="p-8 text-center"><h2 className="text-2xl font-bold">Pengaturan Guru</h2><p>Halaman dalam pengembangan</p></div>
             </ProtectedRoute>
           } />
+          <Route path="guru/profile" element={
+            <ProtectedRoute allowedRoles={['guru']}>
+              <GuruProfile />
+            </ProtectedRoute>
+          } />
 
           {/* Siswa Section */}
           <Route path="siswa/dashboard" element={
@@ -158,6 +171,11 @@ function App() {
           <Route path="siswa/settings" element={
             <ProtectedRoute allowedRoles={['siswa']}>
               <div className="p-8 text-center"><h2 className="text-2xl font-bold">Pengaturan Siswa</h2><p>Halaman dalam pengembangan</p></div>
+            </ProtectedRoute>
+          } />
+          <Route path="siswa/profile" element={
+            <ProtectedRoute allowedRoles={['siswa']}>
+              <SiswaProfile />
             </ProtectedRoute>
           } />
         </Route>
