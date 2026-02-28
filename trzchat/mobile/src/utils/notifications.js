@@ -1,7 +1,20 @@
-import { Platform, NativeModules } from 'react-native';
+import { Platform } from 'react-native';
 import axios from 'axios';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { API_URL } from '../config/api';
 import { getToken } from './auth';
+
+// Konfigurasi bagaimana notifikasi ditampilkan saat aplikasi terbuka (foreground)
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+    }),
+});
 
 // Fungsi pembantu untuk cek dukungan platform
 const isSupported = () => {
@@ -15,23 +28,11 @@ export const registerForPushNotificationsAsync = async () => {
     }
 
     try {
-        const Notifications = require('expo-notifications');
-        const Device = require('expo-device');
-
-        console.log('[Notifications] Memulai pendaftaran...');
-
-        if (Platform.OS === 'android') {
-            await Notifications.setNotificationChannelAsync('default', {
-                name: 'default',
-                importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: [0, 250, 250, 250],
-                lightColor: '#FF231F7C',
-            });
-        }
+        console.log('[Notifications] Memulai pendaftaran token...');
 
         if (!Device.isDevice) {
-            console.log('[Notifications] Harus menggunakan perangkat fisik.');
-            return null;
+            console.log('[Notifications] Perhatian: Harus menggunakan perangkat fisik untuk push notifications.');
+            // Tetap lanjut untuk mencoba mendapatkan token jika ini adalah dev client di device
         }
 
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -42,23 +43,38 @@ export const registerForPushNotificationsAsync = async () => {
         }
 
         if (finalStatus !== 'granted') {
-            console.log('[Notifications] Izin notifikasi ditolak.');
+            console.log('[Notifications] Izin notifikasi ditolak oleh pengguna.');
             return null;
         }
 
-        // Ganti getExpoPushTokenAsync dengan getDevicePushTokenAsync untuk mendapatkan FCM Token asli
-        // karena backend menggunakan firebase-admin (messaging().send)
+        // Pastikan channel android sudah siap
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+                name: 'Pesan Masuk',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#6366F1',
+                enableVibrate: true,
+                showBadge: true,
+                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            });
+        }
+
+        // Dapatkan Project ID dari config untuk stabilitas di Expo Dev Client
+        const projectId = Constants?.expoConfig?.extra?.eas?.projectId || Constants?.easConfig?.projectId;
+
+        // Dapatkan Token FCM Asli untuk backend firebase-admin
         const tokenResponse = await Notifications.getDevicePushTokenAsync();
         const token = tokenResponse.data;
 
-        console.log('[Notifications] Token FCM Asli:', token);
+        console.log('[Notifications] Token FCM didapatkan:', token ? 'Berhasil' : 'Gagal');
 
         if (token) {
             await saveTokenToServer(token);
         }
         return token;
     } catch (error) {
-        console.log('[Notifications] Error saat register:', error.message);
+        console.log('[Notifications] Error saat pendaftaran:', error.message);
         return null;
     }
 };
@@ -66,43 +82,46 @@ export const registerForPushNotificationsAsync = async () => {
 const saveTokenToServer = async (token) => {
     try {
         const authToken = await getToken();
-        if (!authToken) return;
+        if (!authToken) {
+            console.log('[Notifications] Skip simpan token: User belum login');
+            return;
+        }
 
         await axios.post(`${API_URL}/users/fcm-token`, { token }, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        console.log('[Notifications] Token FCM berhasil disimpan ke server');
+        console.log('[Notifications] Token FCM berhasil sinkron ke server');
     } catch (error) {
-        console.log('[Notifications] Gagal simpan token ke server:', error.message);
+        console.log('[Notifications] Gagal kirim token ke server:', error.message);
     }
 };
 
 export const setupNotificationListeners = () => {
-    if (!isSupported()) {
-        console.log('[Notifications] Web tidak mendukung listener native, dilewati.');
-        return null;
-    }
+    if (!isSupported()) return null;
 
     try {
-        const Notifications = require('expo-notifications');
-
-        Notifications.setNotificationHandler({
-            handleNotification: async () => ({
-                shouldShowBanner: true,
-                shouldShowList: true,
-                shouldPlaySound: true,
-                shouldSetBadge: false,
-            }),
-        });
-
+        // Listener untuk notifikasi yang diklik (Saat aplikasi di background/killed dan dibuka via notif)
         const subscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
-            console.log('[Notifications] Notifikasi diklik:', data);
+            console.log('[Notifications] Aktivitas: Notifikasi diklik', data);
         });
+
+        if (Platform.OS === 'android') {
+            Notifications.setNotificationChannelAsync('default', {
+                name: 'Pesan Masuk',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#6366F1',
+                enableVibrate: true,
+                showBadge: true,
+                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            }).catch(err => console.log('[Notifications] Gagal buat channel:', err.message));
+        }
 
         return subscription;
     } catch (error) {
-        console.log('[Notifications] Error setup listener (dilewati):', error.message);
+        console.log('[Notifications] Error saat setup listener:', error.message);
         return null;
     }
 };
+

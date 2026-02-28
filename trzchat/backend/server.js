@@ -488,39 +488,38 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
             const token = users[0].fcm_token;
             console.log(`[Push] Menyiapkan pengiriman ke User ${targetUserId}...`);
 
-            // Pastikan URL gambar aman (HTTPS atau URL valid)
             const senderAvatar = data.senderAvatar && data.senderAvatar.startsWith('http') ? data.senderAvatar : null;
 
             const message = {
                 notification: {
                     title: title,
                     body: body,
-                    ...(senderAvatar ? { image: String(senderAvatar) } : {}),
                 },
                 android: {
                     priority: 'high',
-                    ttl: 0,
+                    ttl: 0, // 0 = Deliver immediately
                     notification: {
                         channelId: 'default',
                         sound: 'default',
                         priority: 'max',
                         visibility: 'public',
-                        ...(senderAvatar ? { imageUrl: String(senderAvatar) } : {}),
+                        imageUrl: senderAvatar || undefined,
                     }
                 },
                 apns: {
                     headers: {
                         'apns-priority': '10',
+                        'apns-push-type': 'alert',
                     },
                     payload: {
                         aps: {
                             sound: 'default',
                             contentAvailable: true,
-                            mutableContent: true, // Diperlukan agar gambar tampil di iOS
+                            mutableContent: true,
                         }
                     },
                     fcmOptions: {
-                        image: senderAvatar ? String(senderAvatar) : undefined
+                        image: senderAvatar || undefined
                     }
                 },
                 data: {
@@ -541,11 +540,10 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
         }
     } catch (error) {
         console.error(`[Push] GAGAL mengirim ke User ${targetUserId}:`, error.message);
-        if (error.code === 'messaging/registration-token-not-registered') {
-            console.log(`[Push] Token User ${targetUserId} sudah tidak valid. Perlu login ulang.`);
-        }
     }
 };
+
+
 
 const getUserAvatar = async (userId) => {
     try {

@@ -383,6 +383,7 @@ const ChatDetailScreen = () => {
     const startTimeRef = useRef(0);
     const [recordingMode, setRecordingMode] = useState(null); // 'hold' or 'toggle'
     const [willCancel, setWillCancel] = useState(false);
+    const willCancelRef = useRef(false);
     const [audioPlayingId, setAudioPlayingId] = useState(null);
     const [audioLoadingId, setAudioLoadingId] = useState(null);
     const soundObjectRef = useRef(null);
@@ -399,6 +400,7 @@ const ChatDetailScreen = () => {
 
     useEffect(() => {
         isRecordingRef.current = isRecording;
+        console.log('[Voice] isRecording state changed:', isRecording);
     }, [isRecording]);
 
     const fetchMessages = useCallback(async (pageNum = 1) => {
@@ -423,7 +425,6 @@ const ChatDetailScreen = () => {
                 messagesRef.current = newMessages;
             } else {
                 setMessages(prev => {
-                    // Filter out any messages that already exist in prev state
                     const filteredNew = newMessages.filter(
                         newMsg => !prev.some(prevMsg => String(prevMsg.id) === String(newMsg.id))
                     );
@@ -656,6 +657,12 @@ const ChatDetailScreen = () => {
     }, [micPulseAnim]);
 
     const startRecording = useCallback(async (mode = 'hold') => {
+        // Guard: Jika status bukan 'none', berarti ada proses yang sedang berjalan
+        if (recordingStatusRef.current !== 'none') {
+            console.log('[Voice] Lewati start: Status saat ini', recordingStatusRef.current);
+            return;
+        }
+
         try {
             const permission = await Audio.requestPermissionsAsync();
             if (!permission.granted) {
@@ -663,22 +670,21 @@ const ChatDetailScreen = () => {
                 return;
             }
 
-            // Clean up previous attempts
-            if (recordingStatusRef.current !== 'none') {
-                await cancelRecording();
-            }
-
             recordingStatusRef.current = 'starting';
             setIsRecording(true);
             setRecordingMode(mode);
             setWillCancel(false);
+            willCancelRef.current = false;
             setRecordingDuration(0);
             startMicPulse();
             startTimeRef.current = Date.now();
 
+            // Set mode audio sebelum inisialisasi rekaman
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: true,
                 playsInSilentModeIOS: true,
+                staysActiveInBackground: false,
+                shouldDuckAndroid: true,
             });
 
             const { recording } = await Audio.Recording.createAsync(
@@ -699,11 +705,13 @@ const ChatDetailScreen = () => {
             }, 1000);
         } catch (error) {
             console.error('Error starting recording:', error);
+            // Penting: Reset status ke 'none' agar guard start berikutnya bisa terbuka
             recordingStatusRef.current = 'none';
             setIsRecording(false);
             setRecordingMode(null);
             setWillCancel(false);
             stopMicPulse();
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         }
     }, [startMicPulse, stopMicPulse]);
 
@@ -714,6 +722,7 @@ const ChatDetailScreen = () => {
         setIsRecording(false);
         setRecordingMode(null);
         setWillCancel(false);
+        willCancelRef.current = false;
         stopMicPulse();
 
         if (recordingTimerRef.current) {
@@ -735,6 +744,13 @@ const ChatDetailScreen = () => {
 
     const stopRecordingAndSend = useCallback(async () => {
         if (recordingStatusRef.current === 'none') return;
+
+        // Gunakan REF untuk pengecekan yang akurat dalam callback
+        if (willCancelRef.current) {
+            console.log('[Voice] Pembatalan terdeteksi (willCancelRef is true)');
+            await cancelRecording();
+            return;
+        }
 
         const currentStatus = recordingStatusRef.current;
         recordingStatusRef.current = 'none';
@@ -832,7 +848,7 @@ const ChatDetailScreen = () => {
             }
             recordingInstanceRef.current = null;
         }
-    }, [replyingTo, chat.id, chat.name, stopMicPulse]);
+    }, [cancelRecording, replyingTo, chat.id, chat.name, stopMicPulse]);
 
     const pickImage = async () => {
         try {
@@ -1132,28 +1148,14 @@ const ChatDetailScreen = () => {
         }
     }, [sharedProgress]);
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                // Logic onPressIn akan ditangani oleh onPress/onLongPress TouchableOpacity
-            },
-            onPanResponderMove: (_, gestureState) => {
-                // Hanya deteksi jika mode hhold sedang aktif
-                if (recordingMode === 'hold' || (isRecording && recordingMode === 'hold')) {
-                    if (gestureState.dy < -80) {
-                        setWillCancel(true);
-                    } else {
-                        setWillCancel(false);
-                    }
-                }
-            },
-            onPanResponderRelease: () => {
-                // Logic akhir ditangani onPressOut/onPress
-            }
-        })
-    ).current;
+    const toggleRecording = () => {
+        console.log('[Voice] toggleRecording called. Current isRecording:', isRecording);
+        if (isRecording) {
+            stopRecordingAndSend();
+        } else {
+            startRecording('toggle');
+        }
+    };
 
     const panResponderRef = useRef(
         PanResponder.create({
@@ -1860,11 +1862,15 @@ const ChatDetailScreen = () => {
                                             <Mic size={24} color="#e53935" />
                                         </Animated.View>
                                         <Text style={styles.recordingTimer}>{formatDuration(recordingDuration)}</Text>
-                                        <View style={styles.slideCancelWrapper}>
-                                            <Text style={styles.slideCancelText}>
-                                                {willCancel ? 'Lepas untuk batal' : 'Geser untuk batal ‹'}
-                                            </Text>
-                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.cancelRecordBtn}
+                                            onPress={() => {
+                                                console.log('[Voice] Tombol BATAL ditekan');
+                                                cancelRecording();
+                                            }}
+                                        >
+                                            <Text style={styles.cancelRecordText}>BATAL</Text>
+                                        </TouchableOpacity>
                                     </View>
                                 ) : (
                                     <View style={styles.inputMain}>
@@ -1891,8 +1897,13 @@ const ChatDetailScreen = () => {
                                 )}
                                 <TouchableOpacity
                                     style={[styles.sendBtnCircle, isRecording && { backgroundColor: '#e53935' }]}
-                                    onPress={() => message.trim() ? sendMessage() : (isRecording ? stopRecordingAndSend() : startRecording())}
-                                    {...(isRecording ? panResponder.panHandlers : {})}
+                                    onPress={() => {
+                                        if (message.trim()) {
+                                            sendMessage();
+                                        } else {
+                                            toggleRecording();
+                                        }
+                                    }}
                                 >
                                     {message.trim() ? (
                                         <Send size={24} color="#fff" fill="#fff" />
@@ -2373,14 +2384,16 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginLeft: scale(5),
     },
-    slideCancelWrapper: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+    cancelRecordBtn: {
+        marginLeft: 'auto',
+        paddingHorizontal: scale(15),
+        paddingVertical: verticalScale(5),
     },
-    slideCancelText: {
-        color: '#888',
+    cancelRecordText: {
+        color: '#e53935',
         fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
     },
     // Options Modal Styles
     modalOverlay: {

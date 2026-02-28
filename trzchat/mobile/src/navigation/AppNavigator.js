@@ -170,73 +170,58 @@ const AppNavigator = () => {
     const navigationRef = React.useRef();
 
     React.useEffect(() => {
-        // Inisialisasi listener dasar dan handler (Heads-up display) hanya di Native
-        if (Platform.OS !== 'web') {
-            setupNotificationListeners();
-        }
+        let notificationSub;
 
-        const setupNotifications = async () => {
-            if (Platform.OS === 'web') return null;
+        const initNotifications = async () => {
+            if (Platform.OS === 'web') return;
 
+            // 1. Setup Listeners dan dapatkan subscription
             const Notifications = require('expo-notifications');
 
-            // Listener untuk notifikasi yang diklik
-            const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+            // Listener untuk klik notifikasi saat aplikasi berjalan
+            notificationSub = Notifications.addNotificationResponseReceivedListener(response => {
                 const data = response.notification.request.content.data;
-                console.log('[Push] Notifikasi diklik:', data);
-
-                if (data && data.chatId) {
-                    // Beri jeda sedikit untuk memastikan navigasi siap
-                    setTimeout(() => {
-                        if (navigationRef.current) {
-                            navigationRef.current.navigate('ChatDetail', {
-                                chat: {
-                                    id: data.chatId,
-                                    name: data.senderName || 'Chat',
-                                    avatar: data.senderAvatar || null
-                                }
-                            });
-                        }
-                    }, 500);
-                }
+                handleNotificationClick(data);
             });
 
-            // Cek jika ada notifikasi yang memicu pembukaan aplikasi
+            // Jalankan setup tambahan dari utils (buat channel, dll)
+            setupNotificationListeners();
+
+            // 2. Cek jika aplikasi dibuka karena notifikasi (Cold Start)
             const lastResponse = await Notifications.getLastNotificationResponseAsync();
             if (lastResponse) {
                 const data = lastResponse.notification.request.content.data;
-                if (data && data.chatId) {
-                    setTimeout(() => {
-                        if (navigationRef.current) {
-                            navigationRef.current.navigate('ChatDetail', {
-                                chat: {
-                                    id: data.chatId,
-                                    name: data.senderName || 'Chat',
-                                    avatar: data.senderAvatar || null
-                                }
-                            });
-                        }
-                    }, 1000);
-                }
+                handleNotificationClick(data, 1500); // Beri jeda lebih lama jika cold start
             }
 
-            return responseSubscription;
-        };
-
-        let notificationSub;
-        setupNotifications().then(sub => {
-            notificationSub = sub;
-        });
-
-        const checkLoggedIn = async () => {
-            if (Platform.OS === 'web') return;
+            // 3. Registrasi token jika sudah login
             const { getToken } = require('../utils/auth');
             const token = await getToken();
             if (token) {
                 await registerForPushNotificationsAsync();
             }
         };
-        checkLoggedIn();
+
+        const handleNotificationClick = (data, delay = 500) => {
+            console.log('[Push] Menangani klik notifikasi:', data);
+            if (data && data.chatId) {
+                setTimeout(() => {
+                    if (navigationRef.current) {
+                        navigationRef.current.navigate('ChatDetail', {
+                            chat: {
+                                id: data.chatId,
+                                name: data.senderName || 'Chat',
+                                avatar: data.senderAvatar || null
+                            }
+                        });
+                    }
+                }, delay);
+            }
+        };
+
+        if (Platform.OS !== 'web') {
+            initNotifications();
+        }
 
         return () => {
             if (notificationSub && notificationSub.remove) {
@@ -244,6 +229,7 @@ const AppNavigator = () => {
             }
         };
     }, []);
+
 
     return (
         <NavigationContainer ref={navigationRef}>

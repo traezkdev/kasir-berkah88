@@ -404,7 +404,7 @@ const ChatListScreen = () => {
                 <View style={styles.chatInfo}>
                     <View style={styles.chatTopLine}>
                         <Text style={styles.waChatName} numberOfLines={1}>{otherUser.name}</Text>
-                        <Text style={[styles.waChatTime, (item.unread_count > 0 && !isSelected) && { color: '#25D366', fontWeight: 'bold' }]}>{timeDisplay}</Text>
+                        <Text style={[styles.waChatTime, (item.unread_count > 0 && !isSelected) && { color: '#008069', fontWeight: 'bold' }]}>{timeDisplay}</Text>
                     </View>
                     <View style={styles.chatBottomLine}>
                         <View style={styles.msgPreviewWrapper}>
@@ -731,7 +731,7 @@ const ChatListScreen = () => {
             {activeTab === 'chat' ? (
                 loading ? (
                     <View style={styles.loaderContainer}>
-                        <ActivityIndicator size="large" color="#25D366" />
+                        <ActivityIndicator size="large" color="#008069" />
                     </View>
                 ) : isSearching && searchQuery.length > 0 ? (
                     <FlatList
@@ -749,7 +749,7 @@ const ChatListScreen = () => {
                             renderItem={renderItem}
                             contentContainerStyle={styles.waChatListScroll}
                             refreshControl={
-                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#25D366']} />
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#008069']} />
                             }
                             ListHeaderComponent={
                                 (chats.length > 0 || archivedCount > 0) && (
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     waUnreadBadge: {
-        backgroundColor: '#25D366',
+        backgroundColor: '#008069',
         width: scale(20),
         height: scale(20),
         borderRadius: scale(10),
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
     },
     archiveCount: {
         fontSize: moderateScale(12),
-        color: '#25D366',
+        color: '#008069',
         fontWeight: 'bold',
     },
     footerInfo: {
@@ -1144,7 +1144,7 @@ const styles = StyleSheet.create({
         padding: 1,
     },
     checkCircle: {
-        backgroundColor: '#25D366',
+        backgroundColor: '#008069',
         width: scale(18),
         height: scale(18),
         borderRadius: scale(9),
