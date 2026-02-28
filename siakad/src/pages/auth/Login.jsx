@@ -10,7 +10,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [siteSettings, setSiteSettings] = useState({
-        welcome_title: 'Pantau Akademik <br /><span className="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>',
+        welcome_title: 'Pantau Akademik <br /><span class="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>',
         welcome_subtitle: 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'
     });
 
@@ -21,7 +21,12 @@ const Login = () => {
                 const response = await fetch(`${apiUrl}/api/settings`);
                 const data = await response.json();
                 if (response.ok) {
-                    setSiteSettings(data);
+                    setSiteSettings(prev => ({
+                        ...prev,
+                        ...data,
+                        welcome_title: data.welcome_title || prev.welcome_title,
+                        welcome_subtitle: data.welcome_subtitle || prev.welcome_subtitle
+                    }));
                 }
             } catch (err) {
                 console.error("Gagal memuat pengaturan site.");

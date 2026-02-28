@@ -179,12 +179,13 @@ const setupDatabase = async () => {
     // Initial Data for Settings
     const [settingsExist] = await connection.query("SELECT COUNT(*) as count FROM settings");
     if (settingsExist[0].count === 0) {
-        INSERT INTO settings(setting_key, setting_value) VALUES
+      const seedSettings = `
+        INSERT INTO settings (setting_key, setting_value) VALUES 
         ('welcome_title', 'Pantau Akademik <br><span class="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>'),
         ('welcome_subtitle', 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'),
         ('register_title', 'Bangun Masa Depan <br><span class="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>'),
         ('register_subtitle', 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.')
-          `;
+      `;
       await connection.query(seedSettings);
     }
 

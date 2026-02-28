@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaGraduationCap, FaEnvelope, FaLock, FaUser, FaPhone, FaArrowRight, FaIdCard } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
@@ -16,6 +16,32 @@ const Register = () => {
         confirmPassword: '',
         role: 'siswa'
     });
+
+    const [siteSettings, setSiteSettings] = useState({
+        register_title: 'Bangun Masa Depan <br /><span class="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>',
+        register_subtitle: 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.'
+    });
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+                const response = await fetch(`${apiUrl}/api/settings`);
+                const data = await response.json();
+                if (response.ok) {
+                    setSiteSettings(prev => ({
+                        ...prev,
+                        ...data,
+                        register_title: data.register_title || prev.register_title,
+                        register_subtitle: data.register_subtitle || prev.register_subtitle
+                    }));
+                }
+            } catch (err) {
+                console.error("Gagal memuat pengaturan site.");
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -83,12 +109,12 @@ const Register = () => {
                         </div>
 
                         <div className="max-w-md">
-                            <h2 className="text-5xl font-black leading-[1.1] mb-8">
-                                Bangun Masa Depan <br />
-                                <span className="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>
-                            </h2>
+                            <h2
+                                className="text-5xl font-black leading-[1.1] mb-8"
+                                dangerouslySetInnerHTML={{ __html: siteSettings.register_title }}
+                            />
                             <p className="text-xl text-indigo-100/70 leading-relaxed mb-12">
-                                Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.
+                                {siteSettings.register_subtitle}
                             </p>
                         </div>
                     </div>
