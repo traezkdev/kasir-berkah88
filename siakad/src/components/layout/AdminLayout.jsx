@@ -42,7 +42,7 @@ const AdminLayout = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Header toggleSidebar={toggleSidebar} headerName={headerName} role={role} />
 
-                <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] dark:bg-[#0F172A] ${location.pathname.includes('/profile') ? '' : 'py-4 sm:py-6 lg:py-8 px-4 sm:px-6'}`}>
+                <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] dark:bg-[#0F172A] ${location.pathname.includes('/profile') || location.pathname.includes('/admin/settings') ? '' : 'py-4 sm:py-6 lg:py-8 px-4 sm:px-6'}`}>
                     <div className="w-full">
                         <Outlet />
                     </div>

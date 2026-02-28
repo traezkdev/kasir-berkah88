@@ -108,9 +108,9 @@ const AdminSettings = () => {
     if (isLoading) return <div className="p-20 text-center font-black animate-pulse text-slate-400 tracking-widest uppercase italic">Initializing System Config...</div>;
 
     return (
-        <div className="p-4 sm:p-6 lg:p-10 max-w-6xl mx-auto space-y-10">
-            {/* Header Utama - Ukuran diperkecil untuk proporsi yang lebih baik */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div className="w-full space-y-0 animate-in fade-in duration-500">
+            {/* Header Utama - Sekarang Full Width Bleed */}
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 shadow-sm p-8 sm:p-12 lg:p-16 flex flex-col md:flex-row md:items-center justify-between gap-10">
                 <div>
                     <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
                         <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center">
@@ -122,54 +122,54 @@ const AdminSettings = () => {
                 </div>
             </div>
 
-            {/* Grid Kategori Pengaturan */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Area Konten dengan padding yang seimbang */}
+            <div className="p-8 sm:p-12 lg:p-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
                 {/* 1. Kategori: Tampilan Landing */}
                 <button
                     onClick={() => openEditor('tampilan')}
-                    className="group relative p-8 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
+                    className="group relative p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
                 >
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-500">
-                        <FaDesktop size={80} />
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-125 transition-transform duration-500">
+                        <FaDesktop size={64} />
                     </div>
-                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl w-fit mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                        <FaDesktop size={24} />
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl w-fit mb-5 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                        <FaDesktop size={20} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Tampilan Landing</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed mb-6">Kelola teks sambutan, judul promo, dan deskripsi pada halaman login dan register.</p>
-                    <div className="flex items-center text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase tracking-widest gap-2">
+                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight leading-none">Tampilan Landing</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-relaxed mb-6">Kelola teks sambutan, judul promo, dan deskripsi pada halaman login dan register.</p>
+                    <div className="flex items-center text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-widest gap-2">
                         <span>Konfigurasi Sekarang</span>
-                        <FaChevronRight size={10} className="group-hover:translate-x-2 transition-transform" />
+                        <FaChevronRight size={8} className="group-hover:translate-x-2 transition-transform" />
                     </div>
                 </button>
 
                 {/* 2. Kategori: Identitas Aplikasi */}
                 <button
                     onClick={() => openEditor('identitas')}
-                    className="group relative p-8 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
+                    className="group relative p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none text-left transition-all hover:scale-[1.03] hover:shadow-2xl hover:border-indigo-500 overflow-hidden"
                 >
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-500">
-                        <FaSchool size={80} />
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-125 transition-transform duration-500">
+                        <FaSchool size={64} />
                     </div>
-                    <div className="p-4 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl w-fit mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
-                        <FaSchool size={24} />
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl w-fit mb-5 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
+                        <FaSchool size={20} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Identitas Aplikasi</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed mb-6">Sesuaikan nama platform, logo, dan identitas visual sistem pendidikan Anda.</p>
-                    <div className="flex items-center text-purple-600 dark:text-purple-400 font-black text-xs uppercase tracking-widest gap-2">
+                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight leading-none">Identitas Aplikasi</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-relaxed mb-6">Sesuaikan nama platform, logo, dan identitas visual sistem pendidikan Anda.</p>
+                    <div className="flex items-center text-purple-600 dark:text-purple-400 font-black text-[10px] uppercase tracking-widest gap-2">
                         <span>Konfigurasi Sekarang</span>
-                        <FaChevronRight size={10} className="group-hover:translate-x-2 transition-transform" />
+                        <FaChevronRight size={8} className="group-hover:translate-x-2 transition-transform" />
                     </div>
                 </button>
 
                 {/* 3. Kategori: Keamanan (Placeholder untuk masa depan) */}
-                <button className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 text-left opacity-60 cursor-not-allowed group">
-                    <div className="p-4 bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-2xl w-fit mb-6">
-                        <FaShieldAlt size={24} />
+                <button className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 text-left opacity-60 cursor-not-allowed group">
+                    <div className="p-3 bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-2xl w-fit mb-5">
+                        <FaShieldAlt size={20} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-400 mb-2 uppercase tracking-tight">Keamanan & Akses</h3>
-                    <p className="text-slate-400 text-sm font-medium italic">Fitur dalam pengembangan...</p>
+                    <h3 className="text-lg font-black text-slate-400 mb-2 uppercase tracking-tight leading-none">Keamanan & Akses</h3>
+                    <p className="text-slate-400 text-[10px] font-medium italic uppercase tracking-widest">Fitur dalam pengembangan...</p>
                 </button>
 
             </div>
@@ -196,117 +196,162 @@ const AdminSettings = () => {
                         </div>
 
                         {/* Modal Body: Render Form Based on Category */}
-                        <div className="p-8 sm:p-12 lg:p-20 flex-1 overflow-y-auto space-y-12">
+                        <div className="p-8 sm:p-12 lg:p-20 flex-1 overflow-y-auto">
 
                             {activeCategory === 'tampilan' && (
-                                <>
-                                    <div className="space-y-6 pb-6 border-b border-slate-100 dark:border-slate-800">
-                                        <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest ml-1">Konfigurasi Halaman Login</h4>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Login (Mendukung HTML)</label>
-                                            <textarea
-                                                rows="2"
-                                                value={tempSettings.welcome_title}
-                                                onChange={(e) => setTempSettings({ ...tempSettings, welcome_title: e.target.value })}
-                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-indigo-500 transition-all font-bold text-slate-700 dark:text-white text-sm"
-                                                placeholder="Gunakan <br> untuk baris baru..."
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Login</label>
-                                            <textarea
-                                                rows="2"
-                                                value={tempSettings.welcome_subtitle}
-                                                onChange={(e) => setTempSettings({ ...tempSettings, welcome_subtitle: e.target.value })}
-                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-white text-sm"
-                                                placeholder="Masukkan deskripsi login..."
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <h4 className="text-xs font-black text-purple-600 uppercase tracking-widest ml-1">Konfigurasi Halaman Register</h4>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Register (Mendukung HTML)</label>
-                                            <textarea
-                                                rows="2"
-                                                value={tempSettings.register_title}
-                                                onChange={(e) => setTempSettings({ ...tempSettings, register_title: e.target.value })}
-                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-white text-sm"
-                                                placeholder="Gunakan <br> untuk baris baru..."
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Register</label>
-                                            <textarea
-                                                rows="2"
-                                                value={tempSettings.register_subtitle}
-                                                onChange={(e) => setTempSettings({ ...tempSettings, register_subtitle: e.target.value })}
-                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-medium text-slate-700 dark:text-white text-sm"
-                                                placeholder="Masukkan deskripsi register..."
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Preview Section */}
-                                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-6">
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Live Preview</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {/* Preview Login */}
-                                            <div className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-3xl text-white shadow-xl relative overflow-hidden group">
-                                                <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded">Login Page</span>
-                                                <div dangerouslySetInnerHTML={{ __html: tempSettings.welcome_title || 'Pantau Akademik <br /><span className="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>' }} className="text-xl font-black mb-3 leading-tight" />
-                                                <p className="text-indigo-100/70 text-[10px] leading-relaxed line-clamp-2">
-                                                    {tempSettings.welcome_subtitle || 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'}
-                                                </p>
+                                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
+                                    {/* Left Side: Form Controls */}
+                                    <div className="space-y-12">
+                                        <div className="space-y-10">
+                                            <div className="space-y-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+                                                <h4 className="text-sm font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-3">
+                                                    <span className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-xs">01</span>
+                                                    Konfigurasi Halaman Login
+                                                </h4>
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Login (HTML)</label>
+                                                    <textarea
+                                                        rows="3"
+                                                        value={tempSettings.welcome_title}
+                                                        onChange={(e) => setTempSettings({ ...tempSettings, welcome_title: e.target.value })}
+                                                        className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-indigo-500 transition-all font-bold text-slate-700 dark:text-white text-base shadow-sm"
+                                                        placeholder="Gunakan <br> untuk baris baru..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Singkat</label>
+                                                    <textarea
+                                                        rows="3"
+                                                        value={tempSettings.welcome_subtitle}
+                                                        onChange={(e) => setTempSettings({ ...tempSettings, welcome_subtitle: e.target.value })}
+                                                        className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-indigo-500 transition-all font-medium text-slate-700 dark:text-white text-sm shadow-sm"
+                                                        placeholder="Masukkan deskripsi login..."
+                                                    />
+                                                </div>
                                             </div>
-                                            {/* Preview Register */}
-                                            <div className="p-6 bg-gradient-to-br from-purple-600 to-indigo-900 rounded-3xl text-white shadow-xl relative overflow-hidden group">
-                                                <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded">Register Page</span>
-                                                <div dangerouslySetInnerHTML={{ __html: tempSettings.register_title || 'Bangun Masa Depan <br /><span className="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>' }} className="text-xl font-black mb-3 leading-tight" />
-                                                <p className="text-indigo-100/70 text-[10px] leading-relaxed line-clamp-2">
-                                                    {tempSettings.register_subtitle || 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.'}
-                                                </p>
+
+                                            <div className="space-y-6">
+                                                <h4 className="text-sm font-black text-purple-600 uppercase tracking-[0.2em] flex items-center gap-3">
+                                                    <span className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-xs">02</span>
+                                                    Konfigurasi Halaman Register
+                                                </h4>
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Register (HTML)</label>
+                                                    <textarea
+                                                        rows="3"
+                                                        value={tempSettings.register_title}
+                                                        onChange={(e) => setTempSettings({ ...tempSettings, register_title: e.target.value })}
+                                                        className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-white text-base shadow-sm"
+                                                        placeholder="Gunakan <br> untuk baris baru..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Singkat</label>
+                                                    <textarea
+                                                        rows="3"
+                                                        value={tempSettings.register_subtitle}
+                                                        onChange={(e) => setTempSettings({ ...tempSettings, register_subtitle: e.target.value })}
+                                                        className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-medium text-slate-700 dark:text-white text-sm shadow-sm"
+                                                        placeholder="Masukkan deskripsi register..."
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </>
+
+                                    {/* Right Side: Visual Preview (Sticky on Desktop) */}
+                                    <div className="relative">
+                                        <div className="lg:sticky lg:top-0 space-y-8">
+                                            <div className="p-10 bg-slate-50 dark:bg-slate-800/50 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-10 text-center">Real-time Interface Preview</h4>
+
+                                                <div className="space-y-12">
+                                                    {/* Preview Login */}
+                                                    <div className="group relative">
+                                                        <span className="absolute -top-3 left-6 px-4 py-1.5 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg z-10 transition-transform group-hover:-translate-y-1">Login View</span>
+                                                        <div className="p-10 bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden ring-4 ring-white/10">
+                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                                                            <div dangerouslySetInnerHTML={{ __html: tempSettings.welcome_title || 'Pantau Akademik <br /><span class="text-indigo-200 italic font-serif">Lebih Mudah & Cepat.</span>' }} className="text-2xl font-black mb-6 leading-tight" />
+                                                            <p className="text-indigo-100/70 text-xs leading-relaxed line-clamp-3">
+                                                                {tempSettings.welcome_subtitle || 'Akses data nilai, absen, dan tugas dalam satu platform yang terintegrasi dan aman.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Preview Register */}
+                                                    <div className="group relative">
+                                                        <span className="absolute -top-3 left-6 px-4 py-1.5 bg-purple-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg z-10 transition-transform group-hover:-translate-y-1">Register View</span>
+                                                        <div className="p-10 bg-gradient-to-br from-purple-600 to-indigo-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden ring-4 ring-white/10">
+                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                                                            <div dangerouslySetInnerHTML={{ __html: tempSettings.register_title || 'Bangun Masa Depan <br /><span class="text-purple-300 italic font-serif">Bersama SIAS PRO.</span>' }} className="text-2xl font-black mb-6 leading-tight" />
+                                                            <p className="text-indigo-100/70 text-xs leading-relaxed line-clamp-3">
+                                                                {tempSettings.register_subtitle || 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-8 bg-amber-50 dark:bg-amber-900/10 border-2 border-dashed border-amber-200 dark:border-amber-800/40 rounded-3xl flex items-start gap-5">
+                                                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-md text-amber-600">
+                                                    <FaSave size={16} />
+                                                </div>
+                                                <p className="text-amber-900/70 dark:text-amber-400/70 text-[10px] font-bold leading-relaxed uppercase tracking-tight">
+                                                    Perubahan pada judul mendukung tag HTML seperti <code className="text-amber-600">&lt;br&gt;</code> untuk baris baru atau <code className="text-amber-600">&lt;span&gt;</code> untuk gaya teks khusus.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
 
                             {activeCategory === 'identitas' && (
-                                <div className="space-y-8">
-                                    <div className="space-y-3">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Nama Di Sidebar (Logo)</label>
-                                        <input
-                                            type="text"
-                                            value={tempSettings.sidebar_name}
-                                            onChange={(e) => setTempSettings({ ...tempSettings, sidebar_name: e.target.value })}
-                                            className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-white"
-                                            placeholder="Contoh: SIAS PRO, SIKAD..."
-                                        />
-                                        <p className="text-[10px] text-slate-400 italic ml-2">Muncul di samping logo pada menu samping.</p>
-                                    </div>
+                                <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16">
+                                    <div className="lg:col-span-12 space-y-12">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 leading-none">
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Nama Di Sidebar (Logo)</label>
+                                                <input
+                                                    type="text"
+                                                    value={tempSettings.sidebar_name}
+                                                    onChange={(e) => setTempSettings({ ...tempSettings, sidebar_name: e.target.value })}
+                                                    className="w-full px-8 py-6 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-black text-slate-800 dark:text-white text-xl shadow-sm"
+                                                    placeholder="Contoh: SIAS PRO"
+                                                />
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest ml-2">Identitas branding menu samping.</p>
+                                            </div>
 
-                                    <div className="space-y-3">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Judul Di Header (Top Bar)</label>
-                                        <input
-                                            type="text"
-                                            value={tempSettings.header_name}
-                                            onChange={(e) => setTempSettings({ ...tempSettings, header_name: e.target.value })}
-                                            className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-white"
-                                            placeholder="Contoh: Sistem Informasi Akademik..."
-                                        />
-                                        <p className="text-[10px] text-slate-400 italic ml-2">Muncul di bagian atas halaman (Header).</p>
-                                    </div>
-
-                                    {/* Logo Placeholder (Visual Only for now) */}
-                                    <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
-                                        <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center mx-auto mb-4">
-                                            <FaSchool className="text-purple-600" size={32} />
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Judul Di Header (Top Bar)</label>
+                                                <input
+                                                    type="text"
+                                                    value={tempSettings.header_name}
+                                                    onChange={(e) => setTempSettings({ ...tempSettings, header_name: e.target.value })}
+                                                    className="w-full px-8 py-6 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-3xl outline-none focus:border-purple-500 transition-all font-black text-slate-800 dark:text-white text-xl shadow-sm"
+                                                    placeholder="Contoh: Sistem Informasi Akademik"
+                                                />
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest ml-2">Judul navigasi atas aplikasi.</p>
+                                            </div>
                                         </div>
-                                        <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tight text-sm">Logo Institusi</h4>
-                                        <p className="text-xs text-slate-400 mt-1 mb-4">Mendukung format PNG, JPG, SVG (Max 2MB)</p>
-                                        <button className="px-6 py-2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">Unggah Logo</button>
+
+                                        <div className="p-12 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-[3rem] border border-white dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center gap-12">
+                                            <div className="relative group shrink-0">
+                                                <div className="w-40 h-40 bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-500 ring-8 ring-indigo-500/5">
+                                                    <FaSchool className="text-indigo-600" size={60} />
+                                                </div>
+                                                <div className="absolute -bottom-4 -right-4 p-4 bg-indigo-600 text-white rounded-2xl shadow-xl">
+                                                    <FaSave size={18} />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 text-center md:text-left">
+                                                <h4 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-3">Logo Institusi</h4>
+                                                <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed mb-8 max-w-md">Kustomisasi identitas visual sekolah Anda. Logo akan muncul di halaman login, laporan, dan profil sekolah.</p>
+                                                <div className="flex flex-wrap gap-4 justify-center md:justify-start font-black text-[9px] uppercase tracking-widest">
+                                                    <button className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-400 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-not-allowed transition-all opacity-60">Pilih File...</button>
+                                                    <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-600/20 cursor-not-allowed opacity-60">Unggah Logo</button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
