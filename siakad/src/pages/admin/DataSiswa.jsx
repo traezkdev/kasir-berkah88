@@ -28,7 +28,8 @@ const DataSiswa = () => {
         jenis_kelamin: 'L',
         nisn_nik: '',
         email: '',
-        wa_number: ''
+        wa_number: '',
+        status: 'aktif'
     });
 
     const resetForm = () => {
@@ -39,7 +40,8 @@ const DataSiswa = () => {
             jenis_kelamin: 'L',
             nisn_nik: '',
             email: '',
-            wa_number: ''
+            wa_number: '',
+            status: 'aktif'
         });
         setSelectedId(null);
         setIsEditMode(false);
@@ -126,7 +128,8 @@ const DataSiswa = () => {
             jenis_kelamin: item.jenis_kelamin || 'L',
             nisn_nik: item.nisn_nik || '',
             email: item.email || '',
-            wa_number: item.wa_number || ''
+            wa_number: item.wa_number || '',
+            status: item.status || 'aktif'
         });
         setIsEditMode(true);
         setShowModal(true);
@@ -339,7 +342,7 @@ const DataSiswa = () => {
                                 <th className="px-6 py-4">Siswa</th>
                                 <th className="px-6 py-4">NISN / Identitas</th>
                                 <th className="px-6 py-4">Kontak</th>
-                                <th className="px-6 py-4">Tgl Terdaftar</th>
+                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -379,8 +382,12 @@ const DataSiswa = () => {
                                         <p className="text-xs text-indigo-500 font-bold">{item.wa_number || '-'}</p>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                                            {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center w-fit space-x-1 ${item.status === 'nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${item.status === 'nonaktif' ? 'bg-red-500' : 'bg-emerald-500 animate-pulse'}`}></span>
+                                            <span>{item.status || 'aktif'}</span>
+                                        </span>
+                                        <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-tighter">
+                                            Sejak: {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                                         </p>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -569,6 +576,27 @@ const DataSiswa = () => {
                                             className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                             placeholder="ex: 081234567890"
                                         />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Status Akun</label>
+                                        <div className="flex gap-4 p-1 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, status: 'aktif' })}
+                                                className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center space-x-2 ${formData.status === 'aktif' ? 'bg-white dark:bg-slate-800 shadow-sm text-emerald-600' : 'text-slate-400'}`}
+                                            >
+                                                <span className={`w-2 h-2 rounded-full ${formData.status === 'aktif' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                                                <span>Aktif</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, status: 'nonaktif' })}
+                                                className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center space-x-2 ${formData.status === 'nonaktif' ? 'bg-white dark:bg-slate-800 shadow-sm text-red-600' : 'text-slate-400'}`}
+                                            >
+                                                <span className={`w-2 h-2 rounded-full ${formData.status === 'nonaktif' ? 'bg-red-500' : 'bg-slate-300'}`}></span>
+                                                <span>Nonaktif</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </form>

@@ -92,6 +92,11 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: "Invalid password" });
         }
 
+        // Check Account Status
+        if (user.status === 'nonaktif') {
+            return res.status(403).json({ error: "Akun Anda telah dinonaktifkan. Silakan hubungi Admin." });
+        }
+
         // Generate JWT
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role },
@@ -164,7 +169,7 @@ const isAdmin = (req, res, next) => {
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { role } = req.query;
-        let sql = 'SELECT id, username, nama_lengkap, role, jenis_kelamin, profile_photo, nisn_nik, email, wa_number, created_at FROM users';
+        let sql = 'SELECT id, username, nama_lengkap, role, jenis_kelamin, profile_photo, nisn_nik, email, wa_number, status, created_at FROM users';
         let params = [];
 
         if (role) {
@@ -197,14 +202,14 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin } = req.body;
+        const { nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status } = req.body;
 
         const sql = `
             UPDATE users 
-            SET nama_lengkap = ?, nisn_nik = ?, email = ?, wa_number = ?, role = ?, jenis_kelamin = ?
+            SET nama_lengkap = ?, nisn_nik = ?, email = ?, wa_number = ?, role = ?, jenis_kelamin = ?, status = ?
             WHERE id = ?
         `;
-        await db.query(sql, [nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, id]);
+        await db.query(sql, [nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status || 'aktif', id]);
         res.json({ message: "Data user berhasil diperbarui." });
     } catch (err) {
         console.error(err);

@@ -50,6 +50,20 @@ const setupDatabase = async () => {
       // Abaikan jika kolom sudah ada
     }
 
+    // Tambahkan kolom status jika belum ada
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN status ENUM('aktif', 'nonaktif') DEFAULT 'aktif' AFTER wa_number");
+    } catch (err) {
+      // Abaikan jika kolom sudah ada
+    }
+
+    // Tambahkan kolom status_kepegawaian jika belum ada
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN status_kepegawaian VARCHAR(100) DEFAULT 'Guru Tetap' AFTER status");
+    } catch (err) {
+      // Abaikan jika kolom sudah ada
+    }
+
     // 2. Create Kelas Table
     const createKelasTable = `
       CREATE TABLE IF NOT EXISTS kelas (
