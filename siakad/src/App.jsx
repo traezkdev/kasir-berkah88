@@ -17,6 +17,7 @@ import DataJadwal from './pages/admin/DataJadwal';
 import DataKelas from './pages/admin/DataKelas';
 import AdminSettings from './pages/admin/AdminSettings';
 import DataAgenda from './pages/admin/DataAgenda';
+import CreditPage from './pages/admin/CreditPage';
 
 import DataNilai from './pages/admin/DataNilai';
 import AdminProfile from './pages/profile/AdminProfile';
@@ -179,6 +180,14 @@ function App() {
             </ProtectedRoute>
           } />
         </Route>
+
+        {/* Standalone Routes (No Sidebar/Header) */}
+        <Route path="/admin/credit" element={
+          <ProtectedRoute>
+            <CreditPage />
+          </ProtectedRoute>
+        } />
+
       </Routes>
     </Router>
   );

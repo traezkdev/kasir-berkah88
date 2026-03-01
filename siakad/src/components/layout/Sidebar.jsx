@@ -3,7 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import {
     FaTachometerAlt, FaUserGraduate, FaChalkboardTeacher, FaBook,
     FaFileAlt, FaUsers, FaCog, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight,
-    FaCalendarAlt, FaGraduationCap, FaCalendarCheck
+    FaCalendarAlt, FaGraduationCap, FaCalendarCheck, FaHeart
 } from 'react-icons/fa';
 
 const MenuItem = ({ to, icon: Icon, children, isCollapsed, navLinkClasses, activeLinkClasses, onClick }) => (
@@ -246,6 +246,16 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'admin', sidebarName, instituti
                         onClick={() => { if (isOpen && window.innerWidth < 1024) toggleSidebar(); }}
                     >
                         Pengaturan
+                    </MenuItem>
+                    <MenuItem
+                        to="/admin/credit"
+                        icon={FaHeart}
+                        isCollapsed={isCollapsed}
+                        navLinkClasses={navLinkClasses}
+                        activeLinkClasses={activeLinkClasses}
+                        onClick={() => { if (isOpen && window.innerWidth < 1024) toggleSidebar(); }}
+                    >
+                        Credit
                     </MenuItem>
                 </nav>
 
