@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { FaChalkboardTeacher, FaSearch, FaTrash, FaEdit, FaPlus, FaFilter, FaEllipsisV, FaSyncAlt, FaCalendarAlt } from 'react-icons/fa';
+import { FaChalkboardTeacher, FaSearch, FaTrash, FaEdit, FaPlus, FaFilter, FaSyncAlt, FaCalendarAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 
 const DataGuru = () => {
@@ -30,7 +30,8 @@ const DataGuru = () => {
         email: '',
         wa_number: '',
         role: 'guru',
-        status: 'aktif'
+        status: 'aktif',
+        status_kepegawaian: 'Guru Tetap'
     });
 
     const resetForm = () => {
@@ -43,7 +44,8 @@ const DataGuru = () => {
             email: '',
             wa_number: '',
             role: 'guru',
-            status: 'aktif'
+            status: 'aktif',
+            status_kepegawaian: 'Guru Tetap'
         });
         setSelectedId(null);
         setIsEditMode(false);
@@ -129,7 +131,8 @@ const DataGuru = () => {
             email: item.email || '',
             wa_number: item.wa_number || '',
             role: 'guru',
-            status: item.status || 'aktif'
+            status: item.status || 'aktif',
+            status_kepegawaian: item.status_kepegawaian || 'Guru Tetap'
         });
         setIsEditMode(true);
         setShowModal(true);
@@ -147,11 +150,7 @@ const DataGuru = () => {
             });
             const data = await response.json();
             if (response.ok) {
-                // Filter jadwal yang diajar oleh guru ini
-                // Berdasarkan server.js, jadwal join mapel, mapel left join users (guru)
-                // Kita filter berdasarkan guru_id di tabel mata_pelajaran or check join results
-                // Since we don't have guru_id directly in jadwal but names, let's filter by name or if ID is available
-                const teacherSchedule = data.filter(j => j.guru_id === guruId); // Assuming guru_id exists in join
+                const teacherSchedule = data.filter(j => j.guru_id === guruId);
                 setJadwalGuru(teacherSchedule);
             }
         } catch (err) {
@@ -202,13 +201,11 @@ const DataGuru = () => {
         return matchesSearch && matchesGender;
     });
 
-    // Hitung Statistik
     const totalLaki = guru.filter(g => g.jenis_kelamin === 'L').length;
     const totalPerempuan = guru.filter(g => g.jenis_kelamin === 'P').length;
 
     return (
         <div className="p-3 sm:p-6 lg:p-8 space-y-6">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white transition-all duration-300">Data Guru</h1>
@@ -232,12 +229,10 @@ const DataGuru = () => {
                 </div>
             </div>
 
-            {/* Stats Cards Mini */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="relative group p-5 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-900 rounded-2xl text-white shadow-2xl shadow-purple-600/30 overflow-hidden transform transition-all hover:scale-[1.02] hover:shadow-purple-600/50">
                     <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
                     <div className="absolute bottom-0 left-0 translate-y-20 -translate-x-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"></div>
-
                     <div className="relative z-10 flex justify-between items-center">
                         <div>
                             <div className="flex items-center space-x-1.5 mb-1.5">
@@ -273,7 +268,6 @@ const DataGuru = () => {
                 </div>
             </div>
 
-            {/* Content Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="relative w-full sm:max-w-xs group">
@@ -286,7 +280,6 @@ const DataGuru = () => {
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-medium text-slate-700 dark:text-slate-200"
                         />
                     </div>
-
                     <div className="flex items-center space-x-2 relative w-full sm:w-auto">
                         <button
                             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
@@ -298,8 +291,6 @@ const DataGuru = () => {
                             <FaFilter size={14} />
                             <span>{filterGender === 'All' ? 'Filter' : `Gender: ${filterGender}`}</span>
                         </button>
-
-                        {/* Dropdown Filter */}
                         {showFilterDropdown && (
                             <>
                                 <div className="fixed inset-0 z-[60]" onClick={() => setShowFilterDropdown(false)}></div>
@@ -331,7 +322,6 @@ const DataGuru = () => {
                     </div>
                 </div>
 
-                {/* Desktop Table View */}
                 <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
@@ -411,7 +401,6 @@ const DataGuru = () => {
                     </table>
                 </div>
 
-                {/* Mobile Card View */}
                 <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-700">
                     {isLoading ? (
                         <div className="p-12 text-center text-slate-500 font-bold animate-pulse">Memuat data...</div>
@@ -479,20 +468,16 @@ const DataGuru = () => {
                 </div>
             </div>
 
-            {/* Modal Tambah/Edit */}
             {showModal && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
                     <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-2xl bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
-                        {/* Modal Header */}
                         <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {isEditMode ? 'Edit Data Guru' : 'Tambah Guru Baru'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
-
-                        {/* Modal Body (Scrollable) */}
                         <div className="flex-1 overflow-y-auto p-6 sm:p-8">
                             <form id="guruForm" onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -579,6 +564,19 @@ const DataGuru = () => {
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Status Kepegawaian</label>
+                                        <select
+                                            value={formData.status_kepegawaian}
+                                            onChange={(e) => setFormData({ ...formData, status_kepegawaian: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold text-slate-700 dark:text-slate-200"
+                                        >
+                                            <option value="Guru Tetap">Guru Tetap</option>
+                                            <option value="Guru Honorer">Guru Honorer</option>
+                                            <option value="Guru Kontrak">Guru Kontrak</option>
+                                            <option value="Staff Akademik">Staff Akademik</option>
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1.5">
                                         <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Status Akun</label>
                                         <div className="flex gap-4 p-1 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                                             <button
@@ -602,8 +600,6 @@ const DataGuru = () => {
                                 </div>
                             </form>
                         </div>
-
-                        {/* Modal Footer (Fixed at Bottom) */}
                         <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
                             <div className="flex justify-end space-x-3">
                                 <button
@@ -626,21 +622,15 @@ const DataGuru = () => {
                 </div>
             )}
 
-            {/* Modal Detail Guru (MOBILE VERSION) */}
             {showDetailModal && selectedGuru && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden flex items-end sm:hidden">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
                     <div className="relative w-full bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl flex flex-col m-0 animate-in slide-in-from-bottom duration-500 max-h-[90vh]">
-                        {/* Pull Bar */}
                         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto my-4 shrink-0" onClick={() => setShowDetailModal(false)}></div>
-
-                        {/* Header Detail */}
                         <div className="px-6 pb-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Profil Guru</h2>
                             <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
-
-                        {/* Body Detail */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             <div className="flex items-center space-x-4">
                                 <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-3xl flex items-center justify-center text-3xl font-black shadow-inner shrink-0">
@@ -651,7 +641,6 @@ const DataGuru = () => {
                                     <p className="text-xs font-bold text-purple-500 uppercase tracking-widest">@{selectedGuru.username}</p>
                                 </div>
                             </div>
-
                             <div className="grid grid-cols-1 gap-4">
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Data Kepegawaian</p>
@@ -666,49 +655,49 @@ const DataGuru = () => {
                                                 {selectedGuru.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
                                             </span>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl border border-purple-100/50 dark:border-purple-900/30">
-                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-3">Kontak</p>
-                                    <div className="space-y-3">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Email</span>
-                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{selectedGuru.email || '-'}</span>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase mb-1">WhatsApp</span>
-                                            <span className="text-base font-black text-purple-600 dark:text-purple-400">{selectedGuru.wa_number || '-'}</span>
+                                        <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                                            <span className="text-xs font-bold text-slate-500 uppercase">Status</span>
+                                            <span className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase">{selectedGuru.status_kepegawaian || 'Guru Tetap'}</span>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Jadwal Mengajar</p>
-                                    {isLoadingJadwal ? (
-                                        <div className="text-center py-4 animate-pulse text-[10px] font-bold text-slate-400">Memuat jadwal...</div>
-                                    ) : jadwalGuru.length === 0 ? (
-                                        <div className="text-center py-4 text-[10px] font-bold text-slate-400 italic">Belum ada jadwal mengajar</div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {jadwalGuru.map((j, idx) => (
-                                                <div key={idx} className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2 last:border-0">
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none mb-1">{j.nama_mapel}</p>
-                                                        <p className="text-[8px] font-bold text-purple-500 uppercase">{j.hari} • {j.jam_mulai} - {j.jam_selesai}</p>
-                                                    </div>
-                                                    <div className="px-2 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-600 uppercase">
-                                                        {j.nama_kelas}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
+                            <div className="p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl border border-purple-100/50 dark:border-purple-900/30">
+                                <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-3">Kontak</p>
+                                <div className="space-y-3">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Email</span>
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{selectedGuru.email || '-'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase mb-1">WhatsApp</span>
+                                        <span className="text-base font-black text-purple-600 dark:text-purple-400">{selectedGuru.wa_number || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Jadwal Mengajar</p>
+                                {isLoadingJadwal ? (
+                                    <div className="text-center py-4 animate-pulse text-[10px] font-bold text-slate-400">Memuat jadwal...</div>
+                                ) : jadwalGuru.length === 0 ? (
+                                    <div className="text-center py-4 text-[10px] font-bold text-slate-400 italic">Belum ada jadwal mengajar</div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {jadwalGuru.map((j, idx) => (
+                                            <div key={idx} className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2 last:border-0">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none mb-1">{j.nama_mapel}</p>
+                                                    <p className="text-[8px] font-bold text-purple-500 uppercase">{j.hari} • {j.jam_mulai} - {j.jam_selesai}</p>
+                                                </div>
+                                                <div className="px-2 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-600 uppercase">
+                                                    {j.nama_kelas}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
-                        {/* Footer Detail */}
                         <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-3 shrink-0 pb-10">
                             <button
                                 onClick={() => { setShowDetailModal(false); handleEdit(selectedGuru); }}
@@ -727,10 +716,8 @@ const DataGuru = () => {
                 </div>
             )}
 
-            {/* Modal Detail Guru (DESKTOP FULL-SCREEN VERSION) */}
             {showDetailModal && selectedGuru && ReactDOM.createPortal(
                 <div className="fixed inset-0 z-[100000] hidden sm:flex flex-col bg-white dark:bg-[#0F172A] animate-in fade-in duration-300">
-                    {/* Header Full Screen */}
                     <div className="h-20 px-8 sm:px-12 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md shrink-0">
                         <div className="flex items-center space-x-4">
                             <div className="p-3 bg-purple-600 rounded-2xl shadow-lg shadow-purple-600/20 text-white">
@@ -749,13 +736,9 @@ const DataGuru = () => {
                             <span className="text-2xl leading-none group-hover:rotate-90 transition-transform">×</span>
                         </button>
                     </div>
-
-                    {/* Content Full Screen */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         <div className="max-w-6xl mx-auto px-8 sm:px-12 py-12">
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-
-                                {/* Left: Identity Card */}
                                 <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-12">
                                     <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden group">
                                         <div className="h-32 bg-gradient-to-br from-purple-600 to-indigo-700 relative">
@@ -774,7 +757,9 @@ const DataGuru = () => {
                                             <div className="grid grid-cols-2 gap-4 mt-8">
                                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center border border-slate-100 dark:border-slate-700/50">
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                                                    <p className="text-sm font-black text-emerald-600 uppercase">Aktif</p>
+                                                    <p className={`text-sm font-black uppercase ${selectedGuru.status === 'nonaktif' ? 'text-red-500' : 'text-emerald-600'}`}>
+                                                        {selectedGuru.status === 'nonaktif' ? 'Nonaktif' : 'Aktif'}
+                                                    </p>
                                                 </div>
                                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center border border-slate-100 dark:border-slate-700/50">
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Rating</p>
@@ -783,7 +768,6 @@ const DataGuru = () => {
                                             </div>
                                         </div>
                                     </div>
-
                                     <div className="p-8 bg-gradient-to-br from-slate-900 to-purple-950 rounded-3xl text-white shadow-2xl relative overflow-hidden group">
                                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-500">
                                             <FaChalkboardTeacher size={100} />
@@ -808,12 +792,8 @@ const DataGuru = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Right: Detailed Info */}
                                 <div className="lg:col-span-8 space-y-8">
                                     <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl p-8 sm:p-12 space-y-12">
-
-                                        {/* Section 1: Data Utama */}
                                         <section className="space-y-8">
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-1.5 h-8 bg-purple-600 rounded-full"></div>
@@ -838,12 +818,10 @@ const DataGuru = () => {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status Kepegawaian</p>
-                                                    <p className="text-lg font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">Guru Tetap</p>
+                                                    <p className="text-lg font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">{selectedGuru.status_kepegawaian || 'Guru Tetap'}</p>
                                                 </div>
                                             </div>
                                         </section>
-
-                                        {/* Section 2: Kontak */}
                                         <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
@@ -864,14 +842,11 @@ const DataGuru = () => {
                                                 </div>
                                             </div>
                                         </section>
-
-                                        {/* Section 3: Jadwal Mengajar */}
                                         <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-1.5 h-8 bg-amber-500 rounded-full"></div>
                                                 <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Jadwal Mengajar Mingguan</h4>
                                             </div>
-
                                             {isLoadingJadwal ? (
                                                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                                                     <div className="w-12 h-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin"></div>
@@ -907,8 +882,6 @@ const DataGuru = () => {
                                                 </div>
                                             )}
                                         </section>
-
-                                        {/* Action Buttons Desktop */}
                                         <div className="flex flex-col sm:flex-row gap-4 pt-10">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setShowDetailModal(false); handleEdit(selectedGuru); }}
@@ -926,7 +899,6 @@ const DataGuru = () => {
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>

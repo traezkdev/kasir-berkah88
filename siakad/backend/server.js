@@ -37,7 +37,7 @@ const upload = multer({ storage: storage });
 
 // 1. Register
 app.post('/api/register', async (req, res) => {
-    const { username, password, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number } = req.body;
+    const { username, password, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number, status_kepegawaian } = req.body;
 
     // Proteksi: Larang pendaftaran Admin secara publik
     if (role === 'admin') {
@@ -53,11 +53,11 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const sql = `
-            INSERT INTO users (username, password, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (username, password, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number, status_kepegawaian)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        await db.query(sql, [username, hashedPassword, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number]);
+        await db.query(sql, [username, hashedPassword, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number, status_kepegawaian || 'Guru Tetap']);
 
         res.status(201).json({ message: "Registration successful" });
     } catch (err) {
@@ -169,7 +169,7 @@ const isAdmin = (req, res, next) => {
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { role } = req.query;
-        let sql = 'SELECT id, username, nama_lengkap, role, jenis_kelamin, profile_photo, nisn_nik, email, wa_number, status, created_at FROM users';
+        let sql = 'SELECT id, username, nama_lengkap, role, jenis_kelamin, profile_photo, nisn_nik, email, wa_number, status, status_kepegawaian, created_at FROM users';
         let params = [];
 
         if (role) {
@@ -202,14 +202,14 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status } = req.body;
+        const { nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status, status_kepegawaian } = req.body;
 
         const sql = `
             UPDATE users 
-            SET nama_lengkap = ?, nisn_nik = ?, email = ?, wa_number = ?, role = ?, jenis_kelamin = ?, status = ?
+            SET nama_lengkap = ?, nisn_nik = ?, email = ?, wa_number = ?, role = ?, jenis_kelamin = ?, status = ?, status_kepegawaian = ?
             WHERE id = ?
         `;
-        await db.query(sql, [nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status || 'aktif', id]);
+        await db.query(sql, [nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status || 'aktif', status_kepegawaian || 'Guru Tetap', id]);
         res.json({ message: "Data user berhasil diperbarui." });
     } catch (err) {
         console.error(err);
