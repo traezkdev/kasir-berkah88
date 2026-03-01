@@ -11,8 +11,15 @@ const DataKelas = () => {
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedKelas, setSelectedKelas] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
+
+    const handleShowDetail = (item) => {
+        setSelectedKelas(item);
+        setShowDetailModal(true);
+    };
     const [formData, setFormData] = useState({
         nama_kelas: '',
         tingkat: 'X',
@@ -154,7 +161,7 @@ const DataKelas = () => {
     const totalWali = kelas.filter(k => k.wali_kelas_id).length;
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="p-3 sm:p-6 lg:p-8 space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -181,7 +188,7 @@ const DataKelas = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="relative group p-5 bg-gradient-to-br from-sky-600 via-sky-700 to-sky-900 rounded-3xl text-white shadow-2xl shadow-sky-600/30 overflow-hidden transform transition-all hover:scale-[1.01]">
+                <div className="relative group p-5 bg-gradient-to-br from-sky-600 via-sky-700 to-sky-900 rounded-3xl text-white overflow-hidden transform transition-all hover:scale-[1.01]">
                     <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
                     <div className="relative z-10 flex justify-between items-center">
                         <div>
@@ -246,7 +253,7 @@ const DataKelas = () => {
                                     <td colSpan="4" className="p-12 text-center font-bold text-slate-500 italic">Data kelas masih kosong.</td>
                                 </tr>
                             ) : filteredKelas.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                                <tr key={item.id} onClick={() => handleShowDetail(item)} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer">
                                     <td className="px-6 py-4">
                                         <span className="px-3 py-1 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-lg text-xs font-black tracking-widest uppercase">
                                             {item.tingkat}
@@ -266,10 +273,10 @@ const DataKelas = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-xl transition-all">
+                                            <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-xl transition-all">
                                                 <FaEdit size={16} />
                                             </button>
-                                            <button onClick={() => handleDelete(item.id, item.nama_kelas)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
+                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_kelas); }} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all">
                                                 <FaTrash size={16} />
                                             </button>
                                         </div>
@@ -287,7 +294,7 @@ const DataKelas = () => {
                     ) : filteredKelas.length === 0 ? (
                         <div className="p-12 text-center font-bold text-slate-500 italic">Data kelas masih kosong.</div>
                     ) : filteredKelas.map((item) => (
-                        <div key={item.id} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group">
+                        <div key={item.id} onClick={() => handleShowDetail(item)} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer">
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-12 h-12 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center text-xl font-black">
@@ -304,10 +311,10 @@ const DataKelas = () => {
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
-                                    <button onClick={() => handleEdit(item)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
                                         <FaEdit size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(item.id, item.nama_kelas)} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
+                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id, item.nama_kelas); }} className="p-2.5 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all border border-slate-100 dark:border-slate-700">
                                         <FaTrash size={16} />
                                     </button>
                                 </div>
@@ -394,6 +401,70 @@ const DataKelas = () => {
                                     {isEditMode ? 'Simpan Perubahan' : 'Buat Kelas'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal Detail */}
+            {showDetailModal && selectedKelas && (
+                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
+                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                        {/* Header Detail */}
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Detail Informasi Kelas</h2>
+                            <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
+                        </div>
+
+                        {/* Body Detail */}
+                        <div className="flex-1 overflow-y-auto p-8">
+                            <div className="flex flex-col items-center text-center space-y-4 mb-8">
+                                <div className="w-20 h-20 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center text-4xl font-black shadow-inner">
+                                    {selectedKelas.nama_kelas?.[0] || 'K'}
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-tight">{selectedKelas.nama_kelas}</h3>
+                                    <p className="text-sm font-bold text-sky-500 uppercase tracking-[0.2em] mt-1">Tingkat {selectedKelas.tingkat}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 group transition-all hover:border-sky-200">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Struktur Kelas</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 font-black text-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                                            {selectedKelas.nama_wali?.[0] || '?'}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Wali Kelas Utama</p>
+                                            <p className="text-base font-bold text-slate-700 dark:text-slate-200">{selectedKelas.nama_wali || 'Belum Ditentukan'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 bg-sky-50/30 dark:bg-sky-900/10 rounded-2xl border border-sky-100/50 dark:border-sky-900/30">
+                                    <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-2 italic">Catatan Sistem</p>
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                                        Kelas {selectedKelas.nama_kelas} merupakan bagian dari institusi pendidikan SIAS PRO. Segala aktivitas akademik di dalam kelas ini dipantau secara digital untuk memastikan kualitas belajar tetap terjaga.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Detail */}
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex sm:justify-end gap-3 shrink-0">
+                            <button
+                                onClick={() => setShowDetailModal(false)}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 transition-all active:scale-95 text-xs uppercase tracking-widest"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowDetailModal(false); handleEdit(selectedKelas); }}
+                                className="flex-1 sm:flex-none px-8 py-3 bg-sky-600 text-white rounded-xl font-bold hover:bg-sky-700 shadow-lg shadow-sky-600/20 transition-all active:scale-95 text-xs uppercase tracking-widest"
+                            >
+                                Edit Kelas
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -192,7 +192,7 @@ const DataNilai = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="p-3 sm:p-6 lg:p-8 space-y-6">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -237,8 +237,8 @@ const DataNilai = () => {
                             <button
                                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                                 className={`flex items-center justify-center space-x-2 px-4 py-3 border rounded-2xl font-bold transition-all w-full sm:w-auto ${(filterKelas !== 'All' || filterSemester !== 'All')
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
-                                        : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
+                                    : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                     }`}
                             >
                                 <FaFilter size={14} />

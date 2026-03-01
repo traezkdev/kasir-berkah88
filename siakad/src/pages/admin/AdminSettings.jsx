@@ -110,7 +110,7 @@ const AdminSettings = () => {
     return (
         <div className="w-full space-y-0 animate-in fade-in duration-500">
             {/* Header Utama - Sekarang Full Width Bleed */}
-            <div className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 shadow-sm p-8 sm:p-12 lg:p-16 flex flex-col md:flex-row md:items-center justify-between gap-10">
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 shadow-sm p-4 sm:p-12 lg:p-16 flex flex-col md:flex-row md:items-center justify-between gap-10">
                 <div>
                     <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
                         <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center">
@@ -123,7 +123,7 @@ const AdminSettings = () => {
             </div>
 
             {/* Area Konten dengan padding yang seimbang */}
-            <div className="p-8 sm:p-12 lg:p-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="p-4 sm:p-12 lg:p-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
                 {/* 1. Kategori: Tampilan Landing */}
                 <button

@@ -42,7 +42,7 @@ const Dashboard = () => {
     }, []);
 
     return (
-        <div className="space-y-8 px-4 sm:px-6 lg:px-8">
+        <div className="space-y-8 px-3 sm:px-6 lg:px-8">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-all duration-300">Dashboard Admin Sekolah</h1>
                 <p className="text-gray-500 dark:text-gray-400">Pusat Informasi Akademik Sekolah Terintegrasi (SIAS PRO).</p>

@@ -120,12 +120,12 @@ const ProfileBase = ({ roleTitle, accentColor = "indigo" }) => {
     return (
         <div className="w-full space-y-0 animate-in fade-in duration-500">
             {/* Header: Identity Banner - Bleed to edges on top/sides */}
-            <div className="relative overflow-hidden bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 shadow-sm p-8 sm:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-10">
+            <div className="relative overflow-hidden bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 shadow-sm p-4 sm:p-10 lg:p-12 flex flex-col md:flex-row items-center gap-8">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-slate-100 dark:bg-slate-900/50 rounded-full -mr-20 -mt-20 opacity-50 blur-3xl"></div>
 
                 {/* Avatar Section */}
                 <div className="relative group">
-                    <div className={`w-36 h-36 rounded-3xl ${profile.profile_photo ? 'bg-transparent border-none shadow-none' : accentBg + ' ring-4 ring-white dark:ring-slate-700 shadow-2xl'} flex items-center justify-center text-white overflow-hidden transform group-hover:scale-105 transition-all duration-500`}>
+                    <div className={`w-28 h-28 rounded-3xl ${profile.profile_photo ? 'bg-transparent border-none shadow-none' : accentBg + ' ring-4 ring-white dark:ring-slate-700 shadow-2xl'} flex items-center justify-center text-white overflow-hidden transform group-hover:scale-105 transition-all duration-500`}>
                         {profile.profile_photo ? (
                             <img
                                 src={`${import.meta.env.VITE_API_URL}${profile.profile_photo}`}
@@ -133,7 +133,7 @@ const ProfileBase = ({ roleTitle, accentColor = "indigo" }) => {
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <FaUser size={65} className="opacity-80 group-hover:scale-110 transition-transform duration-500" />
+                            <FaUser size={48} className="opacity-80 group-hover:scale-110 transition-transform duration-500" />
                         )}
                     </div>
                     <input
@@ -153,23 +153,23 @@ const ProfileBase = ({ roleTitle, accentColor = "indigo" }) => {
 
                 <div className="flex-1 text-center md:text-left relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2 justify-center md:justify-start">
-                        <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none group cursor-default">
+                        <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none group cursor-default">
                             {profile.nama_lengkap || "User Siakad"}
                         </h1>
-                        <span className={`px-4 py-1.5 ${accentBg} text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${accentShadow}`}>
+                        <span className={`px-4 py-1 bg-indigo-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg ${accentShadow}`}>
                             {roleTitle}
                         </span>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm tracking-wide mb-6">@{profile.username} • {profile.email || "Email belum diatur"}</p>
+                    <p className="text-slate-500 dark:text-slate-400 font-bold text-xs tracking-wide mb-4">@{profile.username} • {profile.email || "Email belum diatur"}</p>
 
-                    <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                        <div className="px-5 py-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">ID Pengguna</p>
-                            <p className="font-black text-slate-700 dark:text-slate-200 text-xs">#USR-{profile.id}</p>
+                    <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">ID Pengguna</p>
+                            <p className="font-black text-slate-700 dark:text-slate-200 text-[10px]">#USR-{profile.id}</p>
                         </div>
-                        <div className="px-5 py-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Bergabung Sejak</p>
-                            <p className="font-black text-slate-700 dark:text-slate-200 text-xs">{new Date(profile.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Bergabung Sejak</p>
+                            <p className="font-black text-slate-700 dark:text-slate-200 text-[10px]">{new Date(profile.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                         </div>
                     </div>
                 </div>
