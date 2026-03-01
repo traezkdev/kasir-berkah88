@@ -6,6 +6,7 @@ const DataJadwal = () => {
     const [jadwal, setJadwal] = useState([]);
     const [kelasList, setKelasList] = useState([]);
     const [mapelList, setMapelList] = useState([]);
+    const [guruList, setGuruList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -17,6 +18,7 @@ const DataJadwal = () => {
     const [formData, setFormData] = useState({
         kelas_id: '',
         mapel_id: '',
+        guru_id: '',
         hari: 'Senin',
         jam_mulai: '',
         jam_selesai: '',
@@ -27,6 +29,7 @@ const DataJadwal = () => {
         setFormData({
             kelas_id: '',
             mapel_id: '',
+            guru_id: '',
             hari: 'Senin',
             jam_mulai: '',
             jam_selesai: '',
@@ -63,16 +66,19 @@ const DataJadwal = () => {
             const token = localStorage.getItem('siakad_token');
             const apiUrl = import.meta.env.VITE_API_URL;
 
-            const [resKelas, resMapel] = await Promise.all([
+            const [resKelas, resMapel, resGuru] = await Promise.all([
                 fetch(`${apiUrl}/api/admin/kelas-list`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${apiUrl}/api/admin/mapel`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`${apiUrl}/api/admin/mapel`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${apiUrl}/api/admin/guru-list`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             const dataKelas = await resKelas.json();
             const dataMapel = await resMapel.json();
+            const dataGuru = await resGuru.json();
 
             if (resKelas.ok) setKelasList(dataKelas);
             if (resMapel.ok) setMapelList(dataMapel);
+            if (resGuru.ok) setGuruList(dataGuru);
         } catch (err) {
             console.error("Gagal mengambil data pendukung.");
         }
@@ -129,6 +135,7 @@ const DataJadwal = () => {
         setFormData({
             kelas_id: item.kelas_id,
             mapel_id: item.mapel_id,
+            guru_id: item.guru_id || '',
             hari: item.hari,
             jam_mulai: item.jam_mulai,
             jam_selesai: item.jam_selesai,
@@ -322,9 +329,23 @@ const DataJadwal = () => {
                                     >
                                         <option value="">Pilih Mapel</option>
                                         {mapelList.map(m => (
-                                            <option key={m.id} value={m.id}>{m.nama_mapel} - {m.nama_guru || 'Tanpa Guru'}</option>
+                                            <option key={m.id} value={m.id}>{m.nama_mapel} (Subjek Utama)</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Guru Pengajar (Opsional)</label>
+                                    <select
+                                        value={formData.guru_id}
+                                        onChange={(e) => setFormData({ ...formData, guru_id: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-amber-500 transition-all font-bold"
+                                    >
+                                        <option value="">Gunakan Guru Default Mapel</option>
+                                        {guruList.map(g => (
+                                            <option key={g.id} value={g.id}>{g.nama_lengkap}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-slate-400 italic">Kosongkan jika ingin menggunakan guru yang sudah diatur di menu Mata Pelajaran.</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">

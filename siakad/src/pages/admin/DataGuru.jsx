@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import { FaChalkboardTeacher, FaSearch, FaTrash, FaEdit, FaPlus, FaFilter, FaSyncAlt, FaCalendarAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 
 const DataGuru = () => {
+    const navigate = useNavigate();
     const [guru, setGuru] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -693,7 +695,15 @@ const DataGuru = () => {
                                 {isLoadingJadwal ? (
                                     <div className="text-center py-4 animate-pulse text-[10px] font-bold text-slate-400">Memuat jadwal...</div>
                                 ) : jadwalGuru.length === 0 ? (
-                                    <div className="text-center py-4 text-[10px] font-bold text-slate-400 italic">Belum ada jadwal mengajar</div>
+                                    <div className="text-center py-6 flex flex-col items-center">
+                                        <p className="text-[10px] font-bold text-slate-400 italic mb-3">Belum ada jadwal mengajar</p>
+                                        <button
+                                            onClick={() => { setShowDetailModal(false); navigate('/admin/jadwal'); }}
+                                            className="px-4 py-2 bg-purple-50 text-purple-600 rounded-lg text-[9px] font-black uppercase"
+                                        >
+                                            Atur Sekarang
+                                        </button>
+                                    </div>
                                 ) : (
                                     <div className="space-y-3">
                                         {jadwalGuru.map((j, idx) => (
@@ -876,8 +886,15 @@ const DataGuru = () => {
                                                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sinkronisasi Jadwal...</p>
                                                 </div>
                                             ) : jadwalGuru.length === 0 ? (
-                                                <div className="p-12 bg-slate-50 dark:bg-slate-900/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
-                                                    <p className="text-sm font-bold text-slate-400 italic uppercase tracking-widest">Belum ada jadwal mengajar yang terdaftar.</p>
+                                                <div className="p-12 bg-slate-50 dark:bg-slate-900/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-center flex flex-col items-center">
+                                                    <p className="text-sm font-bold text-slate-400 italic uppercase tracking-widest mb-4">Belum ada jadwal mengajar yang terdaftar.</p>
+                                                    <button
+                                                        onClick={() => { setShowDetailModal(false); navigate('/admin/jadwal'); }}
+                                                        className="px-6 py-2 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-xl text-xs font-black uppercase transition-all flex items-center space-x-2"
+                                                    >
+                                                        <FaPlus size={10} />
+                                                        <span>Atur Jadwal di Sini</span>
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

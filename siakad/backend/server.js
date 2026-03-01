@@ -340,11 +340,14 @@ app.delete('/api/admin/mapel/:id', authenticateToken, isAdmin, async (req, res) 
 app.get('/api/admin/jadwal', authenticateToken, isAdmin, async (req, res) => {
     try {
         const [rows] = await db.query(`
-            SELECT j.*, k.nama_kelas, mp.nama_mapel, u.nama_lengkap as nama_guru
+            SELECT j.*, k.nama_kelas, mp.nama_mapel, 
+                   COALESCE(u.nama_lengkap, u_mp.nama_lengkap) as nama_guru,
+                   COALESCE(j.guru_id, mp.guru_id) as final_guru_id
             FROM jadwal_pelajaran j
             JOIN kelas k ON j.kelas_id = k.id
             JOIN mata_pelajaran mp ON j.mapel_id = mp.id
-            LEFT JOIN users u ON mp.guru_id = u.id
+            LEFT JOIN users u ON j.guru_id = u.id
+            LEFT JOIN users u_mp ON mp.guru_id = u_mp.id
             ORDER BY j.hari ASC, j.jam_mulai ASC
         `);
         res.json(rows);
@@ -365,10 +368,10 @@ app.get('/api/admin/kelas-list', authenticateToken, isAdmin, async (req, res) =>
 
 // Add jadwal
 app.post('/api/admin/jadwal', authenticateToken, isAdmin, async (req, res) => {
-    const { kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan } = req.body;
+    const { kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan, guru_id } = req.body;
     try {
-        const sql = `INSERT INTO jadwal_pelajaran (kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan) VALUES (?, ?, ?, ?, ?, ?)`;
-        await db.query(sql, [kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan]);
+        const sql = `INSERT INTO jadwal_pelajaran (kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan, guru_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        await db.query(sql, [kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan, guru_id || null]);
         res.status(201).json({ message: "Jadwal berhasil ditambahkan." });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -378,10 +381,10 @@ app.post('/api/admin/jadwal', authenticateToken, isAdmin, async (req, res) => {
 // Update jadwal
 app.put('/api/admin/jadwal/:id', authenticateToken, isAdmin, async (req, res) => {
     const { id } = req.params;
-    const { kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan } = req.body;
+    const { kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan, guru_id } = req.body;
     try {
-        const sql = `UPDATE jadwal_pelajaran SET kelas_id = ?, mapel_id = ?, hari = ?, jam_mulai = ?, jam_selesai = ?, ruangan = ? WHERE id = ?`;
-        await db.query(sql, [kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan, id]);
+        const sql = `UPDATE jadwal_pelajaran SET kelas_id = ?, mapel_id = ?, hari = ?, jam_mulai = ?, jam_selesai = ?, ruangan = ?, guru_id = ? WHERE id = ?`;
+        await db.query(sql, [kelas_id, mapel_id, hari, jam_mulai, jam_selesai, ruangan, guru_id || null, id]);
         res.status(200).json({ message: "Jadwal berhasil diperbarui." });
     } catch (err) {
         res.status(500).json({ error: err.message });

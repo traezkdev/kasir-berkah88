@@ -163,6 +163,14 @@ const setupDatabase = async () => {
     `;
     await connection.query(createJadwalTable);
 
+    // Tambahkan kolom guru_id jika belum ada (untuk fleksibilitas pengajar per jadwal)
+    try {
+      await connection.query("ALTER TABLE jadwal_pelajaran ADD COLUMN guru_id INT AFTER mapel_id");
+      await connection.query("ALTER TABLE jadwal_pelajaran ADD CONSTRAINT fk_jadwal_guru FOREIGN KEY (guru_id) REFERENCES users(id) ON DELETE SET NULL");
+    } catch (err) {
+      // Abaikan jika kolom sudah ada
+    }
+
     // 7. Create Settings Table
     const createSettingsTable = `
       CREATE TABLE IF NOT EXISTS settings (
