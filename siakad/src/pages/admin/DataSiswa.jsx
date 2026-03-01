@@ -14,6 +14,8 @@ const DataSiswa = () => {
     // Detail modal state
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedSiswa, setSelectedSiswa] = useState(null);
+    const [nilaiSiswa, setNilaiSiswa] = useState([]);
+    const [isLoadingNilai, setIsLoadingNilai] = useState(false);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -128,6 +130,35 @@ const DataSiswa = () => {
         });
         setIsEditMode(true);
         setShowModal(true);
+    };
+
+    const fetchNilaiSiswa = async (siswaId) => {
+        setIsLoadingNilai(true);
+        try {
+            const token = localStorage.getItem('siakad_token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            const response = await fetch(`${apiUrl}/api/admin/nilai`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                const studentGrades = data.filter(n => n.siswa_id === siswaId);
+                setNilaiSiswa(studentGrades);
+            }
+        } catch (err) {
+            console.error('Fetch nilai error:', err);
+        } finally {
+            setIsLoadingNilai(false);
+        }
+    };
+
+    const handleShowDetail = (item) => {
+        setSelectedSiswa(item);
+        setNilaiSiswa([]); // Reset before fetch
+        setShowDetailModal(true);
+        fetchNilaiSiswa(item.id);
     };
 
     const handleDelete = async (id, nama) => {
@@ -324,7 +355,7 @@ const DataSiswa = () => {
                             ) : filteredSiswa.map((item) => (
                                 <tr
                                     key={item.id}
-                                    onClick={() => { setSelectedSiswa(item); setShowDetailModal(true); }}
+                                    onClick={() => handleShowDetail(item)}
                                     className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer"
                                 >
                                     <td className="px-6 py-4">
@@ -383,7 +414,7 @@ const DataSiswa = () => {
                     ) : filteredSiswa.map((item) => (
                         <div
                             key={item.id}
-                            onClick={() => { setSelectedSiswa(item); setShowDetailModal(true); }}
+                            onClick={() => handleShowDetail(item)}
                             className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer active:scale-[0.98]"
                         >
                             <div className="flex justify-between items-start mb-4">
@@ -570,7 +601,7 @@ const DataSiswa = () => {
             {showDetailModal && selectedSiswa && (
                 <div className="fixed inset-0 z-[99999] overflow-hidden flex items-end sm:hidden">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
-                    <div className="relative w-full bg-white dark:bg-slate-800 rounded-t-[2.5rem] shadow-2xl flex flex-col m-0 animate-in slide-in-from-bottom duration-500 max-h-[90vh]">
+                    <div className="relative w-full bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl flex flex-col m-0 animate-in slide-in-from-bottom duration-500 max-h-[90vh]">
                         {/* Pull Bar */}
                         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto my-4 shrink-0" onClick={() => setShowDetailModal(false)}></div>
 
@@ -622,6 +653,29 @@ const DataSiswa = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Rekap Nilai</p>
+                                    {isLoadingNilai ? (
+                                        <div className="text-center py-4 animate-pulse text-[10px] font-bold text-slate-400">Memuat nilai...</div>
+                                    ) : nilaiSiswa.length === 0 ? (
+                                        <div className="text-center py-4 text-[10px] font-bold text-slate-400 italic">Belum ada data nilai</div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {nilaiSiswa.map((n, idx) => (
+                                                <div key={idx} className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2 last:border-0">
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none mb-1">{n.nama_mapel}</p>
+                                                        <p className="text-[8px] font-bold text-indigo-500 uppercase">{n.semester} • {n.nilai_akhir.toFixed(1)}</p>
+                                                    </div>
+                                                    <div className={`px-2 py-0.5 rounded text-[9px] font-black ${n.nilai_akhir >= 75 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                                        {n.nilai_akhir >= 85 ? 'A' : n.nilai_akhir >= 75 ? 'B' : n.nilai_akhir >= 60 ? 'C' : 'D'}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -670,16 +724,16 @@ const DataSiswa = () => {
                     {/* Content Full Screen */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         <div className="max-w-6xl mx-auto px-8 sm:px-12 py-12">
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
 
                                 {/* Left: Identity Card */}
-                                <div className="lg:col-span-4 space-y-6">
-                                    <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden group">
+                                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-12">
+                                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden group">
                                         <div className="h-32 bg-gradient-to-br from-indigo-600 to-purple-700 relative">
                                             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] text-white"></div>
                                         </div>
                                         <div className="px-8 pb-10 -mt-16 relative text-center">
-                                            <div className="w-32 h-32 mx-auto rounded-[2.5rem] bg-indigo-50 dark:bg-slate-900 border-8 border-white dark:border-slate-800 flex items-center justify-center text-5xl font-black text-indigo-600 shadow-2xl transform group-hover:scale-105 transition-all duration-500">
+                                            <div className="w-32 h-32 mx-auto rounded-3xl bg-indigo-50 dark:bg-slate-900 border-8 border-white dark:border-slate-800 flex items-center justify-center text-5xl font-black text-indigo-600 shadow-2xl transform group-hover:scale-105 transition-all duration-500">
                                                 {selectedSiswa.nama_lengkap?.[0] || 'S'}
                                             </div>
                                             <div className="mt-6">
@@ -701,7 +755,7 @@ const DataSiswa = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+                                    <div className="p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl text-white shadow-2xl relative overflow-hidden group">
                                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-500">
                                             <FaUserGraduate size={100} />
                                         </div>
@@ -728,7 +782,7 @@ const DataSiswa = () => {
 
                                 {/* Right: Detailed Info */}
                                 <div className="lg:col-span-8 space-y-8">
-                                    <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-xl p-8 sm:p-12 space-y-12">
+                                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl p-8 sm:p-12 space-y-12">
 
                                         {/* Section 1: Data Utama */}
                                         <section className="space-y-8">
@@ -782,18 +836,67 @@ const DataSiswa = () => {
                                             </div>
                                         </section>
 
+                                        {/* Section 3: Rekap Nilai */}
+                                        <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-1.5 h-8 bg-amber-500 rounded-full"></div>
+                                                <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Rekapitulasi Nilai Akademik</h4>
+                                            </div>
+
+                                            {isLoadingNilai ? (
+                                                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                                    <div className="w-12 h-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin"></div>
+                                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sinkronisasi Data Nilai...</p>
+                                                </div>
+                                            ) : nilaiSiswa.length === 0 ? (
+                                                <div className="p-12 bg-slate-50 dark:bg-slate-900/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
+                                                    <p className="text-sm font-bold text-slate-400 italic uppercase tracking-widest">Belum ada catatan nilai akademik untuk siswa ini.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {nilaiSiswa.map((n, idx) => (
+                                                        <div key={idx} className="group p-6 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-3xl hover:border-indigo-500/50 transition-all hover:shadow-2xl hover:shadow-indigo-500/10">
+                                                            <div className="flex justify-between items-start mb-4">
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">{n.nama_mapel}</p>
+                                                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-tight">{n.semester} • {n.tahun_ajaran}</p>
+                                                                </div>
+                                                                <div className={`px-4 py-1.5 rounded-xl text-xs font-black tracking-tighter ${n.nilai_akhir >= 75 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                                                    AKHIR: {n.nilai_akhir.toFixed(1)}
+                                                                </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+                                                                <div className="text-center">
+                                                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Harian</p>
+                                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{n.nilai_uh}</p>
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">UTS</p>
+                                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{n.nilai_uts}</p>
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">UAS</p>
+                                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{n.nilai_uas}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </section>
+
                                         {/* Action Buttons Desktop */}
                                         <div className="flex flex-col sm:flex-row gap-4 pt-10">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setShowDetailModal(false); handleEdit(selectedSiswa); }}
-                                                className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-indigo-600/30 transform transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center space-x-3"
+                                                className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-indigo-600/30 transform transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center space-x-3"
                                             >
                                                 <FaEdit size={16} />
                                                 <span>Ubah Data Identitas</span>
                                             </button>
                                             <button
                                                 onClick={() => setShowDetailModal(false)}
-                                                className="flex-1 py-5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
+                                                className="flex-1 py-5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
                                             >
                                                 Kembali ke Data List
                                             </button>
