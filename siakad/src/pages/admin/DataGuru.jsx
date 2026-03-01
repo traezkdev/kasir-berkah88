@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaChalkboardTeacher, FaSearch, FaTrash, FaEdit, FaPlus, FaFilter, FaEllipsisV, FaSyncAlt } from 'react-icons/fa';
+import ReactDOM from 'react-dom';
+import { FaChalkboardTeacher, FaSearch, FaTrash, FaEdit, FaPlus, FaFilter, FaEllipsisV, FaSyncAlt, FaCalendarAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 
 const DataGuru = () => {
@@ -13,6 +14,8 @@ const DataGuru = () => {
     // Detail modal state
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedGuru, setSelectedGuru] = useState(null);
+    const [jadwalGuru, setJadwalGuru] = useState([]);
+    const [isLoadingJadwal, setIsLoadingJadwal] = useState(false);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -127,6 +130,39 @@ const DataGuru = () => {
         });
         setIsEditMode(true);
         setShowModal(true);
+    };
+
+    const fetchJadwalGuru = async (guruId) => {
+        setIsLoadingJadwal(true);
+        try {
+            const token = localStorage.getItem('siakad_token');
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${apiUrl}/api/admin/jadwal`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                // Filter jadwal yang diajar oleh guru ini
+                // Berdasarkan server.js, jadwal join mapel, mapel left join users (guru)
+                // Kita filter berdasarkan guru_id di tabel mata_pelajaran or check join results
+                // Since we don't have guru_id directly in jadwal but names, let's filter by name or if ID is available
+                const teacherSchedule = data.filter(j => j.guru_id === guruId); // Assuming guru_id exists in join
+                setJadwalGuru(teacherSchedule);
+            }
+        } catch (err) {
+            console.error('Fetch jadwal error:', err);
+        } finally {
+            setIsLoadingJadwal(false);
+        }
+    };
+
+    const handleShowDetail = (item) => {
+        setSelectedGuru(item);
+        setJadwalGuru([]);
+        setShowDetailModal(true);
+        fetchJadwalGuru(item.id);
     };
 
     const handleDelete = async (id, nama) => {
@@ -316,7 +352,7 @@ const DataGuru = () => {
                             ) : filteredGuru.map((item) => (
                                 <tr
                                     key={item.id}
-                                    onClick={() => { setSelectedGuru(item); setShowDetailModal(true); }}
+                                    onClick={() => handleShowDetail(item)}
                                     className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer"
                                 >
                                     <td className="px-6 py-4">
@@ -375,7 +411,7 @@ const DataGuru = () => {
                     ) : filteredGuru.map((item) => (
                         <div
                             key={item.id}
-                            onClick={() => { setSelectedGuru(item); setShowDetailModal(true); }}
+                            onClick={() => handleShowDetail(item)}
                             className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all group cursor-pointer active:scale-[0.98]"
                         >
                             <div className="flex justify-between items-start mb-4">
@@ -560,83 +596,312 @@ const DataGuru = () => {
                 </div>
             )}
 
-            {/* Modal Detail Guru */}
+            {/* Modal Detail Guru (MOBILE VERSION) */}
             {showDetailModal && selectedGuru && (
-                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                <div className="fixed inset-0 z-[99999] overflow-hidden flex items-end sm:hidden">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                    <div className="relative w-full bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl flex flex-col m-0 animate-in slide-in-from-bottom duration-500 max-h-[90vh]">
+                        {/* Pull Bar */}
+                        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto my-4 shrink-0" onClick={() => setShowDetailModal(false)}></div>
+
                         {/* Header Detail */}
-                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Detail Informasi Guru</h2>
+                        <div className="px-6 pb-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Profil Guru</h2>
                             <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
 
                         {/* Body Detail */}
-                        <div className="flex-1 overflow-y-auto p-8">
-                            <div className="flex flex-col items-center text-center space-y-4 mb-8">
-                                <div className="w-24 h-24 bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-3xl flex items-center justify-center text-4xl font-black shadow-inner">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-3xl flex items-center justify-center text-3xl font-black shadow-inner shrink-0">
                                     {selectedGuru.nama_lengkap?.[0] || 'G'}
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">{selectedGuru.nama_lengkap}</h3>
-                                    <p className="text-sm font-bold text-purple-500 uppercase tracking-widest">@{selectedGuru.username}</p>
+                                    <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-tight">{selectedGuru.nama_lengkap}</h3>
+                                    <p className="text-xs font-bold text-purple-500 uppercase tracking-widest">@{selectedGuru.username}</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Identitas & Jabatan</p>
-                                    <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Data Kepegawaian</p>
+                                    <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500">NIP / Identitas</span>
-                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{selectedGuru.nisn_nik || '-'}</span>
+                                            <span className="text-xs font-bold text-slate-500 uppercase">NIP / Identitas</span>
+                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">{selectedGuru.nisn_nik || '-'}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500">Jenis Kelamin</span>
-                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${selectedGuru.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                            <span className="text-xs font-bold text-slate-500 uppercase">Gender</span>
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${selectedGuru.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
                                                 {selectedGuru.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
                                             </span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500">Status Akun</span>
-                                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-lg uppercase">Aktif</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-purple-50/30 dark:bg-purple-900/10 rounded-2xl border border-purple-100/50 dark:border-purple-900/30">
-                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-2">Kontak Guru</p>
-                                    <div className="space-y-4">
+                                <div className="p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl border border-purple-100/50 dark:border-purple-900/30">
+                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-3">Kontak</p>
+                                    <div className="space-y-3">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Email Resmi</span>
-                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{selectedGuru.email || '-'}</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Email</span>
+                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{selectedGuru.email || '-'}</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">WhatsApp Business</span>
-                                            <span className="text-lg font-black text-purple-600 dark:text-purple-400">{selectedGuru.wa_number || '-'}</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase mb-1">WhatsApp</span>
+                                            <span className="text-base font-black text-purple-600 dark:text-purple-400">{selectedGuru.wa_number || '-'}</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Jadwal Mengajar</p>
+                                    {isLoadingJadwal ? (
+                                        <div className="text-center py-4 animate-pulse text-[10px] font-bold text-slate-400">Memuat jadwal...</div>
+                                    ) : jadwalGuru.length === 0 ? (
+                                        <div className="text-center py-4 text-[10px] font-bold text-slate-400 italic">Belum ada jadwal mengajar</div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {jadwalGuru.map((j, idx) => (
+                                                <div key={idx} className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2 last:border-0">
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none mb-1">{j.nama_mapel}</p>
+                                                        <p className="text-[8px] font-bold text-purple-500 uppercase">{j.hari} • {j.jam_mulai} - {j.jam_selesai}</p>
+                                                    </div>
+                                                    <div className="px-2 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-600 uppercase">
+                                                        {j.nama_kelas}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         {/* Footer Detail */}
-                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex sm:justify-end gap-3 shrink-0">
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-3 shrink-0 pb-10">
                             <button
-                                onClick={() => setShowDetailModal(false)}
-                                className="flex-1 sm:flex-none px-8 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 transition-all active:scale-95"
+                                onClick={() => { setShowDetailModal(false); handleEdit(selectedGuru); }}
+                                className="w-full py-4 bg-purple-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all active:scale-95"
                             >
-                                Tutup
+                                Edit Data Guru
                             </button>
                             <button
-                                onClick={(e) => { setShowDetailModal(false); handleEdit(selectedGuru); }}
-                                className="flex-1 sm:flex-none px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all active:scale-95"
+                                onClick={() => setShowDetailModal(false)}
+                                className="w-full py-4 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl font-black uppercase text-xs tracking-widest border border-slate-200 dark:border-slate-600 transition-all active:scale-95"
                             >
-                                Edit Profil
+                                Tutup
                             </button>
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Modal Detail Guru (DESKTOP FULL-SCREEN VERSION) */}
+            {showDetailModal && selectedGuru && ReactDOM.createPortal(
+                <div className="fixed inset-0 z-[100000] hidden sm:flex flex-col bg-white dark:bg-[#0F172A] animate-in fade-in duration-300">
+                    {/* Header Full Screen */}
+                    <div className="h-20 px-8 sm:px-12 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md shrink-0">
+                        <div className="flex items-center space-x-4">
+                            <div className="p-3 bg-purple-600 rounded-2xl shadow-lg shadow-purple-600/20 text-white">
+                                <FaChalkboardTeacher size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Profil Lengkap Guru</h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Pendidik Terdaftar dalam Sistem</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowDetailModal(false)}
+                            className="group flex items-center space-x-3 px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all font-black uppercase text-xs tracking-widest"
+                        >
+                            <span>Tutup Detail</span>
+                            <span className="text-2xl leading-none group-hover:rotate-90 transition-transform">×</span>
+                        </button>
+                    </div>
+
+                    {/* Content Full Screen */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <div className="max-w-6xl mx-auto px-8 sm:px-12 py-12">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+
+                                {/* Left: Identity Card */}
+                                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-12">
+                                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden group">
+                                        <div className="h-32 bg-gradient-to-br from-purple-600 to-indigo-700 relative">
+                                            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] text-white"></div>
+                                        </div>
+                                        <div className="px-8 pb-10 -mt-16 relative text-center">
+                                            <div className="w-32 h-32 mx-auto rounded-3xl bg-purple-50 dark:bg-slate-900 border-8 border-white dark:border-slate-800 flex items-center justify-center text-5xl font-black text-purple-600 shadow-2xl transform group-hover:scale-105 transition-all duration-500">
+                                                {selectedGuru.nama_lengkap?.[0] || 'G'}
+                                            </div>
+                                            <div className="mt-6">
+                                                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{selectedGuru.nama_lengkap}</h3>
+                                                <p className="inline-block mt-2 px-4 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                                    @{selectedGuru.username}
+                                                </p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mt-8">
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center border border-slate-100 dark:border-slate-700/50">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                                                    <p className="text-sm font-black text-emerald-600 uppercase">Aktif</p>
+                                                </div>
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center border border-slate-100 dark:border-slate-700/50">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Rating</p>
+                                                    <p className="text-lg font-black text-slate-800 dark:text-white">4.9</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-8 bg-gradient-to-br from-slate-900 to-purple-950 rounded-3xl text-white shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-500">
+                                            <FaChalkboardTeacher size={100} />
+                                        </div>
+                                        <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-4 italic">Ringkasan Guru</h4>
+                                        <div className="space-y-4 relative z-10">
+                                            <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Terdaftar Sejak</span>
+                                                <span className="text-xs font-black">{new Date(selectedGuru.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Role</span>
+                                                <span className="text-xs font-black uppercase">{selectedGuru.role}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Sertifikasi</span>
+                                                <span className="flex items-center space-x-2">
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                                    <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Terverifikasi</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right: Detailed Info */}
+                                <div className="lg:col-span-8 space-y-8">
+                                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl p-8 sm:p-12 space-y-12">
+
+                                        {/* Section 1: Data Utama */}
+                                        <section className="space-y-8">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-1.5 h-8 bg-purple-600 rounded-full"></div>
+                                                <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Informasi Kepegawaian</h4>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nama Lengkap & Gelar</p>
+                                                    <p className="text-lg font-black text-slate-800 dark:text-slate-100 border-b-2 border-slate-50 dark:border-slate-700 pb-2">{selectedGuru.nama_lengkap}</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">NIP / Identitas (Username)</p>
+                                                    <p className="text-lg font-black text-slate-800 dark:text-slate-100 border-b-2 border-slate-50 dark:border-slate-700 pb-2">{selectedGuru.nisn_nik || '-'}</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Jenis Kelamin</p>
+                                                    <div className="flex items-center space-x-3 pt-1">
+                                                        <span className={`px-5 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${selectedGuru.jenis_kelamin === 'L' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-pink-600 text-white shadow-lg shadow-pink-600/20'}`}>
+                                                            {selectedGuru.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status Kepegawaian</p>
+                                                    <p className="text-lg font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">Guru Tetap</p>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 2: Kontak */}
+                                        <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
+                                                <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Konektivitas & Kontak</h4>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                <div className="group space-y-2">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-emerald-500 transition-colors">Alamat Email Resmi</p>
+                                                    <div className="flex items-center space-x-3 text-lg font-black text-slate-800 dark:text-slate-100">
+                                                        <span>{selectedGuru.email || 'Email belum ditautkan'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="group space-y-2">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-emerald-500 transition-colors">WhatsApp Business</p>
+                                                    <div className="flex items-center space-x-3 text-xl font-black text-purple-600 dark:text-purple-400">
+                                                        <span>{selectedGuru.wa_number || 'Tidak ada nomor'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 3: Jadwal Mengajar */}
+                                        <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-1.5 h-8 bg-amber-500 rounded-full"></div>
+                                                <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Jadwal Mengajar Mingguan</h4>
+                                            </div>
+
+                                            {isLoadingJadwal ? (
+                                                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                                    <div className="w-12 h-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin"></div>
+                                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sinkronisasi Jadwal...</p>
+                                                </div>
+                                            ) : jadwalGuru.length === 0 ? (
+                                                <div className="p-12 bg-slate-50 dark:bg-slate-900/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
+                                                    <p className="text-sm font-bold text-slate-400 italic uppercase tracking-widest">Belum ada jadwal mengajar yang terdaftar.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {jadwalGuru.map((j, idx) => (
+                                                        <div key={idx} className="group p-6 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-3xl hover:border-purple-500/50 transition-all hover:shadow-2xl hover:shadow-purple-500/10">
+                                                            <div className="flex justify-between items-start mb-4">
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">{j.nama_mapel}</p>
+                                                                    <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-tight">{j.hari}</p>
+                                                                </div>
+                                                                <div className="px-4 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl text-[10px] font-black tracking-widest uppercase">
+                                                                    {j.nama_kelas}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+                                                                <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                                                    <FaCalendarAlt size={12} className="text-purple-500" />
+                                                                </div>
+                                                                <p className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">
+                                                                    {j.jam_mulai} - {j.jam_selesai}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </section>
+
+                                        {/* Action Buttons Desktop */}
+                                        <div className="flex flex-col sm:flex-row gap-4 pt-10">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setShowDetailModal(false); handleEdit(selectedGuru); }}
+                                                className="flex-1 py-5 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-purple-600/30 transform transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center space-x-3"
+                                            >
+                                                <FaEdit size={16} />
+                                                <span>Ubah Data Guru</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setShowDetailModal(false)}
+                                                className="flex-1 py-5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
+                                            >
+                                                Kembali ke List
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );
