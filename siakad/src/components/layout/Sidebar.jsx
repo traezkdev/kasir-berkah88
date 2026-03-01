@@ -17,13 +17,19 @@ const MenuItem = ({ to, icon: Icon, children, isCollapsed, navLinkClasses, activ
     </NavLink>
 );
 
-const Sidebar = ({ isOpen, toggleSidebar, role = 'admin', sidebarName }) => {
+const Sidebar = ({ isOpen, toggleSidebar, role = 'admin', sidebarName, institutionLogo }) => {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('siakad_user') || '{}');
+    const [logoError, setLogoError] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const savedState = localStorage.getItem('sias_sidebar_collapsed');
         return savedState === 'true';
     });
+
+    // Reset error saat logo berubah (upload/hapus)
+    useEffect(() => {
+        setLogoError(false);
+    }, [institutionLogo]);
 
     useEffect(() => {
         localStorage.setItem('sias_sidebar_collapsed', isCollapsed);
@@ -175,8 +181,17 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'admin', sidebarName }) => {
                 <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-4'} h-20 border-b border-white/10`}>
                     {!isCollapsed && (
                         <div className="flex items-center space-x-3 overflow-hidden">
-                            <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
-                                <FaGraduationCap className="text-white text-xl" />
+                            <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                                {institutionLogo && !logoError ? (
+                                    <img
+                                        src={`${import.meta.env.VITE_API_URL}${institutionLogo}`}
+                                        alt="Logo"
+                                        className="w-full h-full object-contain"
+                                        onError={() => setLogoError(true)}
+                                    />
+                                ) : (
+                                    <FaGraduationCap className="text-white text-xl" />
+                                )}
                             </div>
                             <h1 className="text-lg font-black text-white whitespace-nowrap uppercase tracking-tighter leading-none">
                                 {sidebarName} <br />
@@ -185,8 +200,17 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'admin', sidebarName }) => {
                         </div>
                     )}
                     {isCollapsed && (
-                        <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
-                            <FaGraduationCap className="text-white text-xl" />
+                        <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                            {institutionLogo && !logoError ? (
+                                <img
+                                    src={`${import.meta.env.VITE_API_URL}${institutionLogo}`}
+                                    alt="Logo"
+                                    className="w-full h-full object-contain"
+                                    onError={() => setLogoError(true)}
+                                />
+                            ) : (
+                                <FaGraduationCap className="text-white text-xl" />
+                            )}
                         </div>
                     )}
 

@@ -27,9 +27,13 @@ const AdminSettings = () => {
         register_subtitle: 'Platform sistem informasi akademik terpadu untuk kemudahan akses edukasi dan manajemen sekolah masa kini.',
         header_name: 'Sistem Informasi Akademik',
         sidebar_name: 'SIAS PRO',
+        institution_logo: null
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [logoFile, setLogoFile] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
+    const [logoImgError, setLogoImgError] = useState(false);
 
     // Antarmuka Modal
     const [activeCategory, setActiveCategory] = useState(null); // 'tampilan', 'sekolah', dll
@@ -46,13 +50,13 @@ const AdminSettings = () => {
             if (response.ok) {
                 setSettings(prev => ({
                     ...prev,
-                    ...data,
                     welcome_title: data.welcome_title || prev.welcome_title,
                     welcome_subtitle: data.welcome_subtitle || prev.welcome_subtitle,
                     register_title: data.register_title || prev.register_title,
                     register_subtitle: data.register_subtitle || prev.register_subtitle,
                     header_name: data.header_name || prev.header_name,
-                    sidebar_name: data.sidebar_name || prev.sidebar_name
+                    sidebar_name: data.sidebar_name || prev.sidebar_name,
+                    institution_logo: data.institution_logo || prev.institution_logo
                 }));
             }
         } catch (err) {
@@ -74,6 +78,10 @@ const AdminSettings = () => {
     const openEditor = (category) => {
         setActiveCategory(category);
         setTempSettings({ ...settings });
+        // Reset logo file selection saat modal dibuka (logo yg sudah ada tetap dari settings)
+        setLogoFile(null);
+        setLogoPreview(null);
+        setLogoImgError(false);
     };
 
     // Menyimpan perubahan dari modal ke database
@@ -82,6 +90,30 @@ const AdminSettings = () => {
         try {
             const token = localStorage.getItem('siakad_token');
             const apiUrl = import.meta.env.VITE_API_URL;
+
+            // Upload logo dulu jika ada file yang dipilih
+            if (logoFile) {
+                const formData = new FormData();
+                formData.append('logo', logoFile);
+                const logoResponse = await fetch(`${apiUrl}/api/admin/settings/logo`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const logoData = await logoResponse.json();
+                if (logoResponse.ok) {
+                    tempSettings.institution_logo = logoData.logoUrl;
+                    setSettings(prev => ({ ...prev, institution_logo: logoData.logoUrl }));
+                    // Broadcast ke Sidebar agar langsung update
+                    window.dispatchEvent(new CustomEvent('siakad-logo-changed', { detail: { institution_logo: logoData.logoUrl } }));
+                } else {
+                    toast.error(logoData.error || "Gagal mengunggah logo.");
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
+            // Simpan pengaturan lainnya
             const response = await fetch(`${apiUrl}/api/admin/settings`, {
                 method: 'POST',
                 headers: {
@@ -92,9 +124,11 @@ const AdminSettings = () => {
             });
 
             if (response.ok) {
-                setSettings(tempSettings); // Update state utama
-                toast.success("Pengaturan berhasil diperbarui!");
-                setActiveCategory(null); // Tutup modal
+                setSettings(prev => ({ ...prev, ...tempSettings }));
+                setLogoFile(null);
+                setLogoPreview(null);
+                toast.success("Konfigurasi berhasil disimpan!");
+                setActiveCategory(null);
             } else {
                 toast.error("Gagal menyimpan perubahan.");
             }
@@ -102,6 +136,42 @@ const AdminSettings = () => {
             toast.error("Terjadi kesalahan koneksi.");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setLogoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => setLogoPreview(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleDeleteLogo = async () => {
+        if (!window.confirm('Hapus logo institusi? Ikon default akan digunakan kembali.')) return;
+        const loadingToast = toast.loading('Menghapus logo...');
+        try {
+            const token = localStorage.getItem('siakad_token');
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${apiUrl}/api/admin/settings/logo`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setSettings(prev => ({ ...prev, institution_logo: null }));
+                setLogoFile(null);
+                setLogoPreview(null);
+                setLogoImgError(false);
+                // Broadcast ke seluruh komponen (AdminLayout/Sidebar) agar update logo
+                window.dispatchEvent(new CustomEvent('siakad-logo-changed', { detail: { institution_logo: null } }));
+                toast.success('Logo berhasil dihapus.', { id: loadingToast });
+            } else {
+                toast.error('Gagal menghapus logo.', { id: loadingToast });
+            }
+        } catch (err) {
+            toast.error('Kesalahan koneksi.', { id: loadingToast });
         }
     };
 
@@ -336,19 +406,61 @@ const AdminSettings = () => {
 
                                         <div className="p-12 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-[3rem] border border-white dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center gap-12">
                                             <div className="relative group shrink-0">
-                                                <div className="w-40 h-40 bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-500 ring-8 ring-indigo-500/5">
-                                                    <FaSchool className="text-indigo-600" size={60} />
+                                                <div className="w-40 h-40 bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-500 ring-8 ring-indigo-500/5 overflow-hidden">
+                                                    {logoPreview ? (
+                                                        <img
+                                                            src={logoPreview}
+                                                            alt="Logo Preview"
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    ) : (settings.institution_logo && !logoFile && !logoImgError) ? (
+                                                        <img
+                                                            src={`${import.meta.env.VITE_API_URL}${settings.institution_logo}`}
+                                                            alt="Logo"
+                                                            className="w-full h-full object-contain"
+                                                            onError={() => setLogoImgError(true)}
+                                                        />
+                                                    ) : (
+                                                        <FaSchool className="text-indigo-600" size={60} />
+                                                    )}
                                                 </div>
                                                 <div className="absolute -bottom-4 -right-4 p-4 bg-indigo-600 text-white rounded-2xl shadow-xl">
-                                                    <FaSave size={18} />
+                                                    <FaSyncAlt size={18} />
                                                 </div>
                                             </div>
                                             <div className="flex-1 text-center md:text-left">
                                                 <h4 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-3">Logo Institusi</h4>
                                                 <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed mb-8 max-w-md">Kustomisasi identitas visual sekolah Anda. Logo akan muncul di halaman login, laporan, dan profil sekolah.</p>
                                                 <div className="flex flex-wrap gap-4 justify-center md:justify-start font-black text-[9px] uppercase tracking-widest">
-                                                    <button className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-400 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-not-allowed transition-all opacity-60">Pilih File...</button>
-                                                    <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-600/20 cursor-not-allowed opacity-60">Unggah Logo</button>
+                                                    <input
+                                                        type="file"
+                                                        id="logoInput"
+                                                        className="hidden"
+                                                        onChange={handleFileChange}
+                                                        accept="image/*"
+                                                    />
+                                                    <button
+                                                        onClick={() => document.getElementById('logoInput').click()}
+                                                        className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition-all font-black"
+                                                    >
+                                                        {logoFile ? `✓ ${logoFile.name.substring(0, 20)}...` : 'Pilih File Logo...'}
+                                                    </button>
+                                                    {(settings.institution_logo && !logoFile) && (
+                                                        <button
+                                                            onClick={handleDeleteLogo}
+                                                            className="px-8 py-4 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-2xl border border-red-200 dark:border-red-800/50 hover:bg-red-100 hover:border-red-400 transition-all font-black"
+                                                        >
+                                                            Hapus Logo
+                                                        </button>
+                                                    )}
+                                                    {logoFile && (
+                                                        <button
+                                                            onClick={() => { setLogoFile(null); setLogoPreview(null); document.getElementById('logoInput').value = ''; }}
+                                                            className="px-8 py-4 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-2xl border border-slate-200 dark:border-slate-600 hover:bg-slate-200 transition-all font-black"
+                                                        >
+                                                            × Batal
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

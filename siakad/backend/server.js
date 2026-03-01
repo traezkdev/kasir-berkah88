@@ -473,6 +473,26 @@ app.post('/api/admin/settings/logo', authenticateToken, isAdmin, upload.single('
     }
 });
 
+// Delete Institution Logo
+app.delete('/api/admin/settings/logo', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT setting_value FROM settings WHERE setting_key = 'institution_logo'");
+        if (rows.length > 0 && rows[0].setting_value) {
+            const oldFilePath = path.join(__dirname, rows[0].setting_value);
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath);
+            }
+        }
+        await db.query(
+            "INSERT INTO settings (setting_key, setting_value) VALUES ('institution_logo', NULL) ON DUPLICATE KEY UPDATE setting_value = NULL"
+        );
+        res.json({ message: "Logo institusi berhasil dihapus." });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Gagal menghapus logo." });
+    }
+});
+
 // ==========================================
 // 8. MANAJEMEN NILAI (ADMIN)
 // ==========================================
