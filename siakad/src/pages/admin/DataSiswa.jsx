@@ -21,6 +21,7 @@ const DataSiswa = () => {
     const [showModal, setShowModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
+    const [kelasList, setKelasList] = useState([]);
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -29,7 +30,8 @@ const DataSiswa = () => {
         nisn_nik: '',
         email: '',
         wa_number: '',
-        status: 'aktif'
+        status: 'aktif',
+        kelas_id: ''
     });
 
     const resetForm = () => {
@@ -45,6 +47,22 @@ const DataSiswa = () => {
         });
         setSelectedId(null);
         setIsEditMode(false);
+    };
+
+    const fetchKelasList = async () => {
+        try {
+            const token = localStorage.getItem('siakad_token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            const response = await fetch(`${apiUrl}/api/admin/kelas-list`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setKelasList(data);
+            }
+        } catch (err) {
+            console.error("Gagal mengambil daftar kelas:", err);
+        }
     };
 
     const fetchSiswa = async () => {
@@ -74,6 +92,7 @@ const DataSiswa = () => {
 
     useEffect(() => {
         fetchSiswa();
+        fetchKelasList();
     }, []);
 
     const handleSubmit = async (e) => {
@@ -129,7 +148,8 @@ const DataSiswa = () => {
             nisn_nik: item.nisn_nik || '',
             email: item.email || '',
             wa_number: item.wa_number || '',
-            status: item.status || 'aktif'
+            status: item.status || 'aktif',
+            kelas_id: item.kelas_id || ''
         });
         setIsEditMode(true);
         setShowModal(true);
@@ -368,7 +388,12 @@ const DataSiswa = () => {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{item.nama_lengkap}</p>
-                                                <p className="text-xs text-slate-400 font-medium tracking-wide">@{item.username}</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-xs text-slate-400 font-medium tracking-wide">@{item.username}</p>
+                                                    {item.nama_kelas && (
+                                                        <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded text-[9px] font-black uppercase">{item.nama_kelas}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -461,7 +486,6 @@ const DataSiswa = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NISN / Identitas</p>
                                     <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                         <span className="bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-md">
                                             {item.nisn_nik || '-'}
@@ -469,6 +493,12 @@ const DataSiswa = () => {
                                     </p>
                                 </div>
                                 <div className="space-y-1 text-right">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kelas</p>
+                                    <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                                        {item.nama_kelas || 'TIDAK ADA KELAS'}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Kelamin</p>
                                     <p className="text-sm font-bold">
                                         <span className={`px-2.5 py-1 rounded-md ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
@@ -616,6 +646,19 @@ const DataSiswa = () => {
                                             </button>
                                         </div>
                                     </div>
+                                    <div className="md:col-span-2 space-y-1.5">
+                                        <label className="text-sm font-bold text-slate-500 uppercase tracking-tight">Kelas (Penempatan)</label>
+                                        <select
+                                            value={formData.kelas_id}
+                                            onChange={(e) => setFormData({ ...formData, kelas_id: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold"
+                                        >
+                                            <option value="">-- Tanpa Kelas --</option>
+                                            {kelasList.map(k => (
+                                                <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -676,6 +719,10 @@ const DataSiswa = () => {
                                         <div className="flex justify-between items-center">
                                             <span className="text-xs font-bold text-slate-500 uppercase">NISN / NIK</span>
                                             <span className="text-xs font-black text-slate-800 dark:text-slate-200">{selectedSiswa.nisn_nik || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500 uppercase">Kelas</span>
+                                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase">{selectedSiswa.nama_kelas || 'Belum Diatur'}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-xs font-bold text-slate-500 uppercase">Gender</span>
@@ -797,6 +844,13 @@ const DataSiswa = () => {
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Poin Pel.</p>
                                                     <p className="text-lg font-black text-emerald-600">0</p>
                                                 </div>
+                                            </div>
+
+                                            {/* Integrated Class Card */}
+                                            <div className="mt-4 p-5 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 flex flex-col items-center text-center">
+                                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Kelas Aktif</p>
+                                                <h4 className="text-xl font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">{selectedSiswa.nama_kelas || 'BTM'}</h4>
+                                                <p className="text-[9px] text-indigo-400/80 font-bold mt-1">Penempatan Kelas Terintegrasi</p>
                                             </div>
                                         </div>
                                     </div>

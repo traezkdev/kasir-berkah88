@@ -1,8 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaChalkboardTeacher, FaUsers, FaChartLine, FaCalendarAlt } from 'react-icons/fa';
 import StatCard from '../../components/ui/StatCard';
 
 const GuruDashboard = () => {
+    const [stats, setStats] = useState({
+        jamMengajar: 0,
+        trendJam: '0 dari kemarin',
+        siswaWali: 0,
+        namaKelas: '-',
+        rataNilai: 0,
+        trendNilai: '+0 poin'
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const token = localStorage.getItem('siakad_token');
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+                const response = await fetch(`${apiUrl}/api/guru/dashboard-stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    setStats(data);
+                }
+            } catch (err) {
+                console.error("Gagal mengambil statistik dashboard guru:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     return (
         <div className="space-y-8 px-4 sm:px-6 lg:px-8">
             <div>
@@ -14,27 +48,27 @@ const GuruDashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard
                     title="Jam Mengajar Hari Ini"
-                    value="6 Jam"
+                    value={`${stats.jamMengajar} Jam`}
                     icon={FaChalkboardTeacher}
                     color="indigo"
-                    trend="+2 dari kemarin"
+                    trend={stats.trendJam}
                     description="Total jam pelajaran (JP) terjadwal hari ini."
                     badgeText="GURU"
                 />
                 <StatCard
                     title="Siswa Wali (Wali Kelas)"
-                    value="36 Siswa"
+                    value={`${stats.siswaWali} Siswa`}
                     icon={FaUsers}
                     color="purple"
-                    description="Jumlah siswa di kelas yang Anda ampu (X MIPA 1)."
+                    description={`Jumlah siswa di kelas yang Anda ampu (${stats.namaKelas}).`}
                     badgeText="WALI"
                 />
                 <StatCard
                     title="Rata-rata Nilai Mapel"
-                    value="78.5"
+                    value={stats.rataNilai}
                     icon={FaChartLine}
                     color="emerald"
-                    trend="+2.4 poin"
+                    trend={stats.trendNilai}
                     description="Rata-rata nilai tugas & ujian seluruh kelas."
                     badgeText="NILAI"
                 />

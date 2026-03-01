@@ -169,7 +169,11 @@ const isAdmin = (req, res, next) => {
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { role } = req.query;
-        let sql = 'SELECT id, username, nama_lengkap, role, jenis_kelamin, profile_photo, nisn_nik, email, wa_number, status, status_kepegawaian, created_at FROM users';
+        let sql = `
+            SELECT u.*, k.nama_kelas 
+            FROM users u
+            LEFT JOIN kelas k ON u.kelas_id = k.id
+        `;
         let params = [];
 
         if (role) {
@@ -202,18 +206,58 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status, status_kepegawaian } = req.body;
+        const { nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status, status_kepegawaian, kelas_id } = req.body;
 
         const sql = `
             UPDATE users 
-            SET nama_lengkap = ?, nisn_nik = ?, email = ?, wa_number = ?, role = ?, jenis_kelamin = ?, status = ?, status_kepegawaian = ?
+            SET nama_lengkap = ?, nisn_nik = ?, email = ?, wa_number = ?, role = ?, jenis_kelamin = ?, status = ?, status_kepegawaian = ?, kelas_id = ?
             WHERE id = ?
         `;
-        await db.query(sql, [nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status || 'aktif', status_kepegawaian || 'Guru Tetap', id]);
+        await db.query(sql, [nama_lengkap, nisn_nik, email, wa_number, role, jenis_kelamin, status || 'aktif', status_kepegawaian || 'Guru Tetap', kelas_id || null, id]);
         res.json({ message: "Data user berhasil diperbarui." });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Gagal memperbarui data user." });
+    }
+});
+
+// Create User (Admin only)
+app.post('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { username, password, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number, status, status_kepegawaian, kelas_id } = req.body;
+
+        if (!username || !password || !role) {
+            return res.status(400).json({ error: "Username, password, and role are required" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const sql = `
+            INSERT INTO users (username, password, nama_lengkap, role, jenis_kelamin, nisn_nik, email, wa_number, status, status_kepegawaian, kelas_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        await db.query(sql, [
+            username,
+            hashedPassword,
+            nama_lengkap,
+            role,
+            jenis_kelamin,
+            nisn_nik,
+            email,
+            wa_number,
+            status || 'aktif',
+            status_kepegawaian || (role === 'guru' ? 'Guru Tetap' : null),
+            kelas_id || null
+        ]);
+
+        res.status(201).json({ message: "User created successfully" });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: "Username already exists" });
+        }
+        console.error(err);
+        res.status(500).json({ error: "Internal server error" });
     }
 });
 
@@ -615,6 +659,73 @@ app.get('/api/admin/dashboard-stats', authenticateToken, isAdmin, async (req, re
             pertemuanHariIni: jadwalRow[0].total,
             recentSiswa: recentSiswa,
             recentAgenda: recentAgenda
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- GURU DASHBOARD STATS ---
+app.get('/api/guru/dashboard-stats', authenticateToken, async (req, res) => {
+    try {
+        const guruId = req.user.id;
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const todayIdx = new Date().getDay();
+        const today = days[todayIdx];
+        const yesterday = days[todayIdx === 0 ? 6 : todayIdx - 1];
+
+        // 1. Jam Mengajar Hari Ini
+        const [jadwalHariIni] = await db.query(`
+            SELECT j.* FROM jadwal_pelajaran j
+            JOIN mata_pelajaran mp ON j.mapel_id = mp.id
+            WHERE mp.guru_id = ? AND j.hari = ?
+        `, [guruId, today]);
+
+        const [jadwalYesterday] = await db.query(`
+            SELECT j.* FROM jadwal_pelajaran j
+            JOIN mata_pelajaran mp ON j.mapel_id = mp.id
+            WHERE mp.guru_id = ? AND j.hari = ?
+        `, [guruId, yesterday]);
+
+        // Hitung total jam (asumsi 1 record = 2 JP atau bisa hitung durasi)
+        // Untuk kemudahan, kita hitung jumlah pertemuan dulu, atau durasi jika perlu.
+        // Label di UI "6 Jam", biasanya JP. Mari kita asumsikan 1 record = 2 Jam (rata-rata) atau sesuai jam_mulai/selesai.
+        const calculateJP = (jadwal) => {
+            return jadwal.length * 2; // Sederhana: 1 pertemuan = 2 JP
+        };
+
+        const totalJPHariIni = calculateJP(jadwalHariIni);
+        const totalJPYesterday = calculateJP(jadwalYesterday);
+        const diffJP = totalJPHariIni - totalJPYesterday;
+
+        // 2. Siswa Wali
+        const [kelasWali] = await db.query("SELECT * FROM kelas WHERE wali_kelas_id = ?", [guruId]);
+        let totalSiswaWali = 0;
+        let namaKelasWali = '-';
+        if (kelasWali.length > 0) {
+            namaKelasWali = kelasWali[0].nama_kelas;
+            const [siswaRow] = await db.query("SELECT COUNT(*) as total FROM users WHERE kelas_id = ? AND role = 'siswa'", [kelasWali[0].id]);
+            totalSiswaWali = siswaRow[0].total;
+        }
+
+        // 3. Rata-rata Nilai
+        // Ambil nilai dari siswa di kelas yang diampu guru tersebut atau mapel yang diajar
+        const [nilaiRows] = await db.query(`
+            SELECT AVG(nilai_akhir) as avg_nilai FROM nilai 
+            WHERE guru_id = ?
+        `, [guruId]);
+
+        // Ambil nilai periode sebelumnya (misal ganjil vs genap atau asumsikan tren statis dulu)
+        const avgNilai = parseFloat(nilaiRows[0].avg_nilai || 0).toFixed(1);
+
+        res.json({
+            jamMengajar: totalJPHariIni,
+            trendJam: diffJP >= 0 ? `+${diffJP} dari kemarin` : `${diffJP} dari kemarin`,
+            siswaWali: totalSiswaWali,
+            namaKelas: namaKelasWali,
+            rataNilai: avgNilai,
+            trendNilai: "+0.0 poin" // Dummy trend for now
         });
     } catch (err) {
         console.error(err);

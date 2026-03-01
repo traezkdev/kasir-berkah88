@@ -64,6 +64,14 @@ const setupDatabase = async () => {
       // Abaikan jika kolom sudah ada
     }
 
+    // Tambahkan kolom kelas_id jika belum ada (untuk siswa)
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN kelas_id INT AFTER status_kepegawaian");
+      await connection.query("ALTER TABLE users ADD CONSTRAINT fk_user_kelas FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE SET NULL");
+    } catch (err) {
+      // Abaikan jika kolom sudah ada atau constraint sudah ada
+    }
+
     // 2. Create Kelas Table
     const createKelasTable = `
       CREATE TABLE IF NOT EXISTS kelas (
