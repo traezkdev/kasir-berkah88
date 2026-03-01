@@ -47,13 +47,13 @@ const AdminLayout = () => {
     }, []);
 
     return (
-        <div className="flex h-screen bg-[#F8FAFC] dark:bg-[#111827] text-gray-900 dark:text-gray-100 style-elegant">
+        <div className="flex h-screen bg-[#F8FAFC] dark:bg-[#111827] text-gray-900 dark:text-gray-100 style-elegant transition-colors duration-500">
             <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} role={role} sidebarName={sidebarName} institutionLogo={institutionLogo} />
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Header toggleSidebar={toggleSidebar} headerName={headerName} role={role} />
 
-                <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] dark:bg-[#0F172A] ${location.pathname.includes('/profile') || location.pathname.includes('/admin/settings') ? '' : 'py-4 sm:py-6 lg:py-8 px-3 sm:px-6'}`}>
+                <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] dark:bg-[#0F172A] transition-colors duration-500 ${location.pathname.includes('/profile') || location.pathname.includes('/admin/settings') ? '' : 'py-4 sm:py-6 lg:py-8 px-3 sm:px-6'}`}>
                     <div className="w-full">
                         <Outlet />
                     </div>

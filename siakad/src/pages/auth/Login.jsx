@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaGraduationCap, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaArrowRight } from 'react-icons/fa';
+import { FaGraduationCap, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaSun, FaMoon } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
 
 const Login = () => {
+    const { isDarkMode, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -69,7 +71,16 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex bg-white dark:bg-slate-950 overflow-x-hidden">
+        <div className="min-h-screen w-full flex bg-white dark:bg-slate-950 overflow-x-hidden relative">
+            {/* Toggle Theme Floating */}
+            <button
+                onClick={toggleTheme}
+                className="absolute top-6 right-6 z-[100] p-3 bg-white/10 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all text-slate-600 dark:text-indigo-400"
+                title={isDarkMode ? "Mode Terang" : "Mode Gelap"}
+            >
+                {isDarkMode ? <FaSun size={20} className="text-yellow-400" /> : <FaMoon size={20} />}
+            </button>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 w-full">
 
                 {/* Sisi Kiri: Informasi (Sama dengan Register) */}
@@ -105,7 +116,7 @@ const Login = () => {
                 </div>
 
                 {/* Sisi Kanan: Form Login (Harus identik style-nya dengan Register) */}
-                <div className="flex flex-col justify-center items-center bg-white dark:bg-slate-900 p-8 sm:p-12 lg:px-20 relative overflow-y-auto min-h-screen">
+                <div className="flex flex-col justify-center items-center bg-white dark:bg-slate-900 p-8 sm:p-12 lg:px-20 relative overflow-y-auto min-h-screen transition-colors duration-500">
                     <div className="w-full max-w-xl relative z-10">
 
                         {/* Mobile Logo */}
@@ -187,7 +198,7 @@ const Login = () => {
 
                         <div className="mt-12 text-center">
                             <p className="text-gray-500 dark:text-slate-400 font-bold text-sm tracking-wide">
-                                Belum terdaftar? <Link to="/register" className="text-indigo-600 hover:underline ml-1">Daftar Akun Baru</Link>
+                                Belum terdaftar? <Link to="/register" className="text-indigo-600 dark:text-indigo-400 hover:underline ml-1">Daftar Akun Baru</Link>
                             </p>
                         </div>
                     </div>

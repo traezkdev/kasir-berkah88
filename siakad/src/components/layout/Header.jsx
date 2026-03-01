@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaBars, FaBell, FaUserCircle } from 'react-icons/fa';
+import { FaBars, FaBell, FaUserCircle, FaSun, FaMoon } from 'react-icons/fa';
+import { useTheme } from '../../context/ThemeContext';
 
 const Header = ({ toggleSidebar, headerName, role }) => {
+    const { isDarkMode, toggleTheme } = useTheme();
     const user = JSON.parse(localStorage.getItem('siakad_user') || '{}');
     const profilePath = role === 'admin' ? '/admin/profile' : `/${role}/profile`;
 
@@ -21,6 +23,14 @@ const Header = ({ toggleSidebar, headerName, role }) => {
             </div>
 
             <div className="flex items-center space-x-4">
+                <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                    title={isDarkMode ? "Aktifkan Mode Terang" : "Aktifkan Mode Gelap"}
+                >
+                    {isDarkMode ? <FaSun size={20} className="text-yellow-400" /> : <FaMoon size={20} />}
+                </button>
+
                 <button className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors relative">
                     <FaBell size={20} />
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-[#1F2937]"></span>

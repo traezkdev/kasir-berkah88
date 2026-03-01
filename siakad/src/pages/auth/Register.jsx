@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaGraduationCap, FaEnvelope, FaLock, FaUser, FaPhone, FaArrowRight, FaIdCard } from 'react-icons/fa';
+import { FaGraduationCap, FaEnvelope, FaLock, FaUser, FaPhone, FaArrowRight, FaIdCard, FaSun, FaMoon } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
 
 const Register = () => {
+    const { isDarkMode, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -89,7 +91,16 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex bg-white dark:bg-slate-950 overflow-x-hidden">
+        <div className="min-h-screen w-full flex bg-white dark:bg-slate-950 overflow-x-hidden relative">
+            {/* Toggle Theme Floating */}
+            <button
+                onClick={toggleTheme}
+                className="absolute top-6 right-6 z-[100] p-3 bg-white/10 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all text-slate-600 dark:text-indigo-400"
+                title={isDarkMode ? "Mode Terang" : "Mode Gelap"}
+            >
+                {isDarkMode ? <FaSun size={20} className="text-yellow-400" /> : <FaMoon size={20} />}
+            </button>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 w-full">
 
                 {/* Sisi Kiri: Informasi */}
@@ -125,10 +136,10 @@ const Register = () => {
                 </div>
 
                 {/* Sisi Kanan: Form Registrasi (Sesuai Snippet Anda) */}
-                <div className="flex flex-col justify-center items-center bg-white dark:bg-slate-900 p-8 sm:p-12 lg:px-20 relative overflow-y-auto min-h-screen">
+                <div className="flex flex-col justify-center items-center bg-white dark:bg-slate-900 p-8 sm:p-12 lg:px-20 relative overflow-y-auto min-h-screen transition-colors duration-500">
                     <div className="w-full max-w-2xl relative z-10">
 
-                        <div className="lg:hidden flex items-center space-x-3 mb-10">
+                        <div className="lg:hidden flex items-center space-x-3 mb-10 text-center justify-center">
                             <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
                                 <FaGraduationCap size={20} className="text-white" />
                             </div>
@@ -298,7 +309,7 @@ const Register = () => {
 
                         <div className="mt-12 text-center">
                             <p className="text-gray-500 dark:text-slate-400 font-medium font-bold text-sm tracking-wide">
-                                Sudah memiliki akun? <Link to="/login" className="text-purple-600 font-black hover:underline ml-1">Login Masuk</Link>
+                                Sudah memiliki akun? <Link to="/login" className="text-purple-600 dark:text-purple-400 font-black hover:underline ml-1">Login Masuk</Link>
                             </p>
                         </div>
                     </div>
