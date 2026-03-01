@@ -664,6 +664,14 @@ const DataGuru = () => {
                                             <span className="text-xs font-bold text-slate-500 uppercase">Status</span>
                                             <span className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase">{selectedGuru.status_kepegawaian || 'Guru Tetap'}</span>
                                         </div>
+                                        {selectedGuru.wali_kelas_dari && (
+                                            <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                                                <span className="text-xs font-bold text-slate-500 uppercase">Wali Kelas</span>
+                                                <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">
+                                                    {selectedGuru.wali_kelas_dari}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -825,6 +833,16 @@ const DataGuru = () => {
                                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status Kepegawaian</p>
                                                     <p className="text-lg font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">{selectedGuru.status_kepegawaian || 'Guru Tetap'}</p>
                                                 </div>
+                                                {selectedGuru.wali_kelas_dari && (
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Penugasan Wali Kelas</p>
+                                                        <div className="flex items-center space-x-2">
+                                                            <span className="px-4 py-1.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-sm font-black uppercase tracking-tighter border border-indigo-200 dark:border-indigo-800">
+                                                                WALI KELAS: {selectedGuru.wali_kelas_dari}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </section>
                                         <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">

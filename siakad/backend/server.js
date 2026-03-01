@@ -170,9 +170,10 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { role } = req.query;
         let sql = `
-            SELECT u.*, k.nama_kelas 
+            SELECT u.*, k.nama_kelas, w.nama_kelas AS wali_kelas_dari
             FROM users u
             LEFT JOIN kelas k ON u.kelas_id = k.id
+            LEFT JOIN kelas w ON u.id = w.wali_kelas_id
         `;
         let params = [];
 
