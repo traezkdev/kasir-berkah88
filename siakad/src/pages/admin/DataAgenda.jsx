@@ -211,7 +211,18 @@ const DataAgenda = () => {
                 <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-slate-700">
                     {days.map((d, i) => {
                         const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
-                        const dayAgendas = agenda.filter(a => a.tanggal?.split('T')[0] === dateString);
+                        // Normalisasi tanggal dari DB: ambil hanya bagian tanggal (YYYY-MM-DD) tanpa timezone conversion
+                        const getLocalDateString = (tanggal) => {
+                            if (!tanggal) return '';
+                            // Jika sudah format YYYY-MM-DD, langsung pakai
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) return tanggal;
+                            // Jika format ISO dengan 'T', ambil bagian sebelum T (UTC date) tapi koreksi dengan offset lokal
+                            const d = new Date(tanggal);
+                            const offset = d.getTimezoneOffset() * 60000;
+                            const local = new Date(d.getTime() - offset);
+                            return local.toISOString().split('T')[0];
+                        };
+                        const dayAgendas = agenda.filter(a => getLocalDateString(a.tanggal) === dateString);
                         const isToday = new Date().toDateString() === new Date(year, month, d.day).toDateString() && d.currentMonth;
 
                         return (
