@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const token = localStorage.getItem('siakad_token');
@@ -7,6 +8,21 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
     // Jika tidak ada token, arahkan ke login
     if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Validasi apakah token sudah expired
+    try {
+        const decoded = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp < currentTime) {
+            localStorage.removeItem('siakad_token');
+            localStorage.removeItem('siakad_user');
+            return <Navigate to="/login" replace />;
+        }
+    } catch (error) {
+        localStorage.removeItem('siakad_token');
+        localStorage.removeItem('siakad_user');
         return <Navigate to="/login" replace />;
     }
 

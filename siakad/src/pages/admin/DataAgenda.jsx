@@ -10,7 +10,11 @@ const DataAgenda = () => {
     const [filterType, setFilterType] = useState('All');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-    const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+    const [viewMode, setViewMode] = useState(() => localStorage.getItem('siakad_agenda_view') || 'list'); // 'list' or 'calendar'
+
+    useEffect(() => {
+        localStorage.setItem('siakad_agenda_view', viewMode);
+    }, [viewMode]);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedAgenda, setSelectedAgenda] = useState(null);
 

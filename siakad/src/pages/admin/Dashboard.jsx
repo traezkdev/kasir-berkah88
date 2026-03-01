@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUserGraduate, FaChalkboardTeacher, FaBook, FaCalendarCheck } from 'react-icons/fa';
 import StatCard from '../../components/ui/StatCard';
+import api from '../../utils/api';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -17,19 +18,8 @@ const Dashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const token = localStorage.getItem('siakad_token');
-            const apiUrl = import.meta.env.VITE_API_URL;
-            const response = await fetch(`${apiUrl}/api/admin/dashboard-stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (response.ok) {
-                setStats(data);
-            } else {
-                console.error("Gagal mengambil data statistik.");
-            }
+            const response = await api.get('/api/admin/dashboard-stats');
+            setStats(response.data);
         } catch (err) {
             console.error('Fetch error:', err);
         } finally {
