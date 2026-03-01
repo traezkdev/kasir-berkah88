@@ -23,14 +23,16 @@ const DataKelas = () => {
     const [formData, setFormData] = useState({
         nama_kelas: '',
         tingkat: 'X',
-        wali_kelas_id: ''
+        wali_kelas_id: '',
+        keterangan: ''
     });
 
     const resetForm = () => {
         setFormData({
             nama_kelas: '',
             tingkat: 'X',
-            wali_kelas_id: ''
+            wali_kelas_id: '',
+            keterangan: ''
         });
         setSelectedId(null);
         setIsEditMode(false);
@@ -125,7 +127,8 @@ const DataKelas = () => {
         setFormData({
             nama_kelas: item.nama_kelas || '',
             tingkat: item.tingkat || 'X',
-            wali_kelas_id: item.wali_kelas_id || ''
+            wali_kelas_id: item.wali_kelas_id || '',
+            keterangan: item.keterangan || ''
         });
         setIsEditMode(true);
         setShowModal(true);
@@ -390,6 +393,17 @@ const DataKelas = () => {
                                         ))}
                                     </select>
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Catatan Sistem (Opsional)</label>
+                                    <textarea
+                                        rows="3"
+                                        value={formData.keterangan}
+                                        onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-sky-500 transition-all font-medium text-sm text-slate-600 dark:text-slate-300 italic"
+                                        placeholder="Tulis catatan khusus untuk kelas ini..."
+                                    ></textarea>
+                                    <p className="text-[9px] text-slate-400 font-medium italic">*Jika kosong, sistem akan menggunakan catatan default.</p>
+                                </div>
                             </form>
                         </div>
 
@@ -445,7 +459,7 @@ const DataKelas = () => {
                                 <div className="p-5 bg-sky-50/30 dark:bg-sky-900/10 rounded-2xl border border-sky-100/50 dark:border-sky-900/30">
                                     <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-2 italic">Catatan Sistem</p>
                                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
-                                        Kelas {selectedKelas.nama_kelas} merupakan bagian dari institusi pendidikan SIAS PRO. Segala aktivitas akademik di dalam kelas ini dipantau secara digital untuk memastikan kualitas belajar tetap terjaga.
+                                        {selectedKelas.keterangan ? selectedKelas.keterangan : `Kelas ${selectedKelas.nama_kelas} merupakan bagian dari institusi pendidikan SIAS PRO. Segala aktivitas akademik di dalam kelas ini dipantau secara digital untuk memastikan kualitas belajar tetap terjaga.`}
                                     </p>
                                 </div>
                             </div>

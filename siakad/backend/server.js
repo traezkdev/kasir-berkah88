@@ -27,7 +27,8 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+        const prefix = req.path.includes('logo') ? 'logo-' : 'profile-';
+        cb(null, prefix + uniqueSuffix + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage: storage });
@@ -369,10 +370,10 @@ app.get('/api/admin/kelas', authenticateToken, isAdmin, async (req, res) => {
 
 // Add kelas
 app.post('/api/admin/kelas', authenticateToken, isAdmin, async (req, res) => {
-    const { nama_kelas, tingkat, wali_kelas_id } = req.body;
+    const { nama_kelas, tingkat, wali_kelas_id, keterangan } = req.body;
     try {
-        const sql = `INSERT INTO kelas (nama_kelas, tingkat, wali_kelas_id) VALUES (?, ?, ?)`;
-        await db.query(sql, [nama_kelas, tingkat, wali_kelas_id]);
+        const sql = `INSERT INTO kelas (nama_kelas, tingkat, wali_kelas_id, keterangan) VALUES (?, ?, ?, ?)`;
+        await db.query(sql, [nama_kelas, tingkat, wali_kelas_id, keterangan]);
         res.status(201).json({ message: "Kelas berhasil ditambahkan." });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -382,10 +383,10 @@ app.post('/api/admin/kelas', authenticateToken, isAdmin, async (req, res) => {
 // Update kelas
 app.put('/api/admin/kelas/:id', authenticateToken, isAdmin, async (req, res) => {
     const { id } = req.params;
-    const { nama_kelas, tingkat, wali_kelas_id } = req.body;
+    const { nama_kelas, tingkat, wali_kelas_id, keterangan } = req.body;
     try {
-        const sql = `UPDATE kelas SET nama_kelas = ?, tingkat = ?, wali_kelas_id = ? WHERE id = ?`;
-        await db.query(sql, [nama_kelas, tingkat, wali_kelas_id, id]);
+        const sql = `UPDATE kelas SET nama_kelas = ?, tingkat = ?, wali_kelas_id = ?, keterangan = ? WHERE id = ?`;
+        await db.query(sql, [nama_kelas, tingkat, wali_kelas_id, keterangan, id]);
         res.status(200).json({ message: "Kelas berhasil diperbarui." });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -435,6 +436,40 @@ app.post('/api/admin/settings', authenticateToken, isAdmin, async (req, res) => 
         res.status(200).json({ message: "Pengaturan berhasil diperbarui." });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Upload Institution Logo
+app.post('/api/admin/settings/logo', authenticateToken, isAdmin, upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: "File tidak ditemukan." });
+
+        // Ensure directory exists
+        const dir = './uploads/logos';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+        // Move file if needed or just use the path if multer destination was already set.
+        // Current multer dest is ./uploads/profiles. Let's fix that.
+        const logoPath = `/uploads/logos/${req.file.filename}`;
+
+        // Move file from profiles to logos if we want separate folders
+        const oldPath = path.join(__dirname, 'uploads/profiles', req.file.filename);
+        const newPath = path.join(__dirname, 'uploads/logos', req.file.filename);
+
+        fs.renameSync(oldPath, newPath);
+
+        await db.query(
+            "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?",
+            ['institution_logo', logoPath, logoPath]
+        );
+
+        res.json({
+            message: "Logo institusi berhasil diperbarui.",
+            logoUrl: logoPath
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Gagal mengunggah logo." });
     }
 });
 

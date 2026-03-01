@@ -67,6 +67,11 @@ const setupDatabase = async () => {
       await connection.query("ALTER TABLE kelas ADD COLUMN tingkat VARCHAR(10) AFTER nama_kelas");
     } catch (err) { }
 
+    // Tambahkan kolom keterangan jika belum ada
+    try {
+      await connection.query("ALTER TABLE kelas ADD COLUMN keterangan TEXT AFTER wali_kelas_id");
+    } catch (err) { }
+
     // 3. Create Mata Pelajaran Table
     const createMapelTable = `
       CREATE TABLE IF NOT EXISTS mata_pelajaran (
