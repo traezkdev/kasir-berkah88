@@ -179,7 +179,7 @@ const ProfileBase = ({ roleTitle, accentColor = "indigo" }) => {
             <div className="p-6 sm:p-10 lg:p-20 grid grid-cols-1 lg:grid-cols-3 gap-10">
 
                 {/* Left Sidebar: Settings Navigation */}
-                <div className="space-y-4">
+                <div className="space-y-4 lg:sticky lg:top-8 self-start">
                     <button className={`w-full p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/40 dark:shadow-none flex items-center justify-between group transform hover:-translate-y-1 transition-all ${accentText}`}>
                         <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 text-current`}>
