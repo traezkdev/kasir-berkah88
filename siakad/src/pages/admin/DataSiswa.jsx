@@ -565,62 +565,59 @@ const DataSiswa = () => {
                 </div>
             )}
 
-            {/* Modal Detail Siswa */}
+            {/* Modal Detail Siswa (MOBILE VERSION) */}
             {showDetailModal && selectedSiswa && (
-                <div className="fixed inset-0 z-[99999] overflow-hidden sm:flex sm:items-center sm:justify-center sm:p-4">
+                <div className="fixed inset-0 z-[99999] overflow-hidden flex items-end sm:hidden">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDetailModal(false)}></div>
-                    <div className="fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto max-w-lg bg-white dark:bg-slate-800 sm:rounded-3xl rounded-none shadow-2xl flex flex-col m-0 animate-in fade-in slide-in-from-bottom-0 sm:zoom-in duration-300">
+                    <div className="relative w-full bg-white dark:bg-slate-800 rounded-t-[2.5rem] shadow-2xl flex flex-col m-0 animate-in slide-in-from-bottom duration-500 max-h-[90vh]">
+                        {/* Pull Bar */}
+                        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto my-4 shrink-0" onClick={() => setShowDetailModal(false)}></div>
+
                         {/* Header Detail */}
-                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Detail Informasi Siswa</h2>
+                        <div className="px-6 pb-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Informasi Siswa</h2>
                             <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors text-2xl font-black">×</button>
                         </div>
 
                         {/* Body Detail */}
-                        <div className="flex-1 overflow-y-auto p-8">
-                            <div className="flex flex-col items-center text-center space-y-4 mb-8">
-                                <div className="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center text-4xl font-black shadow-inner">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center text-3xl font-black shadow-inner shrink-0">
                                     {selectedSiswa.nama_lengkap?.[0] || 'S'}
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">{selectedSiswa.nama_lengkap}</h3>
-                                    <p className="text-sm font-bold text-indigo-500 uppercase tracking-widest">@{selectedSiswa.username}</p>
+                                    <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-tight">{selectedSiswa.nama_lengkap}</h3>
+                                    <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">@{selectedSiswa.username}</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Identitas & Status</p>
-                                    <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Data Akademik</p>
+                                    <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500">NISN / NIK</span>
-                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{selectedSiswa.nisn_nik || '-'}</span>
+                                            <span className="text-xs font-bold text-slate-500 uppercase">NISN / NIK</span>
+                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">{selectedSiswa.nisn_nik || '-'}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500">Jenis Kelamin</span>
-                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${selectedSiswa.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                            <span className="text-xs font-bold text-slate-500 uppercase">Gender</span>
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${selectedSiswa.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
                                                 {selectedSiswa.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-500">Tgl Terdaftar</span>
-                                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">
-                                                {new Date(selectedSiswa.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30">
-                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-2">Kontak Penghubung</p>
-                                    <div className="space-y-4">
+                                <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-3">Kontak</p>
+                                    <div className="space-y-3">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Email Address</span>
-                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{selectedSiswa.email || '-'}</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Email</span>
+                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{selectedSiswa.email || '-'}</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase mb-1">WhatsApp / No. HP</span>
-                                            <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">{selectedSiswa.wa_number || '-'}</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase mb-1">WhatsApp</span>
+                                            <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{selectedSiswa.wa_number || '-'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -628,25 +625,197 @@ const DataSiswa = () => {
                         </div>
 
                         {/* Footer Detail */}
-                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex sm:justify-end gap-3 shrink-0">
-                            <button
-                                onClick={() => setShowDetailModal(false)}
-                                className="flex-1 sm:flex-none px-8 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 transition-all active:scale-95"
-                            >
-                                Tutup
-                            </button>
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-3 shrink-0 pb-10">
                             <button
                                 onClick={(e) => { setShowDetailModal(false); handleEdit(selectedSiswa); }}
-                                className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
                             >
-                                Edit Data
+                                Edit Data Siswa
+                            </button>
+                            <button
+                                onClick={() => setShowDetailModal(false)}
+                                className="w-full py-4 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl font-black uppercase text-xs tracking-widest border border-slate-200 dark:border-slate-600 transition-all active:scale-95"
+                            >
+                                Tutup
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Modal Detail Siswa (DESKTOP FULL-SCREEN VERSION) */}
+            {showDetailModal && selectedSiswa && (
+                <div className="fixed inset-0 z-[100000] hidden sm:flex animate-in fade-in duration-300">
+                    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl" onClick={() => setShowDetailModal(false)}></div>
+
+                    <div className="relative w-full h-full bg-white dark:bg-[#0F172A] flex flex-col overflow-hidden animate-in slide-in-from-right duration-500">
+                        {/* Header Full Screen */}
+                        <div className="h-20 px-8 sm:px-12 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-20">
+                            <div className="flex items-center space-x-4">
+                                <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20 text-white">
+                                    <FaUserGraduate size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Profil Lengkap Siswa</h2>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Sistem Informasi Akademik Terintegrasi</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowDetailModal(false)}
+                                className="group flex items-center space-x-3 px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all font-black uppercase text-xs tracking-widest"
+                            >
+                                <span>Tutup Detail</span>
+                                <span className="text-2xl leading-none group-hover:rotate-90 transition-transform">×</span>
+                            </button>
+                        </div>
+
+                        {/* Content Full Screen */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="max-w-6xl mx-auto px-8 sm:px-12 py-12">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+                                    {/* Left: Identity Card */}
+                                    <div className="lg:col-span-4 space-y-6">
+                                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden group">
+                                            <div className="h-32 bg-gradient-to-br from-indigo-600 to-purple-700 relative">
+                                                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] text-white"></div>
+                                            </div>
+                                            <div className="px-8 pb-10 -mt-16 relative text-center">
+                                                <div className="w-32 h-32 mx-auto rounded-[2.5rem] bg-indigo-50 dark:bg-slate-900 border-8 border-white dark:border-slate-800 flex items-center justify-center text-5xl font-black text-indigo-600 shadow-2xl transform group-hover:scale-105 transition-all duration-500">
+                                                    {selectedSiswa.nama_lengkap?.[0] || 'S'}
+                                                </div>
+                                                <div className="mt-6">
+                                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{selectedSiswa.nama_lengkap}</h3>
+                                                    <p className="inline-block mt-2 px-4 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                                        @{selectedSiswa.username}
+                                                    </p>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mt-8">
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center border border-slate-100 dark:border-slate-700/50">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Hadir (Smt)</p>
+                                                        <p className="text-lg font-black text-slate-800 dark:text-white">98%</p>
+                                                    </div>
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center border border-slate-100 dark:border-slate-700/50">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Poin Pel.</p>
+                                                        <p className="text-lg font-black text-emerald-600">0</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:rotate-12 transition-transform duration-500">
+                                                <FaUserGraduate size={100} />
+                                            </div>
+                                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 italic">Ringkasan Status</h4>
+                                            <div className="space-y-4 relative z-10">
+                                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase">Tgl Daftar</span>
+                                                    <span className="text-xs font-black">{new Date(selectedSiswa.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase">Terakhir Login</span>
+                                                    <span className="text-xs font-black">2 Jam yang lalu</span>
+                                                </div>
+                                                <div className="flex justify-between items-center pt-2">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase">Status Akun</span>
+                                                    <span className="flex items-center space-x-2">
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Aktif</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Detailed Info */}
+                                    <div className="lg:col-span-8 space-y-8">
+                                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-xl p-8 sm:p-12 space-y-12">
+
+                                            {/* Section 1: Data Utama */}
+                                            <section className="space-y-8">
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
+                                                    <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Informasi Data Identitas</h4>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nama Lengkap Sesuai Ijazah</p>
+                                                        <p className="text-lg font-black text-slate-800 dark:text-slate-100 border-b-2 border-slate-50 dark:border-slate-700 pb-2">{selectedSiswa.nama_lengkap}</p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">NISN / NIK (Username)</p>
+                                                        <p className="text-lg font-black text-slate-800 dark:text-slate-100 border-b-2 border-slate-50 dark:border-slate-700 pb-2">{selectedSiswa.nisn_nik || '-'}</p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Jenis Kelamin</p>
+                                                        <div className="flex items-center space-x-3 pt-1">
+                                                            <span className={`px-5 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${selectedSiswa.jenis_kelamin === 'L' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-pink-600 text-white shadow-lg shadow-pink-600/20'}`}>
+                                                                {selectedSiswa.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Role Sistem</p>
+                                                        <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Siswa Aktif</p>
+                                                    </div>
+                                                </div>
+                                            </section>
+
+                                            {/* Section 2: Kontak */}
+                                            <section className="space-y-8 pt-6 border-t border-slate-50 dark:border-slate-700/50">
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
+                                                    <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Konektivitas & Kontak</h4>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                    <div className="group space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-emerald-500 transition-colors">Alamat Email Institusi</p>
+                                                        <div className="flex items-center space-x-3 text-lg font-black text-slate-800 dark:text-slate-100">
+                                                            <span>{selectedSiswa.email || 'Email belum ditautkan'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="group space-y-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-emerald-500 transition-colors">Nomor WhatsApp / Seluler</p>
+                                                        <div className="flex items-center space-x-3 text-xl font-black text-emerald-600 dark:text-emerald-400">
+                                                            <span>{selectedSiswa.wa_number || 'Tidak ada nomor'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </section>
+
+                                            {/* Action Buttons Desktop */}
+                                            <div className="flex flex-col sm:flex-row gap-4 pt-10">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setShowDetailModal(false); handleEdit(selectedSiswa); }}
+                                                    className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-indigo-600/30 transform transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center space-x-3"
+                                                >
+                                                    <FaEdit size={16} />
+                                                    <span>Ubah Data Identitas</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowDetailModal(false)}
+                                                    className="flex-1 py-5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
+                                                >
+                                                    Kembali ke Data List
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
 
 export default DataSiswa;
+
