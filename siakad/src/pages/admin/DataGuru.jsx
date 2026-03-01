@@ -361,8 +361,13 @@ const DataGuru = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className={`text-[10px] font-black w-fit px-2 py-0.5 rounded mb-1 ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                                {item.jenis_kelamin || '-'}
+                                            <span className={`text-[10px] font-black w-fit px-2 py-0.5 rounded mb-1 
+                                                ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' :
+                                                    item.jenis_kelamin === 'P' ? 'bg-pink-100 text-pink-600' :
+                                                        'bg-slate-100 text-slate-500'}`}>
+                                                {item.jenis_kelamin === 'L' ? 'LAKI-LAKI' :
+                                                    item.jenis_kelamin === 'P' ? 'PEREMPUAN' :
+                                                        'BELUM DISET'}
                                             </span>
                                             <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg">
                                                 {item.nisn_nik || '-'}

@@ -373,9 +373,19 @@ const DataSiswa = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg">
-                                            {item.nisn_nik || '-'}
-                                        </span>
+                                        <div className="flex flex-col">
+                                            <span className={`text-[10px] font-black w-fit px-2 py-0.5 rounded mb-1 
+                                                ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' :
+                                                    item.jenis_kelamin === 'P' ? 'bg-pink-100 text-pink-600' :
+                                                        'bg-slate-100 text-slate-500'}`}>
+                                                {item.jenis_kelamin === 'L' ? 'LAKI-LAKI' :
+                                                    item.jenis_kelamin === 'P' ? 'PEREMPUAN' :
+                                                        'BELUM DISET'}
+                                            </span>
+                                            <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg">
+                                                {item.nisn_nik || '-'}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{item.email || '-'}</p>
@@ -459,6 +469,14 @@ const DataSiswa = () => {
                                     </p>
                                 </div>
                                 <div className="space-y-1 text-right">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Kelamin</p>
+                                    <p className="text-sm font-bold">
+                                        <span className={`px-2.5 py-1 rounded-md ${item.jenis_kelamin === 'L' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                                            {item.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Terdaftar</p>
                                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                                         {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
