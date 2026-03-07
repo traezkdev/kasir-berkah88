@@ -85,7 +85,7 @@ const getStockHistory = async (filters = {}) => {
         raw_material_stock_history rmsh
       JOIN
         raw_materials rm ON rmsh.material_id = rm.id
-      WHERE 1=1
+      WHERE rmsh.closing_session_id IS NULL
     `;
     const params = [];
 

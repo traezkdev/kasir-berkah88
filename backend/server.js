@@ -1089,6 +1089,7 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
             SELECT t.id, t.timestamp, t.items, t.total
             FROM transactions t
             WHERE t.timestamp BETWEEN ? AND ?
+            AND t.closing_session_id IS NULL
             AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
             ORDER BY t.timestamp DESC
         `;
@@ -1135,6 +1136,7 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
             SELECT category, SUM(amount) as total
             FROM expenses
             WHERE date BETWEEN ? AND ?
+            AND closing_session_id IS NULL
             GROUP BY category
         `;
         const [expensesByCategory] = await db.query(expenseSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
@@ -1144,6 +1146,7 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
              SELECT name, amount, category, date
              FROM expenses
              WHERE date BETWEEN ? AND ?
+             AND closing_session_id IS NULL
              ORDER BY amount DESC
              LIMIT 10
         `;
@@ -2885,7 +2888,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
         const { startDate, endDate, paymentMethod, minTotal, maxTotal, search } = req.query; // Extract paymentMethod and Amount Range
         const offset = (page - 1) * limit;
 
-        let whereClauses = ['t.deleted_at IS NULL'];
+        let whereClauses = ['t.deleted_at IS NULL', 't.closing_session_id IS NULL'];
         let queryParams = [];
 
         if (startDate) {
@@ -2976,7 +2979,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const { startDate, endDate, paymentMethod } = req.query; // Extract startDate and endDate and paymentMethod
 
-        let whereClauses = ['t.deleted_at IS NULL'];
+        let whereClauses = ['t.deleted_at IS NULL', 't.closing_session_id IS NULL'];
         let queryParams = [];
 
         if (startDate) {
@@ -3841,7 +3844,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
 
-        let whereClauses = [];
+        let whereClauses = ['e.closing_session_id IS NULL'];
         let queryParams = [];
 
         if (startDate) {
@@ -3893,7 +3896,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'ka
         const { startDate, endDate } = req.query;
         const offset = (page - 1) * limit;
 
-        let whereClauses = [];
+        let whereClauses = ['e.closing_session_id IS NULL'];
         let queryParams = [];
 
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
@@ -4107,7 +4110,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
 
         // Fetch transactions for this account with filtering
         const { type, startDate, endDate, search } = req.query;
-        let whereClauses = ['at.account_id = ?'];
+        let whereClauses = ['at.account_id = ?', 'at.closing_session_id IS NULL'];
         let queryParams = [account.id];
 
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
@@ -4789,8 +4792,9 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
-        // Always hide soft-deleted orders
+        // Always hide soft-deleted orders and archived orders
         whereClauses.push('deleted_at IS NULL');
+        whereClauses.push('closing_session_id IS NULL');
 
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
@@ -6438,10 +6442,10 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
             const dateClause = effectiveEndDate ? "BETWEEN ? AND ?" : ">= ?";
             const params = effectiveEndDate ? [effectiveStartDate, effectiveEndDate] : [effectiveStartDate];
 
-            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp ${dateClause} ORDER BY timestamp DESC, id DESC`;
-            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date ${dateClause} ORDER BY date DESC, id DESC`;
-            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at ${dateClause} ORDER BY at.created_at DESC, at.id DESC`;
-            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at ${dateClause} ORDER BY at.created_at DESC, at.id DESC`;
+            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp ${dateClause} AND closing_session_id IS NULL ORDER BY timestamp DESC, id DESC`;
+            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date ${dateClause} AND closing_session_id IS NULL ORDER BY date DESC, id DESC`;
+            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at ${dateClause} AND at.closing_session_id IS NULL ORDER BY at.created_at DESC, at.id DESC`;
+            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at ${dateClause} AND at.closing_session_id IS NULL ORDER BY at.created_at DESC, at.id DESC`;
 
             queryParams = params;
         }
@@ -6911,7 +6915,7 @@ app.post("/api/customers/points/manual", authenticateToken, authorizeRoles('admi
 // Get all credits
 app.get("/api/credits", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const sql = "SELECT * FROM employee_credits ORDER BY credit_date DESC";
+        const sql = "SELECT * FROM employee_credits WHERE closing_session_id IS NULL ORDER BY credit_date DESC";
         const [rows] = await db.query(sql);
         res.json({ message: "success", data: rows });
     } catch (err) {
@@ -8214,6 +8218,176 @@ app.use((err, req, res, next) => {
     });
 });
 
+// --- Tutup Buku (Closing Session) Endpoints ---
+
+// Process Tutup Buku
+app.post("/api/settings/close-book", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { masterPassword, notes, initialCapitalNextDay } = req.body;
+    let connection;
+
+    try {
+        // 1. Verify Master Password
+        const [masterPwdRow] = await db.query("SELECT value FROM settings WHERE `key` = 'master_password'");
+        const storedMasterPassword = masterPwdRow.length > 0 ? masterPwdRow[0].value : '123456';
+
+        let isPasswordValid = false;
+        const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+
+        if (isStoredPassHashed) {
+            isPasswordValid = await bcrypt.compare(masterPassword, storedMasterPassword);
+        } else {
+            isPasswordValid = (masterPassword === storedMasterPassword);
+        }
+
+        if (!isPasswordValid) {
+            return res.status(403).json({ error: "Master password salah!" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 2. Calculate summary for the closing session (Active data only)
+        const [salesRow] = await connection.query("SELECT SUM(total) as total FROM transactions WHERE closing_session_id IS NULL AND deleted_at IS NULL");
+        const totalSales = parseFloat(salesRow[0].total || 0);
+
+        const [expensesRow] = await connection.query("SELECT SUM(amount) as total FROM expenses WHERE closing_session_id IS NULL");
+        const totalExpenses = parseFloat(expensesRow[0].total || 0);
+
+        const [lapakAccount] = await connection.query("SELECT id, balance FROM accounts WHERE name = 'lapak_deposit'");
+        const [ownerAccount] = await connection.query("SELECT id, balance FROM accounts WHERE name = 'owner_deposit'");
+
+        const lapakBalance = lapakAccount.length > 0 ? parseFloat(lapakAccount[0].balance) : 0;
+        const ownerBalance = ownerAccount.length > 0 ? parseFloat(ownerAccount[0].balance) : 0;
+
+        // 3. Create Closing Session Record
+        const insertSessionSql = `
+            INSERT INTO closing_sessions 
+            (closed_by_user_id, total_sales, total_expenses, total_profit, lapak_balance_at_closing, owner_balance_at_closing, initial_capital_next_day, notes) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const [sessionResult] = await connection.query(insertSessionSql, [
+            req.user.userId,
+            totalSales,
+            totalExpenses,
+            totalSales - totalExpenses,
+            lapakBalance,
+            ownerBalance,
+            parseFloat(initialCapitalNextDay || 0),
+            notes || ''
+        ]);
+        const sessionId = sessionResult.insertId;
+
+        // 4. Archive all active data
+        const tablesToArchive = [
+            'transactions',
+            'orders',
+            'expenses',
+            'account_transactions',
+            'simple_transactions',
+            'simple_transaction_items',
+            'cash_reconciliations',
+            'employee_credits',
+            'raw_material_stock_history'
+        ];
+
+        for (const tableName of tablesToArchive) {
+            await connection.query(`UPDATE ${tableName} SET closing_session_id = ? WHERE closing_session_id IS NULL`, [sessionId]);
+        }
+
+        // 5. Reset Accounts & Set Initial Capital
+        if (lapakAccount.length > 0) {
+            // Reset balance to the new initial capital
+            await connection.query("UPDATE accounts SET balance = ? WHERE id = ?", [parseFloat(initialCapitalNextDay || 0), lapakAccount[0].id]);
+
+            // Record this as the first transaction of the new session
+            await connection.query(
+                "INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, closing_session_id) VALUES (?, ?, ?, ?, ?, NULL)",
+                [lapakAccount[0].id, 'deposit', parseFloat(initialCapitalNextDay || 0), 'Modal Awal Pasca Tutup Buku', req.user.userId]
+            );
+        }
+
+        // Update last_closing_date in settings
+        const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).replace(' ', 'T');
+        await connection.query("INSERT INTO settings (`key`, `value`) VALUES ('last_closing_date', ?) ON DUPLICATE KEY UPDATE `value` = ?", [nowStr, nowStr]);
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Tutup Buku', 'closing_session', sessionId, `Tutup buku berhasil. Sesi #${sessionId}. Omzet: Rp ${totalSales.toLocaleString('id-ID')}`);
+
+        res.json({ message: "Tutup buku berhasil!", sessionId });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Error in Tutup Buku:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Get all closing sessions (Archive List)
+app.get("/api/archive/sessions", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT cs.*, u.username as closed_by_username 
+            FROM closing_sessions cs
+            LEFT JOIN users u ON cs.closed_by_user_id = u.id
+            ORDER BY cs.timestamp DESC
+        `);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get detail of a specific session summary
+app.get("/api/archive/sessions/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.query(`
+            SELECT cs.*, u.username as closed_by_username 
+            FROM closing_sessions cs
+            LEFT JOIN users u ON cs.closed_by_user_id = u.id
+            WHERE cs.id = ?
+        `, [id]);
+
+        if (rows.length === 0) return res.status(404).json({ error: "Sesi arsip tidak ditemukan" });
+        res.json({ message: "success", data: rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get archived records by type and session
+app.get("/api/archive/sessions/:id/data/:type", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id, type } = req.params;
+    try {
+        let sql = "";
+        switch (type) {
+            case 'transactions':
+                sql = "SELECT t.*, u.username as cashier_name FROM transactions t LEFT JOIN users u ON t.user_id = u.id WHERE t.closing_session_id = ? ORDER BY t.timestamp DESC";
+                break;
+            case 'expenses':
+                sql = "SELECT e.*, u.username as recorded_by FROM expenses e LEFT JOIN users u ON e.user_id = u.id WHERE e.closing_session_id = ? ORDER BY e.date DESC";
+                break;
+            case 'orders':
+                sql = "SELECT * FROM orders WHERE closing_session_id = ? ORDER BY created_at DESC";
+                break;
+            case 'account_transactions':
+                sql = "SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id WHERE at.closing_session_id = ? ORDER BY at.created_at DESC";
+                break;
+            case 'credits':
+                sql = "SELECT * FROM employee_credits WHERE closing_session_id = ? ORDER BY credit_date DESC";
+                break;
+            default:
+                return res.status(400).json({ error: "Tipe data arsip tidak valid" });
+        }
+
+        const [rows] = await db.query(sql, [id]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 // Default response for any other request
 app.use(function (req, res) {
     res.status(404).send();

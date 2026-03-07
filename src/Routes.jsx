@@ -48,6 +48,8 @@ import BerkahLandingPage from './pages/berkah88';
 import AuditorPage from './pages/Auditor';
 import AllFeatures from './pages/AllFeatures';
 import DownloadApp from './pages/DownloadApp';
+import Archive from './pages/Archive';
+import ArchiveSessionDetail from './pages/Archive/SessionDetail';
 
 import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
@@ -223,6 +225,8 @@ const AppRoutes = () => {
         <Route path="/promos" element={<AdminPromoManagement />} />
         <Route path="/popups" element={<AdminPopupManagement />} />
         <Route path="/information" element={<SellerInformationManagement />} />
+        <Route path="/admin/archive" element={<Archive />} />
+        <Route path="/admin/archive/:id" element={<ArchiveSessionDetail />} />
       </Route>
 
 

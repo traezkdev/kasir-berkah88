@@ -174,6 +174,12 @@ const Settings = () => {
   const [watermarkFile, setWatermarkFile] = useState(null);
   const [watermarkPreview, setWatermarkPreview] = useState('');
 
+  // --- Tutup Buku States ---
+  const [closeBookPassword, setCloseBookPassword] = useState('');
+  const [closeBookNotes, setCloseBookNotes] = useState('');
+  const [nextInitialCapital, setNextInitialCapital] = useState('');
+  const [showCloseBookPassword, setShowCloseBookPassword] = useState(false);
+
   // --- Effects ---
   useEffect(() => {
     fetchSettings();
@@ -672,6 +678,37 @@ const Settings = () => {
     }
   };
 
+  const handleCloseBook = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/close-book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          masterPassword: closeBookPassword,
+          notes: closeBookNotes,
+          initialCapitalNextDay: nextInitialCapital
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        showToast('Tutup buku berhasil! Data periode ini telah diarsipkan.', 'success');
+        setCloseBookPassword('');
+        setCloseBookNotes('');
+        setNextInitialCapital('');
+        handleModalClose();
+        setTimeout(() => navigate(`/admin/archive/${data.sessionId}`), 1500);
+      } else {
+        showToast(data.error || 'Gagal melakukan tutup buku', 'error');
+      }
+    } catch (err) {
+      showToast('Terjadi kesalahan jaringan', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
 
   const confirmDeleteLogo = () => {
@@ -743,6 +780,8 @@ const Settings = () => {
             <SettingsCard icon="PiggyBank" title="Modal Awal" description="Atur saldo awal kas operasional" onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
             <SettingsCard icon="Share2" title="Media Sosial" description="Atur link berbagi ke media sosial" onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
             <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Sinkronkan data lokal ke cloud" onClick={() => setActiveModal('dataSync')} disabled={!isAdmin} />
+            <SettingsCard icon="BookOpen" title="Tutup Buku" description="Arsip data periode ini sekarang" onClick={() => setActiveModal('closeBook')} disabled={!isAdmin} />
+            <SettingsCard icon="Archive" title="Arsip Data" description="Lihat riwayat data yang diarsip" onClick={() => navigate('/admin/archive')} disabled={!isAdmin} />
             <SettingsCard icon="Trash2" title="Bersihkan Data" description="Hapus semua riwayat (Hati-hati!)" onClick={() => setActiveModal('clearAllData')} disabled={!isAdmin} />
           </div>
         </div>
@@ -1309,6 +1348,61 @@ const Settings = () => {
             >
               {isResetMasterPasswordMode ? "Kembali ke Ubah Sandi" : "Lupa Sandi Master? (Reset)"}
             </button>
+          </div>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Tutup Buku & Arsip" isOpen={activeModal === 'closeBook'} onClose={handleModalClose}>
+        <form onSubmit={handleCloseBook} className="space-y-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50">
+            <div className="flex items-center gap-3 mb-2">
+              <AppIcon name="Info" className="text-blue-600 w-5 h-5" />
+              <h4 className="font-black text-blue-900 dark:text-blue-100 text-xs uppercase tracking-widest">Informasi Tutup Buku</h4>
+            </div>
+            <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+              Melakukan Tutup Buku akan mengarsipkan seluruh data penjualan, pengeluaran, dan mutasi kas saat ini. Data yang diarsipkan tidak akan hilang, namun tidak akan muncul lagi di laporan aktif harian/bulanan. Anda dapat melihatnya kembali di menu <strong>Arsip Data</strong>.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <Input
+              label="Modal Awal Sesi Berikutnya (Rp)"
+              type="number"
+              placeholder="Contoh: 500000"
+              value={nextInitialCapital}
+              onChange={(e) => setNextInitialCapital(e.target.value)}
+              required
+            />
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] opacity-70">Catatan Tutup Buku</label>
+              <textarea
+                className="w-full bg-background border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all outline-none min-h-[100px]"
+                placeholder="Tambahkan catatan singkat (opsional)..."
+                value={closeBookNotes}
+                onChange={(e) => setCloseBookNotes(e.target.value)}
+              />
+            </div>
+
+            <Input
+              label="Kata Sandi Master"
+              type={showCloseBookPassword ? "text" : "password"}
+              value={closeBookPassword}
+              onChange={(e) => setCloseBookPassword(e.target.value)}
+              required
+              rightIcon={
+                <span className="cursor-pointer" onClick={() => setShowCloseBookPassword(!showCloseBookPassword)}>
+                  <AppIcon name={showCloseBookPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
+                </span>
+              }
+            />
+          </div>
+
+          <div className="pt-2">
+            <Button type="submit" className="w-full py-4 rounded-2xl font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20" disabled={isLoading}>
+              {isLoading ? 'Memproses...' : 'Lakukan Tutup Buku'}
+            </Button>
+            <p className="text-[9px] text-center text-text-secondary mt-3 uppercase font-bold tracking-tighter opacity-40">Tindakan ini tidak dapat dibatalkan</p>
           </div>
         </form>
       </SettingsModal>
