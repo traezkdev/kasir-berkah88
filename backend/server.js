@@ -2979,7 +2979,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const { startDate, endDate, paymentMethod } = req.query; // Extract startDate and endDate and paymentMethod
 
-        let whereClauses = ['t.deleted_at IS NULL', 't.closing_session_id IS NULL'];
+        let whereClauses = ['t.deleted_at IS NULL']; // Sengaja tidak filter closing_session_id agar data arsip ikut tampil di chart
         let queryParams = [];
 
         if (startDate) {
@@ -3844,15 +3844,12 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
 
-        let whereClauses = ['e.closing_session_id IS NULL'];
+        let whereClauses = []; // Sengaja tidak filter closing_session_id agar data arsip ikut tampil di chart
         let queryParams = [];
 
         if (startDate) {
             whereClauses.push('e.date >= ?');
             queryParams.push(startDate);
-        } else if (lastClosingDate) {
-            whereClauses.push('e.date >= ?');
-            queryParams.push(lastClosingDate);
         }
 
         if (endDate) {
@@ -4125,10 +4122,6 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
             // User requested a specific start date. Honor it strictly (00:00:00)
             whereClauses.push('at.created_at >= ?');
             queryParams.push(startDate.includes(':') ? startDate : `${startDate} 00:00:00`);
-        } else if (lastClosingDate) {
-            // Default view (no filters): show only since last closing
-            whereClauses.push('at.created_at >= ?');
-            queryParams.push(lastClosingDate);
         }
 
         if (endDate) {
@@ -8388,6 +8381,183 @@ app.get("/api/archive/sessions/:id/data/:type", authenticateToken, authorizeRole
         res.status(500).json({ error: err.message });
     }
 });
+
+// Preview jumlah data yang akan di-restore (GET)
+app.get("/api/archive/sessions/:id/restore/preview", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    try {
+        const buildDateFilter = (dateCol) => {
+            if (startDate && endDate) return ` AND DATE(\`${dateCol}\`) BETWEEN ? AND ?`;
+            if (startDate) return ` AND DATE(\`${dateCol}\`) >= ?`;
+            if (endDate) return ` AND DATE(\`${dateCol}\`) <= ?`;
+            return '';
+        };
+        const dateParams = [];
+        if (startDate) dateParams.push(startDate);
+        if (endDate) dateParams.push(endDate);
+
+        const countTable = async (table, dateCol) => {
+            const filter = buildDateFilter(dateCol);
+            const sql = `SELECT COUNT(*) as total FROM ${table} WHERE closing_session_id = ?${filter}`;
+            const [rows] = await db.query(sql, [id, ...dateParams]);
+            return rows[0].total;
+        };
+
+        const [transactions, expenses, orders, account_transactions, credits] = await Promise.all([
+            countTable('transactions', 'timestamp'),
+            countTable('expenses', 'date'),
+            countTable('orders', 'created_at'),
+            countTable('account_transactions', 'created_at'),
+            countTable('employee_credits', 'credit_date'),
+        ]);
+
+        const total = transactions + expenses + orders + account_transactions + credits;
+
+        res.json({
+            message: "success",
+            data: { transactions, expenses, orders, account_transactions, credits, total }
+        });
+    } catch (err) {
+        console.error("Error restore preview:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eksekusi Restore (POST) - kembalikan data arsip ke live
+app.post("/api/archive/sessions/:id/restore", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    const { startDate, endDate } = req.body;
+    let connection;
+
+    try {
+        const buildDateFilter = (dateCol) => {
+            if (startDate && endDate) return ` AND DATE(\`${dateCol}\`) BETWEEN ? AND ?`;
+            if (startDate) return ` AND DATE(\`${dateCol}\`) >= ?`;
+            if (endDate) return ` AND DATE(\`${dateCol}\`) <= ?`;
+            return '';
+        };
+        const dateParams = [];
+        if (startDate) dateParams.push(startDate);
+        if (endDate) dateParams.push(endDate);
+
+        // Validasi sesi ada
+        const [sessionRows] = await db.query("SELECT id FROM closing_sessions WHERE id = ?", [id]);
+        if (sessionRows.length === 0) {
+            return res.status(404).json({ error: "Sesi arsip tidak ditemukan" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Tabel dan kolom tanggalnya
+        const tables = [
+            { table: 'transactions', dateCol: 'timestamp' },
+            { table: 'expenses', dateCol: 'date' },
+            { table: 'orders', dateCol: 'created_at' },
+            { table: 'account_transactions', dateCol: 'created_at' },
+            { table: 'simple_transactions', dateCol: 'created_at' },
+            { table: 'employee_credits', dateCol: 'credit_date' },
+            { table: 'cash_reconciliations', dateCol: 'created_at' },
+        ];
+
+        let totalRestored = 0;
+        const detail = {};
+
+        for (const { table, dateCol } of tables) {
+            const filter = buildDateFilter(dateCol);
+            const sql = `UPDATE ${table} SET closing_session_id = NULL WHERE closing_session_id = ?${filter}`;
+            const [result] = await connection.query(sql, [id, ...dateParams]);
+            detail[table] = result.affectedRows;
+            totalRestored += result.affectedRows;
+        }
+
+        // Jika semua data pada sesi ini sudah di-restore, hapus sesi closing-nya
+        const [remaining] = await connection.query(
+            "SELECT COUNT(*) as cnt FROM transactions WHERE closing_session_id = ?",
+            [id]
+        );
+        if (remaining[0].cnt === 0 && !startDate && !endDate) {
+            await connection.query("DELETE FROM closing_sessions WHERE id = ?", [id]);
+        }
+
+        await connection.commit();
+
+        const filterDesc = startDate || endDate
+            ? ` (filter: ${startDate || '?'} s/d ${endDate || '?'})`
+            : ' (semua data)';
+        await logActivity(req.user.userId, 'Restore Arsip', 'closing_session', id,
+            `Restore sesi #${id}${filterDesc}. Total: ${totalRestored} record.`);
+
+        res.json({
+            message: `Berhasil merestore ${totalRestored} data dari sesi #${id}`,
+            data: { restored: totalRestored, detail }
+        });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Error restore archive:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Hapus permanen satu sesi arsip beserta semua datanya
+app.delete("/api/archive/sessions/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    let connection;
+    try {
+        const [sessionRows] = await db.query("SELECT id FROM closing_sessions WHERE id = ?", [id]);
+        if (sessionRows.length === 0) {
+            return res.status(404).json({ error: "Sesi arsip tidak ditemukan" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Hapus semua record di tabel yang berelasi dengan sesi ini
+        const tables = [
+            'raw_material_stock_history',
+            'cash_reconciliations',
+            'simple_transaction_items',
+            'simple_transactions',
+            'employee_credits',
+            'account_transactions',
+            'expenses',
+            'orders',
+            'transactions',
+        ];
+
+        let totalDeleted = 0;
+        for (const table of tables) {
+            const [result] = await connection.query(
+                `DELETE FROM ${table} WHERE closing_session_id = ?`, [id]
+            );
+            totalDeleted += result.affectedRows;
+        }
+
+        // Hapus record closing_sessions itu sendiri
+        await connection.query("DELETE FROM closing_sessions WHERE id = ?", [id]);
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Hapus Arsip', 'closing_session', id,
+            `Sesi arsip #${id} dihapus permanen. Total data dihapus: ${totalDeleted} record.`);
+
+        res.json({
+            message: `Sesi arsip #${id} berhasil dihapus permanen`,
+            data: { deleted: totalDeleted }
+        });
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Error delete archive session:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
 // Default response for any other request
 app.use(function (req, res) {
     res.status(404).send();

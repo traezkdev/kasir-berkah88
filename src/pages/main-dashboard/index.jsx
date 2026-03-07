@@ -324,14 +324,7 @@ const MainDashboard = ({ headerTitle }) => {
       if (endDate) endDate.setHours(23, 59, 59, 999);
     }
 
-    // --- last_closing_date Clamping ---
-    const lastClosingDateStr = settings?.last_closing_date;
-    if (lastClosingDateStr && filterType !== 'all_time') {
-      const lastClosingDate = new Date(lastClosingDateStr);
-      if (startDate < lastClosingDate) {
-        startDate = lastClosingDate;
-      }
-    }
+    // Tidak ada clamping berdasarkan last_closing_date agar chart menampilkan semua data historis
 
     const filteredTransactions = filterType === 'all_time'
       ? allTransactions

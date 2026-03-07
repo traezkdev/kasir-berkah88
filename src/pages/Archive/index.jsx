@@ -13,16 +13,88 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const ITEMS_PER_PAGE = 20;
 
 /* ------------------------------------------------------------------ */
+/*  Modal Konfirmasi Hapus                                              */
+/* ------------------------------------------------------------------ */
+const DeleteConfirmModal = ({ session, onConfirm, onCancel, isDeleting }) => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-card w-full max-w-sm rounded-3xl border border-gray-100 dark:border-slate-800 shadow-2xl overflow-hidden">
+            {/* Header merah */}
+            <div className="relative bg-gradient-to-br from-red-500 to-rose-600 p-6 text-white">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8" />
+                <div className="relative z-10 flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                        <AppIcon name="Trash2" size={22} />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-black tracking-tight">Hapus Arsip Permanen</h2>
+                        <p className="text-xs font-bold text-white/70 uppercase tracking-widest">Sesi #{session.id}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+                {/* Peringatan */}
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-4 space-y-1">
+                    <p className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-wide">⚠ Tindakan ini tidak dapat dibatalkan!</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 leading-relaxed">
+                        Semua data dalam sesi ini (transaksi, pengeluaran, pesanan, mutasi kas, dll.) akan dihapus <strong>secara permanen</strong> dari database.
+                    </p>
+                </div>
+
+                {/* Info sesi */}
+                <div className="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest opacity-60">Tanggal</span>
+                        <span className="text-xs font-bold text-text-primary">
+                            {new Date(session.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest opacity-60">Ditutup oleh</span>
+                        <span className="text-xs font-bold text-text-primary">{session.closed_by_username || 'Admin'}</span>
+                    </div>
+                </div>
+
+                {/* Tombol */}
+                <div className="flex gap-3 pt-1">
+                    <button
+                        onClick={onCancel}
+                        disabled={isDeleting}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-text-secondary text-xs font-black uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-all"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isDeleting}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    >
+                        {isDeleting ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <AppIcon name="Trash2" size={14} />
+                        )}
+                        {isDeleting ? 'Menghapus...' : 'Hapus Permanen'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+/* ------------------------------------------------------------------ */
 /*  Sub-komponen grid + pagination                                       */
 /* ------------------------------------------------------------------ */
-const ArchiveGrid = ({ sessions, navigate, formatCurrency }) => {
+const ArchiveGrid = ({ sessions, navigate, formatCurrency, onDelete }) => {
     const [currentPage, setCurrentPage] = useState(1);
+    const [deleteTarget, setDeleteTarget] = useState(null); // session object
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { showToast } = useToast();
 
     const totalPages = Math.ceil(sessions.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const paginatedSessions = sessions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-    /* Hanya tampilkan maks 5 nomor halaman di sekitar halaman aktif */
     const getPageNumbers = () => {
         const pages = [];
         const maxVisible = 5;
@@ -37,8 +109,38 @@ const ArchiveGrid = ({ sessions, navigate, formatCurrency }) => {
         return pages;
     };
 
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
+        setIsDeleting(true);
+        try {
+            const resp = await authFetch(`${apiUrl}/api/archive/sessions/${deleteTarget.id}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (resp.ok) {
+                showToast(data.message, 'success');
+                setDeleteTarget(null);
+                onDelete(); // refresh list dari parent
+            } else {
+                showToast(data.error || 'Gagal menghapus arsip', 'error');
+            }
+        } catch {
+            showToast('Kesalahan jaringan', 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
+            {/* Modal konfirmasi hapus */}
+            {deleteTarget && (
+                <DeleteConfirmModal
+                    session={deleteTarget}
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={() => setDeleteTarget(null)}
+                    isDeleting={isDeleting}
+                />
+            )}
+
             {/* ---- Grid Kartu Sesi ---- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedSessions.map((session) => (
@@ -81,6 +183,7 @@ const ArchiveGrid = ({ sessions, navigate, formatCurrency }) => {
                                 </div>
                             </div>
 
+                            {/* Footer card: user + tombol hapus */}
                             <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
@@ -88,24 +191,35 @@ const ArchiveGrid = ({ sessions, navigate, formatCurrency }) => {
                                     </div>
                                     <span className="text-[10px] font-bold text-text-secondary">{session.closed_by_username || 'Admin'}</span>
                                 </div>
-                                <AppIcon name="ChevronRight" size={16} className="text-blue-500 transform group-hover:translate-x-1 transition-transform" />
+
+                                <div className="flex items-center gap-2">
+                                    {/* Tombol Hapus */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // jangan navigasi ke detail
+                                            setDeleteTarget(session);
+                                        }}
+                                        title="Hapus arsip ini"
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    >
+                                        <AppIcon name="Trash2" size={14} />
+                                    </button>
+
+                                    <AppIcon name="ChevronRight" size={16} className="text-blue-500 transform group-hover:translate-x-1 transition-transform" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* ---- Kontrol Paginasi (hanya muncul jika > 1 halaman) ---- */}
+            {/* ---- Kontrol Paginasi ---- */}
             {totalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100 dark:border-slate-800">
-                    {/* Info jumlah data */}
                     <p className="text-xs font-bold text-text-secondary uppercase tracking-widest opacity-60">
                         Menampilkan {startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, sessions.length)} dari {sessions.length} sesi
                     </p>
-
-                    {/* Tombol navigasi */}
                     <div className="flex items-center gap-1">
-                        {/* Prev */}
                         <button
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
@@ -115,7 +229,6 @@ const ArchiveGrid = ({ sessions, navigate, formatCurrency }) => {
                             <AppIcon name="ChevronLeft" size={16} />
                         </button>
 
-                        {/* Nomor halaman */}
                         {getPageNumbers().map((page) => (
                             <button
                                 key={page}
@@ -131,7 +244,6 @@ const ArchiveGrid = ({ sessions, navigate, formatCurrency }) => {
                             </button>
                         ))}
 
-                        {/* Next */}
                         <button
                             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
@@ -225,7 +337,12 @@ const Archive = () => {
                             <Button onClick={() => navigate('/settings')}>Ke Pengaturan</Button>
                         </div>
                     ) : (
-                        <ArchiveGrid sessions={sessions} navigate={navigate} formatCurrency={formatCurrency} />
+                        <ArchiveGrid
+                            sessions={sessions}
+                            navigate={navigate}
+                            formatCurrency={formatCurrency}
+                            onDelete={fetchSessions}
+                        />
                     )}
                 </div>
             </main>
