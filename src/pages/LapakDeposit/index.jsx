@@ -38,6 +38,7 @@ const LapakDeposit = ({ headerTitle }) => {
     const [transactionToDelete, setTransactionToDelete] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
+    const [mode, setMode] = useState('lapak'); // 'lapak' or 'owner'
     const [filters, setFilters] = useState({
         type: 'all',
         startDate: '',
@@ -45,9 +46,11 @@ const LapakDeposit = ({ headerTitle }) => {
         search: ''
     });
     const [isFilterOpen, setIsFilterOpen] = useState(window.innerWidth >= 1024);
-    const [logoUrl, setLogoUrl] = useState(''); // Add logoUrl state
+    const [logoUrl, setLogoUrl] = useState('');
 
-    const { showToast } = useToast(); // <--- Panggil useToast
+    const { showToast } = useToast();
+
+    const currentAccountName = mode === 'lapak' ? 'lapak_deposit' : 'owner_deposit';
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', {
@@ -59,8 +62,8 @@ const LapakDeposit = ({ headerTitle }) => {
     };
 
     const fetchLapakAccountData = async (isInitialLoad = false) => {
-        if (isInitialLoad) setLoading(true); // Only set full page loading on first load
-        else setIsFilteringLoading(true); // Set partial loading for filters
+        if (isInitialLoad) setLoading(true);
+        else setIsFilteringLoading(true);
         setError(null);
         try {
             const queryParams = new URLSearchParams();
@@ -69,15 +72,15 @@ const LapakDeposit = ({ headerTitle }) => {
             if (filters.endDate) queryParams.append('endDate', filters.endDate);
             if (filters.search) queryParams.append('search', filters.search);
 
-            const response = await authFetch(`${apiUrl}/api/accounts/lapak_deposit?${queryParams.toString()}`);
+            const response = await authFetch(`${apiUrl}/api/accounts/${currentAccountName}?${queryParams.toString()}`);
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || 'Failed to fetch lapak account data');
+                throw new Error(errData.error || 'Failed to fetch account data');
             }
             const data = await response.json();
             setLapakAccount(data.data);
         } catch (err) {
-            console.error("Error fetching lapak account data:", err);
+            console.error("Error fetching account data:", err);
             setError(err.message);
         } finally {
             if (isInitialLoad) setLoading(false);
@@ -88,15 +91,14 @@ const LapakDeposit = ({ headerTitle }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchLapakAccountData();
-        }, 500); // 500ms debounce
+        }, 300);
 
         return () => clearTimeout(timer);
-    }, [filters]);
+    }, [filters, mode]); // Add mode to dependencies
 
     useEffect(() => {
-        fetchLapakAccountData(true); // Initial fetch with full page loading
+        fetchLapakAccountData(true);
 
-        // Fetch logo settings
         const fetchLogo = async () => {
             try {
                 const response = await fetch(`${apiUrl}/api/settings/logo`);
@@ -118,7 +120,7 @@ const LapakDeposit = ({ headerTitle }) => {
             if (token) {
                 try {
                     const decoded = jwtDecode(token);
-                    setUserRole(decoded.role);
+                    setUserRole(decoded.role.trim());
                 } catch (e) {
                     console.error("Failed to decode token", e);
                 }
@@ -131,7 +133,7 @@ const LapakDeposit = ({ headerTitle }) => {
 
     const handleFilterChange = (name, value) => {
         setFilters(prev => ({ ...prev, [name]: value }));
-        setCurrentPage(1); // Reset page on filter
+        setCurrentPage(1);
     };
 
     const handleResetFilters = () => {
@@ -160,10 +162,10 @@ const LapakDeposit = ({ headerTitle }) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    account_name: 'lapak_deposit',
+                    account_name: currentAccountName,
                     amount: amount,
                     description: description,
-                    created_at: date // Pass the user's local date
+                    created_at: date
                 }),
             });
             if (!response.ok) {
@@ -172,7 +174,7 @@ const LapakDeposit = ({ headerTitle }) => {
             }
             showToast('Deposit berhasil ditambahkan!', 'success');
             setIsDepositModalOpen(false);
-            fetchLapakAccountData(); // Refresh data
+            fetchLapakAccountData();
         } catch (err) {
             showToast(`Error: ${err.message}`, 'error');
             console.error("Error saving deposit:", err);
@@ -187,10 +189,10 @@ const LapakDeposit = ({ headerTitle }) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    account_name: 'lapak_deposit',
+                    account_name: currentAccountName,
                     amount: amount,
                     description: description,
-                    created_at: date // Pass the user's local date
+                    created_at: date
                 }),
             });
             if (!response.ok) {
@@ -199,14 +201,13 @@ const LapakDeposit = ({ headerTitle }) => {
             }
             showToast('Pengeluaran berhasil dicatat!', 'success');
             setIsExpenseModalOpen(false);
-            fetchLapakAccountData(); // Refresh data
+            fetchLapakAccountData();
         } catch (err) {
             showToast(`Error: ${err.message}`, 'error');
             console.error("Error saving expense:", err);
         }
     };
 
-    // --- Edit and Delete Transaction Handlers ---
     const handleEditClick = (transaction) => {
         setTransactionToEdit(transaction);
         setIsEditModalOpen(true);
@@ -237,7 +238,7 @@ const LapakDeposit = ({ headerTitle }) => {
             showToast('Transaksi berhasil diperbarui!', 'success');
             setIsEditModalOpen(false);
             setTransactionToEdit(null);
-            fetchLapakAccountData(); // Refresh data
+            fetchLapakAccountData();
         } catch (err) {
             showToast(`Error: ${err.message}`, 'error');
             console.error("Error editing transaction:", err);
@@ -256,21 +257,19 @@ const LapakDeposit = ({ headerTitle }) => {
             showToast('Transaksi berhasil dihapus!', 'success');
             setIsDeleteConfirmOpen(false);
             setTransactionToDelete(null);
-            fetchLapakAccountData(); // Refresh data
+            fetchLapakAccountData();
         } catch (err) {
             showToast(`Error: ${err.message}`, 'error');
             console.error("Error deleting transaction:", err);
         }
     };
-    // --- End Edit and Delete Transaction Handlers ---
-
 
     if (loading && !lapakAccount) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-text-secondary">Memuat data lapak...</p>
+                    <p className="text-text-secondary">Memuat data...</p>
                 </div>
             </div>
         );
@@ -281,7 +280,7 @@ const LapakDeposit = ({ headerTitle }) => {
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center p-4">
                     <p className="text-red-500 mb-4">Error: {error}</p>
-                    <Button onClick={fetchLapakAccountData}>Coba Lagi</Button>
+                    <Button onClick={() => fetchLapakAccountData(true)}>Coba Lagi</Button>
                 </div>
             </div>
         );
@@ -300,19 +299,22 @@ const LapakDeposit = ({ headerTitle }) => {
         }
     ];
 
+    const pageTitle = mode === 'lapak' ? 'Uang Lapak' : 'Uang Owner';
+    const pageSubtitle = mode === 'lapak' ? 'Deposit & Pengeluaran Lapak' : 'Kas & Pengeluaran Owner';
+
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : 'bg-transparent'}`}>
             {theme === 'default' && (
                 userRole === 'owner' ? (
                     <OwnerNavigationHeader
                         onToggleSidebar={toggleSidebar}
-                        headerTitle={headerTitle || 'Pengeluaran Lapak'}
+                        headerTitle={headerTitle || pageTitle}
                         hideMobileHeader={true}
                     />
                 ) : (
                     <NavigationHeader
                         onToggleSidebar={toggleSidebar}
-                        headerTitle={headerTitle || 'Pengeluaran Lapak'}
+                        headerTitle={headerTitle || pageTitle}
                         hideMobileHeader={true}
                     />
                 )
@@ -320,42 +322,73 @@ const LapakDeposit = ({ headerTitle }) => {
             <main className={`${theme === 'default' ? 'pt-0 lg:pt-16' : ''} pb-24 lg:pb-8`}>
                 {theme === 'default' && (
                     <AdminMobileHeader
-                        title="Atur Lapak"
-                        subtitle="Deposit & Pengeluaran"
-                        badgeText="Lapak Deposit"
-                        stickyTitle={headerTitle || 'Pengeluaran Lapak'}
+                        title={pageTitle}
+                        subtitle={pageSubtitle}
+                        badgeText={mode === 'lapak' ? "Lapak Deposit" : "Owner Cash"}
+                        stickyTitle={headerTitle || pageTitle}
                         actions={mobileActions}
-                        decorativeIcon="Wallet"
+                        decorativeIcon={mode === 'lapak' ? "Wallet" : "User"}
                     />
                 )}
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-4 md:py-6" : ""}>
-                    <div className="mb-6 mt-4 hidden lg:block">
-                        <div className="hidden md:block">
-                            <BreadcrumbNavigation />
+                    <div className="mb-6 mt-4 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div className="hidden lg:block">
+                            <div className="hidden md:block">
+                                <BreadcrumbNavigation />
+                            </div>
+                            <div className="mt-4">
+                                <h1 className="text-2xl lg:text-4xl font-black text-gray-800 dark:text-white uppercase tracking-tighter">{pageTitle}</h1>
+                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                                    <span className={`w-8 h-[2px] ${mode === 'lapak' ? 'bg-blue-600' : 'bg-purple-600'} rounded-full`}></span>
+                                    {mode === 'lapak' ? 'Kelola dana operasional lapak' : 'Kelola keuangan pribadi owner'}
+                                </p>
+                            </div>
                         </div>
-                        <div className="mt-4">
-                            <h1 className="text-2xl lg:text-4xl font-black text-gray-800 dark:text-white uppercase tracking-tighter">Pengeluaran Lapak</h1>
-                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
-                                <span className="w-8 h-[2px] bg-blue-600 rounded-full"></span>
-                                Kelola dana operasional lapak
-                            </p>
+
+                        {/* Premium Mode Toggle */}
+                        <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 flex items-center gap-1 self-start md:self-auto">
+                            <button
+                                onClick={() => setMode('lapak')}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${mode === 'lapak'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 active:scale-95'
+                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                    }`}
+                            >
+                                <Icon name="Store" size={14} strokeWidth={3} />
+                                <span>Uang Lapak</span>
+                            </button>
+                            <button
+                                onClick={() => setMode('owner')}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${mode === 'owner'
+                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 active:scale-95'
+                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                    }`}
+                            >
+                                <Icon name="User" size={14} strokeWidth={3} />
+                                <span>Uang Owner</span>
+                            </button>
                         </div>
                     </div>
 
                     <div className="!-mt-20 lg:!mt-0 relative z-30">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                             <MetricsCard
-                                title="Saldo Lapak"
+                                title={mode === 'lapak' ? "Saldo Lapak" : "Saldo Owner"}
                                 value={formatCurrency(lapakAccount?.account?.balance || 0)}
-                                icon="Wallet"
+                                icon={mode === 'lapak' ? "Wallet" : "User"}
                                 color="white"
-                                description="Total dana tersedia untuk operasional lapak"
+                                description={mode === 'lapak' ? "Total dana tersedia untuk operasional lapak" : "Total dana kas yang dipegang owner"}
                             />
                         </div>
 
                         <div className="hidden lg:flex flex-wrap justify-start gap-4 mb-8">
-                            <Button variant="primary" iconName="Plus" onClick={handleAddDeposit}>
-                                Tambah Deposit
+                            <Button
+                                variant={mode === 'lapak' ? "primary" : "info"}
+                                iconName="Plus"
+                                onClick={handleAddDeposit}
+                                className={mode === 'owner' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}
+                            >
+                                Tambah {mode === 'lapak' ? 'Deposit' : 'Tabungan'}
                             </Button>
                             <Button variant="destructive" iconName="Minus" onClick={handleRecordExpense}>
                                 Catat Pengeluaran
@@ -366,15 +399,14 @@ const LapakDeposit = ({ headerTitle }) => {
                     {/* Filter Section */}
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm mb-8 overflow-hidden border border-gray-100 dark:border-slate-800 transition-all duration-300">
                         <div
-                            className="p-5 flex flex-row items-center justify-between cursor-pointer bg-[#118eea] lg:bg-white lg:dark:bg-slate-900 border-b border-gray-50 dark:border-slate-800 hover:bg-[#0d70ba] lg:hover:bg-gray-50 lg:dark:hover:bg-slate-800 transition-all relative overflow-hidden group"
+                            className={`p-5 flex flex-row items-center justify-between cursor-pointer ${mode === 'lapak' ? 'bg-[#118eea] lg:bg-white lg:dark:bg-slate-900' : 'bg-[#9333ea] lg:bg-white lg:dark:bg-slate-900'} border-b border-gray-50 dark:border-slate-800 transition-all relative overflow-hidden group`}
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                         >
-                            {/* Simple Decorative Light - Hidden on Desktop */}
                             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all lg:hidden"></div>
 
                             <div className="flex items-center gap-3 relative z-10">
                                 <div className={`p-2 rounded-xl transition-colors ${isFilterOpen
-                                    ? 'bg-white/20 lg:bg-blue-50 lg:dark:bg-blue-900/20 text-white lg:text-blue-600'
+                                    ? `bg-white/20 lg:bg-${mode === 'lapak' ? 'blue' : 'purple'}-50 lg:dark:bg-${mode === 'lapak' ? 'blue' : 'purple'}-900/20 text-white lg:text-${mode === 'lapak' ? 'blue' : 'purple'}-600`
                                     : 'bg-black/10 lg:bg-gray-100 lg:dark:bg-slate-800 text-white/80 lg:text-gray-400'}`}>
                                     <Icon name="Filter" className="h-5 w-5" />
                                 </div>
@@ -401,12 +433,11 @@ const LapakDeposit = ({ headerTitle }) => {
                                 </Button>
                                 <Icon
                                     name={isFilterOpen ? "ChevronUp" : "ChevronDown"}
-                                    className={`h-5 w-5 transition-transform duration-500 ${isFilterOpen ? 'rotate-180 text-white lg:text-blue-500' : 'text-white/50 lg:text-gray-400'}`}
+                                    className={`h-5 w-5 transition-transform duration-500 ${isFilterOpen ? `rotate-180 text-white lg:text-${mode === 'lapak' ? 'blue' : 'purple'}-500` : 'text-white/50 lg:text-gray-400'}`}
                                 />
                             </div>
                         </div>
 
-                        {/* Collapsible Content */}
                         <div className={`transition-all duration-300 ease-in-out border-t border-gray-50 dark:border-slate-800 ${isFilterOpen ? 'max-h-[1000px] opacity-100 p-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div>
@@ -450,21 +481,19 @@ const LapakDeposit = ({ headerTitle }) => {
                         </div>
                     </div>
 
-                    {/* Transaction List */}
                     <div className="mt-8">
                         <div className="flex items-center justify-between mb-6 px-1">
                             <div>
-                                <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight">Riwayat Transaksi</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Catatan dana keluar masuk</p>
+                                <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight text-stroke-1">Riwayat Transaksi</h2>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Catatan dana {mode === 'lapak' ? 'lapak' : 'owner'}</p>
                             </div>
                         </div>
 
                         <div className="relative min-h-[400px]">
-                            {/* Loading Overlay */}
                             {isFilteringLoading && (
                                 <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 backdrop-blur-[1px] z-30 flex items-center justify-center rounded-3xl transition-all duration-300">
                                     <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 dark:border-slate-700">
-                                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                        <div className={`w-12 h-12 border-4 ${mode === 'lapak' ? 'border-blue-600' : 'border-purple-600'} border-t-transparent rounded-full animate-spin`}></div>
                                         <span className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] animate-pulse">Memperbarui Data...</span>
                                     </div>
                                 </div>
@@ -482,9 +511,8 @@ const LapakDeposit = ({ headerTitle }) => {
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <h4 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-tight truncate">
-                                                                {transaction.type === 'deposit' ? 'Uang Masuk / Deposit' : 'Pengeluaran Lapak'}
+                                                                {transaction.type === 'deposit' ? (mode === 'lapak' ? 'Uang Masuk / Deposit' : 'Pemasukan Kas Owner') : (mode === 'lapak' ? 'Pengeluaran Lapak' : 'Pengeluaran Pribadi Owner')}
                                                             </h4>
-                                                            {/* Premium Record Badge */}
                                                             <div className={`mt-2 px-3 py-2 rounded-xl border flex items-center gap-2.5 ${transaction.type === 'deposit' ? 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20' : 'bg-rose-50/50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20'}`}>
                                                                 <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${transaction.type === 'deposit' ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
                                                                 <p className={`text-[11px] font-black uppercase tracking-widest leading-none ${transaction.type === 'deposit' ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
@@ -529,7 +557,6 @@ const LapakDeposit = ({ headerTitle }) => {
                                         ))}
                                     </ul>
 
-                                    {/* Premium Pagination Controls */}
                                     <div className="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4 px-2">
                                         <div className="flex items-center gap-2 order-2 sm:order-1">
                                             <Button
@@ -556,7 +583,7 @@ const LapakDeposit = ({ headerTitle }) => {
                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                                                 Halaman
                                             </span>
-                                            <div className="flex items-center justify-center h-8 px-4 rounded-lg bg-blue-600 text-white font-mono font-black text-sm shadow-lg shadow-blue-500/30">
+                                            <div className={`flex items-center justify-center h-8 px-4 rounded-lg ${mode === 'lapak' ? 'bg-blue-600' : 'bg-purple-600'} text-white font-mono font-black text-sm shadow-lg`}>
                                                 {currentPage}
                                             </div>
                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -566,13 +593,13 @@ const LapakDeposit = ({ headerTitle }) => {
                                     </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-20 px-4 bg-gray-50/50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
+                                <div className="flex flex-col items-center justify-center py-20 px-4 bg-gray-50/50 dark:bg-slate-950/20 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
                                     <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-3xl shadow-xl flex items-center justify-center mb-6">
                                         <Icon name="Inbox" size={40} className="text-gray-300 dark:text-gray-600" />
                                     </div>
                                     <h3 className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tight">Belum Ada Transaksi</h3>
                                     <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2 text-center max-w-[280px]">
-                                        Silakan tambah deposit atau catat pengeluaran untuk melihat riwayat.
+                                        Silakan tambah {mode === 'lapak' ? 'deposit' : 'kas'} atau catat pengeluaran untuk melihat riwayat.
                                     </p>
                                 </div>
                             )}
@@ -585,13 +612,15 @@ const LapakDeposit = ({ headerTitle }) => {
                 isOpen={isDepositModalOpen}
                 onClose={() => setIsDepositModalOpen(false)}
                 onSave={handleSaveDeposit}
-                accountType="lapak"
+                accountType={mode === 'lapak' ? 'lapak' : 'owner'}
+                title={mode === 'lapak' ? 'Tambah Deposit Lapak' : 'Tambah Simpanan Owner'}
             />
             <ExpenseModal
                 isOpen={isExpenseModalOpen}
                 onClose={() => setIsExpenseModalOpen(false)}
                 onSave={handleSaveExpense}
-                accountType="lapak"
+                accountType={mode === 'lapak' ? 'lapak' : 'owner'}
+                title={mode === 'lapak' ? 'Catat Pengeluaran Lapak' : 'Catat Pengeluaran Owner'}
             />
             <EditTransactionDescriptionModal
                 isOpen={isEditModalOpen}

@@ -4078,7 +4078,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         if (accountName === 'lapak_deposit') {
             allowedRoles = ['admin', 'user', 'kasir', 'owner']; // Owner can also view lapak deposit
         } else if (accountName === 'owner_deposit') {
-            allowedRoles = ['admin', 'owner'];
+            allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller']; // Expanded roles for Owner account as requested
         } else {
             return res.status(400).json({ error: "Invalid account name" });
         }
@@ -4179,7 +4179,7 @@ app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
         if (account_name === 'lapak_deposit') {
             allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
-            allowedRoles = ['admin', 'owner'];
+            allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
         } else {
             return res.status(400).json({ error: "Invalid account name" });
         }
@@ -4238,7 +4238,7 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
         if (account_name === 'lapak_deposit') {
             allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
-            allowedRoles = ['admin', 'owner'];
+            allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
         } else {
             return res.status(400).json({ error: "Invalid account name" });
         }
@@ -4320,8 +4320,9 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
         const accountId = transaction.account_id;
         const type = transaction.type; // 'deposit' or 'expense'
 
-        // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
+        // Check ownership or admin/authorized roles
+        const authorizedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
+        if (transaction.created_by_user_id !== userId && !authorizedRoles.includes(req.user.role)) {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
         }
@@ -4377,8 +4378,9 @@ app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res)
         }
         const transaction = transRows[0];
 
-        // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
+        // Check ownership or admin/authorized roles
+        const authorizedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
+        if (transaction.created_by_user_id !== userId && !authorizedRoles.includes(req.user.role)) {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to delete this transaction" });
         }
