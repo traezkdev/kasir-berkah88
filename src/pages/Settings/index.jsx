@@ -148,6 +148,7 @@ const Settings = () => {
   const [userToDeleteUsername, setUserToDeleteUsername] = useState('');
   const [showDeleteLogoConfirmation, setShowDeleteLogoConfirmation] = useState(false);
   const [showDeleteWatermarkConfirmation, setShowDeleteWatermarkConfirmation] = useState(false);
+  const [isResetMasterPasswordMode, setIsResetMasterPasswordMode] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
@@ -551,22 +552,30 @@ const Settings = () => {
       showToast('Kata sandi master baru dan konfirmasi tidak cocok.', 'error');
       return;
     }
+    setIsLoading(true);
     try {
-      const res = await authFetch(`${apiUrl}/api/settings/master-password`, {
+      const url = isResetMasterPasswordMode
+        ? `${apiUrl}/api/admin/master-password/reset`
+        : `${apiUrl}/api/settings/master-password`;
+
+      const body = isResetMasterPasswordMode
+        ? { newMasterPassword }
+        : { currentMasterPassword, newMasterPassword };
+
+      const res = await authFetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          currentMasterPassword: currentMasterPassword,
-          newMasterPassword: newMasterPassword,
-        }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
-        showToast('Kata sandi master berhasil diperbarui!', 'success');
+        showToast(isResetMasterPasswordMode ? 'Kata sandi master berhasil direset!' : 'Kata sandi master berhasil diperbarui!', 'success');
         setCurrentMasterPassword('');
         setNewMasterPassword('');
         setConfirmNewMasterPassword('');
+        setIsResetMasterPasswordMode(false);
+        handleModalClose();
       } else {
         const errorData = await res.json();
         showToast(errorData.error || 'Gagal memperbarui kata sandi master.', 'error');
@@ -574,6 +583,8 @@ const Settings = () => {
     } catch (error) {
       console.error('Error updating master password:', error);
       showToast(error.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -668,7 +679,7 @@ const Settings = () => {
   };
 
   const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Pengaturan', path: '/settings' }];
-  const isAdmin = userRole === 'admin';
+  const isAdmin = userRole === 'admin' || userRole === 'owner';
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
@@ -1268,16 +1279,37 @@ const Settings = () => {
         </form>
       </SettingsModal>
 
-      <SettingsModal title="Ubah Kata Sandi Master" isOpen={activeModal === 'masterPassword'} onClose={handleModalClose}>
+      <SettingsModal title={isResetMasterPasswordMode ? "Reset Kata Sandi Master" : "Ubah Kata Sandi Master"} isOpen={activeModal === 'masterPassword'} onClose={() => { setIsResetMasterPasswordMode(false); handleModalClose(); }}>
         <form onSubmit={handleChangeMasterPassword} className="space-y-4">
-          <p className="text-sm text-text-secondary">Digunakan untuk otorisasi penghapusan data masal.</p>
-          <Input label="Sandi Master Saat Ini" name="currentMasterPassword" type={showCurrentMasterPassword ? "text" : "password"} value={currentMasterPassword} onChange={(e) => setCurrentMasterPassword(e.target.value)} required
-            rightIcon={<span className="cursor-pointer" onClick={() => setShowCurrentMasterPassword(!showCurrentMasterPassword)}><AppIcon name={showCurrentMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
-          <Input label="Sandi Master Baru" name="newMasterPassword" type={showNewMasterPassword ? "text" : "password"} value={newMasterPassword} onChange={(e) => setNewMasterPassword(e.target.value)} required
+          <p className="text-sm text-text-secondary">
+            {isResetMasterPasswordMode
+              ? "Reset paksa kata sandi master tanpa sandi lama (Khusus Admin/Owner)."
+              : "Digunakan untuk otorisasi penghapusan data masal."}
+          </p>
+
+          {!isResetMasterPasswordMode && (
+            <Input label="Sandi Master Saat Ini" name="currentMasterPassword" type={showCurrentMasterPassword ? "text" : "password"} value={currentMasterPassword} onChange={(e) => setCurrentMasterPassword(e.target.value)} required
+              rightIcon={<span className="cursor-pointer" onClick={() => setShowCurrentMasterPassword(!showCurrentMasterPassword)}><AppIcon name={showCurrentMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
+          )}
+
+          <Input label={isResetMasterPasswordMode ? "Sandi Master Baru (Reset)" : "Sandi Master Baru"} name="newMasterPassword" type={showNewMasterPassword ? "text" : "password"} value={newMasterPassword} onChange={(e) => setNewMasterPassword(e.target.value)} required
             rightIcon={<span className="cursor-pointer" onClick={() => setShowNewMasterPassword(!showNewMasterPassword)}><AppIcon name={showNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
           <Input label="Konfirmasi Sandi Baru" name="confirmNewMasterPassword" type={showConfirmNewMasterPassword ? "text" : "password"} value={confirmNewMasterPassword} onChange={(e) => setConfirmNewMasterPassword(e.target.value)} required
             rightIcon={<span className="cursor-pointer" onClick={() => setShowConfirmNewMasterPassword(!showConfirmNewMasterPassword)}><AppIcon name={showConfirmNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Memperbarui...' : 'Perbarui Kata Sandi'}</Button>
+
+          <div className="flex flex-col gap-3">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (isResetMasterPasswordMode ? 'Mereset...' : 'Memperbarui...') : (isResetMasterPasswordMode ? 'Reset Sekarang' : 'Perbarui Kata Sandi')}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => setIsResetMasterPasswordMode(!isResetMasterPasswordMode)}
+              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-widest text-center py-2"
+            >
+              {isResetMasterPasswordMode ? "Kembali ke Ubah Sandi" : "Lupa Sandi Master? (Reset)"}
+            </button>
+          </div>
         </form>
       </SettingsModal>
 

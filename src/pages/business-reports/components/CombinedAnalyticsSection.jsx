@@ -22,21 +22,21 @@ const CombinedAnalyticsSection = ({ reportData, onExportCombined }) => {
   const lapakBalance = balances?.lapakBalance || 0;
   const currentEndingCapital = ownerBalance + lapakBalance;
 
-  // Expected Cash (Modal Awal + Pendapatan All Time - Pengeluaran All Time)
-  const expectedEndingCapital = (initialCapital || 0) + totalRevenueAllTime - totalExpensesAllTime;
+  // Expected Cash (Modal Awal + Pendapatan Periode - Pengeluaran Periode)
+  const expectedEndingCapital = (initialCapital || 0) + totalRevenue - totalExpenses;
   const auditDifference = currentEndingCapital - expectedEndingCapital;
 
-  // Modal Berjalan (Formula: Modal awal + total pendapatan + total stok - total pengeluaran)
+  // Modal Berjalan (Formula: Modal awal + total pendapatan periode + total stok - total pengeluaran periode)
   const stockValue = rawMetrics?.totalStockValue || 0;
-  const workingModal = (initialCapital || 0) + totalRevenueAllTime + stockValue - totalExpensesAllTime;
+  const workingModal = (initialCapital || 0) + totalRevenue + stockValue - totalExpenses;
 
   // Equity
-  const equity = (initialCapital || 0) + netProfitAllTime;
+  const equity = (initialCapital || 0) + netProfit;
 
   const analyticsMetrics = [
     { label: 'Laba Bersih (Periode)', value: formatCurrency(netProfit) },
-    { label: 'Selisih Audit', value: formatCurrency(auditDifference), color: auditDifference < 0 ? 'text-destructive' : 'text-success' },
-    { label: 'Kekayaan Bisnis', value: formatCurrency(equity) },
+    { label: 'Selisih Audit (Periode)', value: formatCurrency(auditDifference), color: auditDifference < 0 ? 'text-destructive' : 'text-success' },
+    { label: 'Kekayaan Bisnis (Periode)', value: formatCurrency(equity) },
   ];
 
   const auditCards = [
@@ -83,34 +83,34 @@ const CombinedAnalyticsSection = ({ reportData, onExportCombined }) => {
     {
       title: 'Kekayaan Bisnis (Equity)',
       value: formatCurrency(equity),
-      desc: 'Modal Awal + Laba Bersih Keseluruhan',
+      desc: 'Modal Awal + Laba Bersih Periode Ini',
       icon: 'ShieldCheck',
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10'
     },
     {
-      title: 'Total Pendapatan (All Time)',
-      value: formatCurrency(totalRevenueAllTime),
-      desc: 'Seluruh pendapatan yang tercatat',
+      title: 'Total Pendapatan (Periode Ini)',
+      value: formatCurrency(totalRevenue),
+      desc: 'Pendapatan yang tercatat pada periode ini',
       icon: 'TrendingUp',
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-500/10'
     },
     {
-      title: 'Total Pengeluaran (All Time)',
-      value: formatCurrency(totalExpensesAllTime),
-      desc: 'Seluruh pengeluaran yang tercatat',
+      title: 'Total Pengeluaran (Periode Ini)',
+      value: formatCurrency(totalExpenses),
+      desc: 'Pengeluaran yang tercatat pada periode ini',
       icon: 'TrendingDown',
       color: 'text-rose-500',
       bgColor: 'bg-rose-500/10'
     },
     {
-      title: 'Laba Bersih (All Time)',
-      value: formatCurrency(netProfitAllTime),
-      desc: 'Seluruh laba/rugi yang tercatat',
+      title: 'Laba Bersih (Periode Ini)',
+      value: formatCurrency(netProfit),
+      desc: 'Laba/rugi yang tercatat pada periode ini',
       icon: 'BarChart3',
-      color: netProfitAllTime >= 0 ? 'text-emerald-600' : 'text-rose-600',
-      bgColor: netProfitAllTime >= 0 ? 'bg-emerald-600/10' : 'bg-rose-600/10'
+      color: netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600',
+      bgColor: netProfit >= 0 ? 'bg-emerald-600/10' : 'bg-rose-600/10'
     },
     {
       title: 'Selisih Perhitungan (Audit)',

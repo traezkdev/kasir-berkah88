@@ -16,7 +16,6 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     image: null,
     discount: '',
     is_featured: false,
-    is_featured: false,
     is_hidden: false, // Add is_hidden
     options: [], // Add options to initial state
     description: '',

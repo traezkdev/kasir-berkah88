@@ -2507,7 +2507,7 @@ app.get('/api/settings/:key', async (req, res) => {
 });
 
 // Update master password
-app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { currentMasterPassword, newMasterPassword } = req.body;
 
@@ -2547,6 +2547,26 @@ app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admi
 
         res.json({ message: "Master password updated successfully" });
 
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Reset Master Password (without knowing current password) - Admin/Owner Only
+app.put("/api/admin/master-password/reset", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { newMasterPassword } = req.body;
+
+        if (!newMasterPassword) {
+            return res.status(400).json({ error: "Kata sandi master baru diperlukan" });
+        }
+
+        const hashedNewMasterPassword = await bcrypt.hash(newMasterPassword, 10);
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['master_password', hashedNewMasterPassword]);
+
+        res.json({ message: "Master password has been reset successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
@@ -6089,7 +6109,7 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
 // --- Data Management Endpoints (Admin Only) ---
 
 // Delete all transactions, expenses, and reset menu item stock
-app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     const connection = await db.getConnection();
     try {
         const { masterPassword } = req.body;
@@ -6100,7 +6120,20 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         const [masterPassRow] = await connection.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
-        if (!storedMasterPassword || !(await bcrypt.compare(masterPassword, storedMasterPassword))) {
+        if (!storedMasterPassword) {
+            return res.status(401).json({ error: "Kata sandi master belum diatur. Silakan atur di Pengaturan." });
+        }
+
+        let isPasswordValid = false;
+        const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+
+        if (isStoredPassHashed) {
+            isPasswordValid = await bcrypt.compare(masterPassword, storedMasterPassword);
+        } else {
+            isPasswordValid = (masterPassword === storedMasterPassword);
+        }
+
+        if (!isPasswordValid) {
             return res.status(401).json({ error: "Kata sandi master salah" });
         }
 
