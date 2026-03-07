@@ -3837,8 +3837,27 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
 // Get all expenses without pagination
 app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user', 'guest'), async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (startDate) {
+            whereClauses.push('e.date >= ?');
+            queryParams.push(startDate);
+        } else if (lastClosingDate) {
+            whereClauses.push('e.date >= ?');
+            queryParams.push(lastClosingDate);
+        }
+
+        if (endDate) {
+            whereClauses.push('e.date <= ?');
+            queryParams.push(`${endDate} 23:59:59`);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         const dataSql = `
             SELECT 
@@ -3852,10 +3871,10 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
-            ${lastClosingDate ? 'WHERE e.date >= ?' : ''}
+            ${whereSql}
             ORDER BY e.date DESC
         `;
-        const [rows] = await db.query(dataSql, lastClosingDate ? [lastClosingDate] : []);
+        const [rows] = await db.query(dataSql, queryParams);
 
         res.json({
             "message": "success",

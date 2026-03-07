@@ -25,6 +25,10 @@ export default function AuditorPage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [isSavingDefault, setIsSavingDefault] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -38,13 +42,22 @@ export default function AuditorPage() {
         }
     }, []);
 
-    const fetchData = async () => {
+    const fetchData = async (currentStart, currentEnd) => {
+        // Safeguard against objects (like React events) being passed as arguments
+        const start = typeof currentStart === 'string' ? currentStart : startDate;
+        const end = typeof currentEnd === 'string' ? currentEnd : endDate;
+
         setLoading(true);
         try {
+            const params = new URLSearchParams();
+            if (start) params.append('startDate', start);
+            if (end) params.append('endDate', end);
+            const queryString = params.toString() ? `?${params.toString()}` : '';
+
             const [allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes] = await Promise.all([
-                authFetch(`${apiUrl}/api/transactions/all`),
+                authFetch(`${apiUrl}/api/transactions/all${queryString}`),
                 authFetch(`${apiUrl}/api/menu-items/all`),
-                authFetch(`${apiUrl}/api/expenses/all`),
+                authFetch(`${apiUrl}/api/expenses/all${queryString}`),
                 authFetch(`${apiUrl}/api/all-settings`),
                 authFetch(`${apiUrl}/api/accounts/owner_deposit`),
                 authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
@@ -72,6 +85,17 @@ export default function AuditorPage() {
                 unitsRes.json()
             ]);
 
+            // Auto-initialize startDate from settings on first load
+            if (!isInitialized) {
+                setIsInitialized(true);
+                const defaultStartDate = settings.data?.audit_start_date;
+                if (defaultStartDate && !startDate && !currentStart) {
+                    setStartDate(defaultStartDate);
+                    // Re-fetch immediately with the default date
+                    return fetchData(defaultStartDate, end);
+                }
+            }
+
             processAuditData({
                 transactions: allTransactions.data || [],
                 menuItems: menuItems.data || [],
@@ -87,6 +111,30 @@ export default function AuditorPage() {
             toast.error("Gagal memuat data audit");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveAsDefault = async () => {
+        if (!startDate) {
+            toast.error("Silakan pilih tanggal mulai terlebih dahulu");
+            return;
+        }
+        setIsSavingDefault(true);
+        try {
+            const res = await authFetch(`${apiUrl}/api/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audit_start_date: startDate })
+            });
+            if (res.ok) {
+                toast.success("Tanggal audit default disimpan");
+            } else {
+                throw new Error("Gagal menyimpan");
+            }
+        } catch (error) {
+            toast.error("Gagal menyimpan pengaturan default");
+        } finally {
+            setIsSavingDefault(false);
         }
     };
 
@@ -212,7 +260,7 @@ export default function AuditorPage() {
                     {
                         label: 'Refresh Data',
                         icon: 'RefreshCw',
-                        onClick: fetchData
+                        onClick: () => fetchData()
                     }
                 ]}
             />
@@ -292,7 +340,7 @@ export default function AuditorPage() {
 
                             <div className="flex flex-col items-end gap-3">
                                 <Button
-                                    onClick={fetchData}
+                                    onClick={() => fetchData()}
                                     variant="ghost"
                                     className="h-14 px-8 rounded-2xl bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-white font-black text-xs uppercase tracking-[0.2em] transition-all border border-gray-100 dark:border-slate-700 flex items-center gap-3 active:scale-95"
                                 >
@@ -305,6 +353,50 @@ export default function AuditorPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+                {/* Filters & Configuration section */}
+                <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">Mulai Tanggal</label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="w-full h-10 px-4 rounded-xl bg-gray-50 dark:bg-slate-800 border-none text-sm font-bold text-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+                        />
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">Sampai Tanggal</label>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="w-full h-10 px-4 rounded-xl bg-gray-50 dark:bg-slate-800 border-none text-sm font-bold text-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => fetchData()}
+                            variant="primary"
+                            className="flex-1 h-14 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Icon name="Search" size={16} />
+                            Filter Audit
+                        </Button>
+                    </div>
+                    {userRole === 'admin' || userRole === 'owner' ? (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={handleSaveAsDefault}
+                                disabled={isSavingDefault || !startDate}
+                                variant="ghost"
+                                className="flex-1 h-14 rounded-[1.5rem] bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 text-purple-600 font-black text-[10px] uppercase tracking-widest border border-purple-100 dark:border-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Icon name={isSavingDefault ? "Loader2" : "Save"} size={16} severity={isSavingDefault ? "animate-spin" : ""} />
+                                {isSavingDefault ? "Menyimpan..." : "Set Sebagai Default"}
+                            </Button>
+                        </div>
+                    ) : null}
                 </div>
 
                 {/* Main Audit Grid */}
