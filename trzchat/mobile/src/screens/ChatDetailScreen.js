@@ -19,11 +19,12 @@ import {
     AppState,
     Modal,
     Dimensions,
-    Linking
+    Linking,
+    Clipboard
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
-import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2 } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone, User, Image as ImageIcon, MapPin, Copy, Camera } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -47,6 +48,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import { getToken } from '../utils/auth';
+import { useCall } from '../context/CallContext';
 
 // --- Komponen Pembantu di Luar (Untuk Optimasi Performa) ---
 
@@ -160,12 +162,11 @@ const MessageItem = memo(({
                 style={[
                     styles.messageContainer,
                     isMe ? styles.myMessageContainer : styles.theirMessageContainer,
-                    selectionMode && { maxWidth: '85%' },
-                    selectionMode && { flexDirection: isMe ? 'row-reverse' : 'row' }
+                    selectionMode && { maxWidth: '100%', width: '100%', alignSelf: 'center', flexDirection: 'row', alignItems: 'center' },
                 ]}
             >
                 {selectionMode && (
-                    <View style={[styles.selectionIndicator, isMe ? styles.selectionIndicatorMe : styles.selectionIndicatorThem]}>
+                    <View style={styles.selectionIndicator}>
                         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                             {isSelected && <Check size={12} color="#fff" strokeWidth={4} />}
                         </View>
@@ -176,6 +177,7 @@ const MessageItem = memo(({
                     onPress={() => selectionMode ? onToggleSelection(item.id) : null}
                     delayLongPress={400}
                     activeOpacity={0.85}
+                    style={selectionMode ? { flex: 1, alignItems: isMe ? 'flex-end' : 'flex-start' } : null}
                 >
                     <Animated.View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble, isDeleted ? styles.deletedBubble : null, animatedBubbleStyle]}>
                         {hasReply ? (
@@ -284,10 +286,13 @@ const MessageItem = memo(({
                                 </View>
                                 <Download size={18} color="#888" />
                             </TouchableOpacity>
+                        ) : isDeleted ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(5) }}>
+                                <Text style={styles.deletedText}>🚫</Text>
+                                <Text style={styles.deletedText}>Pesan ini telah dihapus</Text>
+                            </View>
                         ) : (
-                            <Text style={[styles.messageText, isDeleted ? styles.deletedText : null]}>
-                                {isDeleted ? 'Pesan ini telah dihapus' : item.text}
-                            </Text>
+                            <Text style={styles.messageText}>{item.text}</Text>
                         )}
                         <View style={styles.messageFooter}>
                             {(item.is_edited && !isDeleted) ? (
@@ -330,6 +335,7 @@ const ChatDetailScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { chat } = route.params;
+    const { startCall } = useCall();
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -377,6 +383,7 @@ const ChatDetailScreen = () => {
     const startTimeRef = useRef(0);
     const [recordingMode, setRecordingMode] = useState(null); // 'hold' or 'toggle'
     const [willCancel, setWillCancel] = useState(false);
+    const willCancelRef = useRef(false);
     const [audioPlayingId, setAudioPlayingId] = useState(null);
     const [audioLoadingId, setAudioLoadingId] = useState(null);
     const soundObjectRef = useRef(null);
@@ -393,6 +400,7 @@ const ChatDetailScreen = () => {
 
     useEffect(() => {
         isRecordingRef.current = isRecording;
+        console.log('[Voice] isRecording state changed:', isRecording);
     }, [isRecording]);
 
     const fetchMessages = useCallback(async (pageNum = 1) => {
@@ -417,7 +425,6 @@ const ChatDetailScreen = () => {
                 messagesRef.current = newMessages;
             } else {
                 setMessages(prev => {
-                    // Filter out any messages that already exist in prev state
                     const filteredNew = newMessages.filter(
                         newMsg => !prev.some(prevMsg => String(prevMsg.id) === String(newMsg.id))
                     );
@@ -650,6 +657,12 @@ const ChatDetailScreen = () => {
     }, [micPulseAnim]);
 
     const startRecording = useCallback(async (mode = 'hold') => {
+        // Guard: Jika status bukan 'none', berarti ada proses yang sedang berjalan
+        if (recordingStatusRef.current !== 'none') {
+            console.log('[Voice] Lewati start: Status saat ini', recordingStatusRef.current);
+            return;
+        }
+
         try {
             const permission = await Audio.requestPermissionsAsync();
             if (!permission.granted) {
@@ -657,22 +670,21 @@ const ChatDetailScreen = () => {
                 return;
             }
 
-            // Clean up previous attempts
-            if (recordingStatusRef.current !== 'none') {
-                await cancelRecording();
-            }
-
             recordingStatusRef.current = 'starting';
             setIsRecording(true);
             setRecordingMode(mode);
             setWillCancel(false);
+            willCancelRef.current = false;
             setRecordingDuration(0);
             startMicPulse();
             startTimeRef.current = Date.now();
 
+            // Set mode audio sebelum inisialisasi rekaman
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: true,
                 playsInSilentModeIOS: true,
+                staysActiveInBackground: false,
+                shouldDuckAndroid: true,
             });
 
             const { recording } = await Audio.Recording.createAsync(
@@ -693,11 +705,13 @@ const ChatDetailScreen = () => {
             }, 1000);
         } catch (error) {
             console.error('Error starting recording:', error);
+            // Penting: Reset status ke 'none' agar guard start berikutnya bisa terbuka
             recordingStatusRef.current = 'none';
             setIsRecording(false);
             setRecordingMode(null);
             setWillCancel(false);
             stopMicPulse();
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         }
     }, [startMicPulse, stopMicPulse]);
 
@@ -708,6 +722,7 @@ const ChatDetailScreen = () => {
         setIsRecording(false);
         setRecordingMode(null);
         setWillCancel(false);
+        willCancelRef.current = false;
         stopMicPulse();
 
         if (recordingTimerRef.current) {
@@ -729,6 +744,13 @@ const ChatDetailScreen = () => {
 
     const stopRecordingAndSend = useCallback(async () => {
         if (recordingStatusRef.current === 'none') return;
+
+        // Gunakan REF untuk pengecekan yang akurat dalam callback
+        if (willCancelRef.current) {
+            console.log('[Voice] Pembatalan terdeteksi (willCancelRef is true)');
+            await cancelRecording();
+            return;
+        }
 
         const currentStatus = recordingStatusRef.current;
         recordingStatusRef.current = 'none';
@@ -826,7 +848,7 @@ const ChatDetailScreen = () => {
             }
             recordingInstanceRef.current = null;
         }
-    }, [replyingTo, chat.id, chat.name, stopMicPulse]);
+    }, [cancelRecording, replyingTo, chat.id, chat.name, stopMicPulse]);
 
     const pickImage = async () => {
         try {
@@ -838,7 +860,7 @@ const ChatDetailScreen = () => {
 
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
-                allowsEditing: false, // Menghilangkan crop paksa
+                allowsEditing: false,
                 quality: 0.8,
             });
 
@@ -851,6 +873,32 @@ const ChatDetailScreen = () => {
             }
         } catch (error) {
             console.error('Error picking image:', error);
+        }
+    };
+
+    const takePhoto = async () => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin kamera untuk mengambil foto.');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                const { uri, width, height } = result.assets[0];
+                setSelectedMedia({ uri, type: 'image', width, height });
+                setMediaCaption('');
+                setMediaPreviewVisible(true);
+                setAttachmentMenuVisible(false);
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error);
         }
     };
 
@@ -1100,28 +1148,23 @@ const ChatDetailScreen = () => {
         }
     }, [sharedProgress]);
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                // Logic onPressIn akan ditangani oleh onPress/onLongPress TouchableOpacity
-            },
-            onPanResponderMove: (_, gestureState) => {
-                // Hanya deteksi jika mode hhold sedang aktif
-                if (recordingMode === 'hold' || (isRecording && recordingMode === 'hold')) {
-                    if (gestureState.dy < -80) {
-                        setWillCancel(true);
-                    } else {
-                        setWillCancel(false);
-                    }
-                }
-            },
-            onPanResponderRelease: () => {
-                // Logic akhir ditangani onPressOut/onPress
+    const handlePressIn = () => {
+        if (!message.trim()) {
+            startRecording('hold');
+        }
+    };
+
+    const handlePressOut = () => {
+        if (isRecording) {
+            // Jika sudah merekam lebih dari 0.5 detik, anggap user ingin kirim saat lepas
+            // Jika kurang dari itu, kita anggap user cuma 'tap' dan biarkan rekaman jalan terus (hands-free)
+            if (recordingDuration >= 1) {
+                stopRecordingAndSend();
+            } else {
+                console.log('[Voice] Sentuhan singkat, masuk mode hands-free');
             }
-        })
-    ).current;
+        }
+    };
 
     const panResponderRef = useRef(
         PanResponder.create({
@@ -1210,6 +1253,13 @@ const ChatDetailScreen = () => {
         setOptionsVisible(true);
     }, []);
 
+    const handleCopy = () => {
+        if (selectedMessage) {
+            Clipboard.setString(selectedMessage.text);
+            setOptionsVisible(false);
+        }
+    };
+
     const handleReply = () => {
         setReplyingTo(selectedMessage);
         setEditingMessage(null);
@@ -1218,11 +1268,16 @@ const ChatDetailScreen = () => {
 
     const handleEdit = () => {
         if (selectedMessage.sender !== 'me') return;
+        // Hanya izinkan edit untuk tipe text dan image (edit caption)
+        const editableTypes = [undefined, null, 'text', 'image'];
+        if (!editableTypes.includes(selectedMessage.type)) return;
+
         setEditingMessage(selectedMessage);
         setReplyingTo(null);
 
         let initialText = selectedMessage.text;
-        if (initialText === '📷 Foto' || initialText === '🎥 Video' || initialText === '🎤 Pesan Suara') {
+        // Jika teks hanya placeholder, kosongkan input agar user bisa tulis caption baru
+        if (['📷 Foto', '🎥 Video', '🎤 Pesan Suara'].includes(initialText)) {
             initialText = '';
         }
 
@@ -1282,6 +1337,20 @@ const ChatDetailScreen = () => {
         setSelectedIds({});
     }, []);
 
+    const handleCopyMultiple = useCallback(() => {
+        const ids = Object.keys(selectedIds);
+        const selectedMessages = messages.filter(m => ids.includes(String(m.id)));
+        const combinedText = selectedMessages
+            .reverse() // Balik karena di flatlist inverted
+            .map(m => m.text)
+            .join('\n');
+
+        Clipboard.setString(combinedText);
+        Alert.alert('Tersalin', `${ids.length} pesan telah disalin ke papan klip.`);
+        exitSelectionMode();
+    }, [selectedIds, messages, exitSelectionMode]);
+
+
     const handleDeleteSelected = async () => {
         const ids = Object.keys(selectedIds);
         if (ids.length === 0) return;
@@ -1313,6 +1382,7 @@ const ChatDetailScreen = () => {
             ]
         );
     };
+
 
     const scrollToOriginalMessage = useCallback((replyToId) => {
         const currentMessages = messagesRef.current;
@@ -1491,9 +1561,8 @@ const ChatDetailScreen = () => {
                                 setSelectedMedia(null);
                             }}
                         >
-                            <X size={28} color="#fff" />
+                            <ArrowLeft size={28} color="#fff" />
                         </TouchableOpacity>
-                        <Text style={styles.previewHeaderText}>Preview</Text>
                         <View style={{ width: 28 }} />
                     </View>
 
@@ -1521,7 +1590,7 @@ const ChatDetailScreen = () => {
                             <TextInput
                                 style={styles.previewInput}
                                 placeholder="Tambahkan pesan..."
-                                placeholderTextColor="rgba(255,255,255,0.6)"
+                                placeholderTextColor="#999"
                                 value={mediaCaption}
                                 onChangeText={setMediaCaption}
                                 multiline
@@ -1530,16 +1599,82 @@ const ChatDetailScreen = () => {
                                 style={styles.previewSendBtn}
                                 onPress={handleSendPreview}
                             >
-                                <LinearGradient
-                                    colors={['#6366F1', '#8B5CF6']}
-                                    style={styles.previewSendGradient}
-                                >
-                                    <Send size={24} color="#fff" />
-                                </LinearGradient>
+                                <Send size={24} color="#fff" />
                             </TouchableOpacity>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
+            </Modal>
+        );
+    };
+
+    const renderOptionsModal = () => {
+        if (!optionsVisible || !selectedMessage) return null;
+
+        const isMe = selectedMessage.sender === 'me';
+        const isDeletedMsg = selectedMessage.is_deleted;
+
+        return (
+            <Modal
+                visible={optionsVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setOptionsVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setOptionsVisible(false)}
+                >
+                    <View style={styles.optionsContainer}>
+                        {isDeletedMsg ? (
+                            <TouchableOpacity
+                                style={styles.optionItem}
+                                onPress={() => handleDelete('pribadi')}
+                            >
+                                <Trash2 size={22} color="#e53935" />
+                                <Text style={[styles.optionText, { color: '#e53935' }]}>Hapus untuk saya</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <>
+                                <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
+                                    <CornerUpRight size={22} color="#555" />
+                                    <Text style={styles.optionText}>Balas</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.optionItem} onPress={handleCopy}>
+                                    <Copy size={22} color="#555" />
+                                    <Text style={styles.optionText}>Salin</Text>
+                                </TouchableOpacity>
+
+                                {isMe && ['text', 'image', undefined, null].includes(selectedMessage.type) && (
+                                    <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
+                                        <Edit2 size={22} color="#555" />
+                                        <Text style={styles.optionText}>Edit</Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                <TouchableOpacity
+                                    style={styles.optionItem}
+                                    onPress={() => {
+                                        Alert.alert(
+                                            'Hapus Pesan?',
+                                            'Pilih jenis penghapusan',
+                                            [
+                                                { text: 'Batal', style: 'cancel' },
+                                                { text: 'Hapus untuk saya', onPress: () => handleDelete('pribadi') },
+                                                isMe ? { text: 'Hapus untuk semua orang', style: 'destructive', onPress: () => handleDelete('semua') } : null
+                                            ].filter(Boolean)
+                                        );
+                                    }}
+                                >
+                                    <Trash2 size={22} color="#e53935" />
+                                    <Text style={[styles.optionText, { color: '#e53935' }]}>Hapus</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                </TouchableOpacity>
             </Modal>
         );
     };
@@ -1570,342 +1705,748 @@ const ChatDetailScreen = () => {
         );
     }, [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress, uploadProgress, selectionMode, selectedIds, openMediaViewer, downloadMedia, toggleSelection, enterSelectionMode]);
 
-    const renderChatArea = () => (
-        <View style={styles.chatBackground}>
-            <ImageBackground
-                source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
-                style={StyleSheet.absoluteFillObject}
-            />
-            <View style={{ flex: 1 }}>
-                {loading ? (
-                    <View style={styles.loaderContainer}>
-                        <ActivityIndicator size="large" color="#0088cc" />
-                    </View>
-                ) : (
-                    <FlatList
-                        ref={flatListRef}
-                        data={messages}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={renderMessage}
-                        extraData={selectedIds}
-                        contentContainerStyle={styles.messageList}
-                        showsVerticalScrollIndicator={true}
-                        inverted={true}
-                        removeClippedSubviews={true}
-                        initialNumToRender={20}
-                        maxToRenderPerBatch={15}
-                        windowSize={5}
-                        onEndReached={loadMoreMessages}
-                        onEndReachedThreshold={0.5}
-                        onScrollToIndexFailed={(info) => {
-                            if (flatListRef.current) {
-                                flatListRef.current.scrollToOffset({
-                                    offset: info.averageItemLength * info.index,
-                                    animated: true,
-                                });
-                            }
-                        }}
-                        ListFooterComponent={loadingMore ? (
-                            <ActivityIndicator size="small" color="#0088cc" style={{ marginVertical: 10 }} />
-                        ) : null}
-                    />
-                )}
-            </View>
-        </View>
-    );
-
-    const renderInputBar = () => (
-        <View>
-            {isRecording ? (
-                <View style={[styles.recordingBanner, willCancel && styles.recordingBannerCancel]}>
-                    <Animated.View style={[
-                        styles.recordingPulse,
-                        { transform: [{ scale: micPulseAnim }] },
-                        willCancel && { backgroundColor: '#e53935' }
-                    ]} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.recordingText, willCancel && { color: '#e53935' }]}>
-                            🎤 {willCancel ? 'Lepas untuk batal' : (recordingMode === 'hold' ? 'Geser ke atas untuk batal' : 'Merekam')}... {formatDuration(recordingDuration)}
-                        </Text>
-                    </View>
-                    <TouchableOpacity onPress={cancelRecording} style={styles.recordingCancelBtn}>
-                        <X size={16} color="#e53935" />
-                        <Text style={styles.recordingCancelText}>Batal</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : null}
-            {(replyingTo || editingMessage) ? (
-                <View style={styles.replyBanner}>
-                    <View style={styles.replyBannerLeft}>
-                        {editingMessage ? (
-                            <Edit2 size={16} color="#0088cc" />
-                        ) : (
-                            <CornerUpRight size={16} color="#0088cc" />
-                        )}
-                        <View style={styles.replyBannerText}>
-                            <Text style={styles.replyBannerTitle}>
-                                {editingMessage ? 'Edit Pesan' : ('Balas ' + (replyingTo && replyingTo.sender === 'me' ? 'Anda' : chat.name))}
-                            </Text>
-                            <Text style={styles.replyBannerMessage} numberOfLines={1}>
-                                {editingMessage ? editingMessage.text : (replyingTo ? replyingTo.text : '')}
-                            </Text>
-                        </View>
-                    </View>
-                    <TouchableOpacity onPress={cancelAction}>
-                        <X size={20} color="#888" />
-                    </TouchableOpacity>
-                </View>
-            ) : null}
-            <View style={styles.inputContainer}>
-                <View style={styles.inputWrapper}>
-                    <TouchableOpacity style={styles.iconButton} onPress={toggleEmojiPicker}>
-                        <Smile size={24} color={showEmojis ? "#6366F1" : "#888"} />
-                    </TouchableOpacity>
-                    <TextInput
-                        style={styles.input}
-                        placeholder={editingMessage ? 'Edit pesan...' : 'Message'}
-                        placeholderTextColor="#999"
-                        value={message}
-                        onChangeText={setMessage}
-                        multiline
-                    />
-                    <TouchableOpacity style={styles.iconButton} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
-                        <Paperclip size={24} color={attachmentMenuVisible ? "#6366F1" : "#888"} />
-                    </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                    {...panResponderRef.panHandlers}
-                    style={[styles.sendButton, message.trim() ? styles.sendButtonActive : (willCancel ? styles.recordingCancelBtnRaw : styles.micButtonActive)]}
-                    onPress={() => {
-                        if (message.trim()) {
-                            sendMessage();
-                        } else {
-                            if (!isRecording) {
-                                startRecording('toggle');
-                            } else if (recordingMode === 'toggle') {
-                                stopRecordingAndSend();
-                            }
-                        }
-                    }}
-                    onLongPress={() => {
-                        if (!message.trim() && !isRecording) {
-                            startRecording('hold');
-                        }
-                    }}
-                    onPressOut={() => {
-                        if (isRecording && recordingMode === 'hold') {
-                            if (willCancel) {
-                                cancelRecording();
-                            } else {
-                                stopRecordingAndSend();
-                            }
-                        }
-                    }}
-                    delayLongPress={300}
-                >
-                    {(message.trim() || isRecording) ? (
-                        <Send size={22} color={willCancel ? "#ff4d4f" : "#fff"} />
-                    ) : (
-                        <Animated.View style={{ transform: [{ scale: micPulseAnim }] }}>
-                            <Mic size={22} color="#fff" />
-                        </Animated.View>
-                    )}
-                </TouchableOpacity>
-            </View>
-            {attachmentMenuVisible && (
-                <View style={styles.attachmentMenu}>
-                    <TouchableOpacity style={styles.attachmentItem} onPress={pickImage}>
-                        <View style={[styles.attachmentIcon, { backgroundColor: '#8B5CF6' }]}>
-                            <Image style={{ width: 24, height: 24, tintColor: '#fff' }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1375/1375106.png' }} />
-                        </View>
-                        <Text style={styles.attachmentText}>Galeri</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.attachmentItem} onPress={pickVideo}>
-                        <View style={[styles.attachmentIcon, { backgroundColor: '#F43F5E' }]}>
-                            <VideoIcon size={22} color="#fff" />
-                        </View>
-                        <Text style={styles.attachmentText}>Video</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.attachmentItem} onPress={pickDocument}>
-                        <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
-                            <File size={22} color="#fff" />
-                        </View>
-                        <Text style={styles.attachmentText}>Dokumen</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-            {showEmojis && (
-                <View style={styles.emojiContainer}>
-                    <FlatList
-                        data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🤲', '👐', '🙌', '👏', '🤝', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐', '🖖', '👋', '🤙', '💪', '🦾', '🖕', '✍️', '🙏', '💍', '💄', '💋', '👄', '👅', '👂', '🦻', '👃', '👣', '👁', '👀', '🧠', '🦴', '🦷', '🗣', '👤', '👥']}
-                        keyExtractor={(item, index) => index.toString()}
-                        numColumns={8}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.emojiItem}
-                                onPress={() => handleEmojiSelected(item)}
-                            >
-                                <Text style={styles.emojiText}>{item}</Text>
-                            </TouchableOpacity>
-                        )}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.emojiList}
-                    />
-                </View>
-            )}
-        </View>
-    );
-
     return (
-        <View style={[styles.container, { paddingBottom: Platform.OS === 'android' ? keyboardPadding : 0 }]}>
-            <StatusBar style="dark" translucent />
+        <View style={styles.container}>
+            <StatusBar style="dark" />
 
             {renderViewerModal()}
             {renderMediaPreviewModal()}
+            {renderOptionsModal()}
 
-            {(optionsVisible && selectedMessage) ? (
-                <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => { setOptionsVisible(false); setSelectedMessage(null); }}>
-                    <View style={[styles.optionsBox, selectedMessage.sender === 'me' ? styles.optionsBoxMe : styles.optionsBoxThem]}>
-                        {!selectedMessage.is_deleted && (
-                            <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
-                                <Reply size={18} color="#6366F1" />
-                                <Text style={styles.optionText}>Balas</Text>
-                            </TouchableOpacity>
-                        )}
-
-                        {(selectedMessage.sender === 'me' && !selectedMessage.is_deleted) && (
-                            <View>
-                                <View style={styles.optionDivider} />
-                                <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
-                                    <Edit2 size={18} color="#555" />
-                                    <Text style={styles.optionText}>Edit</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
-                        <View style={styles.optionDivider} />
-                        <TouchableOpacity style={styles.optionItem} onPress={() => handleDelete('pribadi')}>
-                            <Trash2 size={18} color="#e53935" />
-                            <Text style={[styles.optionText, styles.dangerText]}>Hapus untuk saya</Text>
-                        </TouchableOpacity>
-
-                        {(selectedMessage.sender === 'me' && !selectedMessage.is_deleted) && (
-                            <View>
-                                <View style={styles.optionDivider} />
-                                <TouchableOpacity style={styles.optionItem} onPress={() => handleDelete('semua')}>
-                                    <CornerUpRight size={18} color="#e53935" style={{ transform: [{ scaleX: -1 }] }} />
-                                    <Text style={[styles.optionText, styles.dangerText]}>Tarik pesan (Semua)</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            ) : null}
-
-            {attachmentMenuVisible && (
-                <TouchableOpacity
-                    style={StyleSheet.absoluteFillObject}
-                    activeOpacity={1}
-                    onPress={() => setAttachmentMenuVisible(false)}
-                />
-            )}
-
-            <View style={styles.header}>
+            {/* Header WhatsApp Style */}
+            <View style={[styles.header, selectionMode && styles.selectionHeader]}>
                 {selectionMode ? (
-                    <View style={styles.headerSelectionRow}>
-                        <TouchableOpacity onPress={exitSelectionMode} style={styles.headerActionBtn}>
-                            <X size={26} color="#1F2937" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerSelectionCount}>{Object.keys(selectedIds).length} dipilih</Text>
-                        <View style={{ flex: 1 }} />
-                        <TouchableOpacity onPress={handleDeleteSelected} style={styles.headerActionBtn}>
-                            <Trash2 size={24} color="#1F2937" />
-                        </TouchableOpacity>
-                    </View>
+                    <>
+                        <View style={styles.headerLeft}>
+                            <TouchableOpacity onPress={exitSelectionMode} style={styles.headerIcon}>
+                                <X size={24} color="#1F2937" />
+                            </TouchableOpacity>
+                            <Text style={styles.selectionCount}>{Object.keys(selectedIds).length}</Text>
+                        </View>
+                        <View style={styles.headerRight}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={handleCopyMultiple}>
+                                <Copy size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcon} onPress={handleDeleteSelected}>
+                                <Trash2 size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                        </View>
+                    </>
                 ) : (
                     <>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <ArrowLeft size={24} color="#1F2937" />
-                        </TouchableOpacity>
-                        <Image source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
-                        <View style={styles.headerInfo}>
-                            <Text style={styles.headerName}>{chat.name}</Text>
-                            <Text style={styles.headerStatus}>
-                                {currentStatus === 'online'
-                                    ? 'Online'
-                                    : lastSeen
-                                        ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}`
-                                        : 'offline'}
-                            </Text>
+                        <View style={styles.headerLeft}>
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                                <ArrowLeft size={24} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerProfile}>
+                                <Image
+                                    source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }}
+                                    style={styles.headerAvatar}
+                                />
+                                <View style={styles.headerInfo}>
+                                    <Text style={styles.headerName} numberOfLines={1}>{chat.name}</Text>
+                                    <Text style={styles.headerStatus}>
+                                        {currentStatus === 'online' ? 'online' : lastSeen ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}` : 'offline'}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity>
-                            <MoreVertical size={24} color="#1F2937" />
-                        </TouchableOpacity>
+                        <View style={styles.headerRight}>
+                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, chat.name, fixUrl(chat.avatar || chat.otherUser?.avatar), 'video')}>
+                                <VideoIcon size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcon} onPress={() => startCall(chat.otherUser?.id, chat.name, fixUrl(chat.avatar || chat.otherUser?.avatar), 'audio')}>
+                                <Phone size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcon}>
+                                <MoreVertical size={22} color="#1F2937" />
+                            </TouchableOpacity>
+                        </View>
                     </>
                 )}
             </View>
 
-            <View style={{ flex: 1 }}>
-                {renderChatArea()}
-            </View>
+            {/* Chat Area + Input (wrapped in KeyboardAvoidingView) */}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
+                <View style={styles.chatBackground}>
+                    <ImageBackground
+                        source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
+                        style={StyleSheet.absoluteFillObject}
+                        resizeMode="repeat"
+                    />
 
-            {!selectionMode && (
-                Platform.OS === 'web' ? (
-                    renderInputBar()
-                ) : (
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-                    >
-                        {renderInputBar()}
-                    </KeyboardAvoidingView>
-                )
-            )}
-        </View >
+                    <View style={{ flex: 1 }}>
+                        {loading ? (
+                            <View style={styles.loaderContainer}>
+                                <ActivityIndicator size="large" color="#075e54" />
+                            </View>
+                        ) : (
+                            <FlatList
+                                ref={flatListRef}
+                                data={messages}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={renderMessage}
+                                contentContainerStyle={styles.messageList}
+                                inverted={true}
+                                onEndReached={loadMoreMessages}
+                                onEndReachedThreshold={0.5}
+                            />
+                        )}
+                    </View>
+
+                    {/* Input Bar Section */}
+                    {!selectionMode && (
+                        <View style={[styles.inputSection, Platform.OS === 'android' && { paddingBottom: keyboardPadding > 0 ? keyboardPadding + scale(8) : scale(8) }]}>
+                            {(replyingTo || editingMessage) && (
+                                <View style={styles.replyBanner}>
+                                    <View style={{ width: 4, backgroundColor: '#075e54', borderRadius: 2, marginRight: scale(8), alignSelf: 'stretch' }} />
+                                    <View style={styles.replyBannerContent}>
+                                        <Text style={styles.replyUser}>
+                                            {editingMessage
+                                                ? '✏️ Edit Pesan'
+                                                : (replyingTo?.sender === 'me' ? 'Anda' : chat.name)
+                                            }
+                                        </Text>
+                                        <Text style={styles.replyText} numberOfLines={1}>
+                                            {replyingTo?.text || editingMessage?.text}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity onPress={cancelAction} style={{ padding: scale(5) }}>
+                                        <X size={18} color="#888" />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                            {attachmentMenuVisible && (
+                                <View style={styles.attachmentMenuContainer}>
+                                    <View style={styles.attachmentRow}>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickDocument(); setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#5F66CD' }]}>
+                                                <File size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Dokumen</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { takePhoto(); setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#EC407A' }]}>
+                                                <Camera size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Kamera</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { pickImage(); setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#BF59CF' }]}>
+                                                <ImageIcon size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Galeri</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={[styles.attachmentRow, { marginTop: verticalScale(15) }]}>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#F06034' }]}>
+                                                <Phone size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Audio</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#069E58' }]}>
+                                                <MapPin size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Lokasi</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.attachmentItem} onPress={() => { setAttachmentMenuVisible(false); }}>
+                                            <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
+                                                <User size={24} color="#fff" />
+                                            </View>
+                                            <Text style={styles.attachmentText}>Kontak</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
+                            <View style={styles.inputRow}>
+                                {isRecording ? (
+                                    <View style={[styles.inputMain, styles.recordingInputMain]}>
+                                        <Animated.View style={{ transform: [{ scale: micPulseAnim }] }}>
+                                            <Mic size={24} color="#e53935" />
+                                        </Animated.View>
+                                        <Text style={styles.recordingTimer}>{formatDuration(recordingDuration)}</Text>
+                                        <TouchableOpacity
+                                            style={styles.cancelRecordBtn}
+                                            onPress={() => {
+                                                console.log('[Voice] Tombol BATAL ditekan');
+                                                cancelRecording();
+                                            }}
+                                        >
+                                            <Text style={styles.cancelRecordText}>BATAL</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <View style={styles.inputMain}>
+                                        <TouchableOpacity style={styles.inputActionIcon} onPress={toggleEmojiPicker}>
+                                            <Smile size={24} color="#888" />
+                                        </TouchableOpacity>
+                                        <TextInput
+                                            style={styles.textInput}
+                                            placeholder="Ketik pesan"
+                                            placeholderTextColor="#909090"
+                                            value={message}
+                                            onChangeText={setMessage}
+                                            multiline
+                                        />
+                                        <TouchableOpacity style={styles.inputActionIcon} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
+                                            <Paperclip size={24} color="#888" />
+                                        </TouchableOpacity>
+                                        {!message.trim() && (
+                                            <TouchableOpacity style={styles.inputActionIcon} onPress={takePhoto}>
+                                                <Camera size={24} color="#888" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                )}
+                                <TouchableOpacity
+                                    style={[styles.sendBtnCircle, isRecording && { backgroundColor: '#e53935' }]}
+                                    onPress={() => {
+                                        if (message.trim()) {
+                                            sendMessage();
+                                        } else if (isRecording) {
+                                            stopRecordingAndSend();
+                                        }
+                                    }}
+                                    onPressIn={handlePressIn}
+                                    onPressOut={handlePressOut}
+                                >
+                                    {message.trim() ? (
+                                        <Send size={24} color="#fff" fill="#fff" />
+                                    ) : (
+                                        <Mic size={24} color="#fff" />
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                            {showEmojis && (
+                                <View style={styles.emojiWrapper}>
+                                    <FlatList
+                                        data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾']}
+                                        numColumns={8}
+                                        keyExtractor={(item, index) => index.toString()}
+                                        renderItem={({ item }) => (
+                                            <TouchableOpacity style={styles.emojiBtn} onPress={() => handleEmojiSelected(item)}>
+                                                <Text style={{ fontSize: 26 }}>{item}</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    />
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </View>
+            </KeyboardAvoidingView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#efe7de',
         height: Platform.OS === 'web' ? '100vh' : '100%',
         maxHeight: Platform.OS === 'web' ? '100vh' : '100%',
         overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
     },
     header: {
-        paddingTop: verticalScale(50),
-        paddingBottom: verticalScale(14),
-        paddingHorizontal: scale(15),
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(40),
+        paddingBottom: verticalScale(10),
+        paddingHorizontal: scale(10),
         backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        elevation: 2,
+        elevation: 4,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: verticalScale(2) },
-        shadowOpacity: 0.05,
-        shadowRadius: scale(4),
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    backBtn: {
+        padding: scale(5),
+    },
+    headerProfile: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        marginLeft: scale(2),
     },
     headerAvatar: {
-        width: scale(42),
-        height: scale(42),
-        borderRadius: scale(14),
-        marginLeft: scale(14),
-        borderWidth: 1,
-        borderColor: '#eee',
+        width: scale(38),
+        height: scale(38),
+        borderRadius: scale(19),
     },
     headerInfo: {
-        flex: 1,
-        marginLeft: scale(12),
+        marginLeft: scale(10),
     },
-    deleteActionText: {
+    headerName: {
         fontSize: moderateScale(16),
-        fontWeight: '700',
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    headerStatus: {
+        fontSize: moderateScale(12),
+        color: '#666',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    headerIcon: {
+        padding: scale(8),
+        marginLeft: scale(5),
+    },
+    chatBackground: {
+        flex: 1,
+        backgroundColor: '#efe7de',
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    messageList: {
+        paddingVertical: verticalScale(10),
+    },
+    messageContainer: {
+        marginVertical: verticalScale(2),
+        maxWidth: '85%',
+        paddingHorizontal: scale(12), // Pindahkan padding ke sini
+    },
+    myMessageContainer: {
+        alignSelf: 'flex-end',
+    },
+    theirMessageContainer: {
+        alignSelf: 'flex-start',
+    },
+    bubble: {
+        paddingHorizontal: scale(10),
+        paddingVertical: verticalScale(6),
+        borderRadius: scale(8),
+        elevation: 1,
+        minWidth: scale(60),
+    },
+    myBubble: {
+        backgroundColor: '#d9fdd3',
+        borderTopRightRadius: 0, // "Tail" effect
+    },
+    theirBubble: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 0,
+    },
+    messageText: {
+        fontSize: moderateScale(16),
+        color: '#000',
+    },
+    deletedBubble: {
+        opacity: 0.7,
+    },
+    deletedText: {
+        fontSize: moderateScale(15),
+        color: '#8696A0',
+        fontStyle: 'italic',
+    },
+    editedLabel: {
+        fontSize: moderateScale(11),
+        color: '#8696A0',
+        fontStyle: 'italic',
+        marginRight: scale(4),
+    },
+    messageFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: verticalScale(2),
+    },
+    messageTime: {
+        fontSize: moderateScale(10),
+        color: '#888',
+        marginRight: scale(4),
+    },
+    inputSection: {
+        paddingHorizontal: scale(8),
+        paddingBottom: scale(8),
+        paddingTop: scale(4),
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
+    inputMain: {
+        flex: 1,
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: scale(25),
+        alignItems: 'center',
+        paddingHorizontal: scale(10),
+        minHeight: verticalScale(45),
+        elevation: 2,
+    },
+    inputActionIcon: {
+        padding: scale(8),
+    },
+    textInput: {
+        flex: 1,
+        fontSize: moderateScale(16),
+        paddingVertical: verticalScale(8),
+        maxHeight: verticalScale(100),
+        color: '#000',
+    },
+    sendBtnCircle: {
+        width: scale(45),
+        height: scale(45),
+        borderRadius: scale(22.5),
+        backgroundColor: '#075e54',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: scale(8),
+        elevation: 2,
+    },
+    replyBanner: {
+        backgroundColor: '#fff',
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(10),
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+        marginBottom: verticalScale(6),
+        borderRadius: scale(8),
+        elevation: 1,
+    },
+    replyBannerContent: {
+        flex: 1,
+    },
+    replyUser: {
+        fontWeight: 'bold',
+        color: '#075e54',
+        fontSize: moderateScale(13),
+    },
+    replyText: {
+        color: '#666',
+        fontSize: moderateScale(13),
+    },
+    emojiWrapper: {
+        height: verticalScale(250),
+        marginTop: verticalScale(10),
+    },
+    emojiBtn: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: scale(5),
+    },
+    attachmentMenuContainer: {
+        backgroundColor: '#fff',
+        borderRadius: scale(20),
+        padding: scale(20),
+        marginBottom: verticalScale(12),
+        marginHorizontal: scale(10),
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+    },
+    attachmentRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+    },
+    attachmentItem: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: scale(70),
+    },
+    attachmentIcon: {
+        width: scale(52),
+        height: scale(52),
+        borderRadius: scale(26),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(8),
+    },
+    attachmentText: {
+        fontSize: moderateScale(13),
+        color: '#555',
+    },
+    // Missing Media Styles
+    imageContainer: {
+        borderRadius: scale(10),
+        overflow: 'hidden',
+        marginVertical: verticalScale(2),
+        width: scale(250),
+        height: scale(250),
+        backgroundColor: '#f3f4f6',
+    },
+    messageImage: {
+        width: '100%',
+        height: '100%',
+    },
+    imageCaptionContainer: {
+        paddingTop: verticalScale(6),
+        paddingHorizontal: scale(4),
+    },
+    imageCaptionText: {
+        fontSize: moderateScale(15),
+        color: '#000',
+    },
+    audioPlayer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(2),
+        minWidth: scale(200),
+        gap: scale(12),
+    },
+    audioPlayBtn: {
+        width: scale(40),
+        height: scale(40),
+        borderRadius: scale(20),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    audioPlayBtnMe: {
+        backgroundColor: '#075e54',
+    },
+    audioPlayBtnThem: {
+        backgroundColor: '#888',
+    },
+    audioWaveContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    waveformContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: verticalScale(25),
+        gap: scale(3),
+    },
+    waveBar: {
+        width: scale(3),
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        borderRadius: scale(1.5),
+    },
+    audioMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: verticalScale(2),
+    },
+    audioDurationText: {
+        fontSize: moderateScale(11),
+        color: '#666',
+    },
+    videoWrapper: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+    },
+    playOverlay: {
+        position: 'absolute',
+        width: scale(40),
+        height: scale(40),
+        borderRadius: scale(20),
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    fileContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        padding: scale(10),
+        borderRadius: scale(10),
+        width: scale(200),
+        gap: scale(10),
+    },
+    fileIconBox: {
+        width: scale(35),
+        height: scale(35),
+        borderRadius: scale(8),
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fileInfo: {
+        flex: 1,
+    },
+    fileName: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    fileSize: {
+        fontSize: moderateScale(11),
+        color: '#666',
+    },
+    uploadOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadProgressText: {
         color: '#fff',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+    },
+    replyPreviewBubble: {
+        borderRadius: scale(8),
+        padding: scale(5),
+        marginBottom: verticalScale(5),
+        borderLeftWidth: 3,
+    },
+    replyPreviewMe: {
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        borderLeftColor: '#075e54',
+    },
+    replyPreviewThem: {
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        borderLeftColor: '#075e54',
+    },
+    replyPreviewUser: {
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        color: '#075e54',
+    },
+    replyPreviewText: {
+        fontSize: moderateScale(12),
+        color: '#555',
+    },
+    messageOuterContainer: {
+        width: '100%',
+    },
+    selectedMessageBg: {
+        backgroundColor: 'rgba(52, 183, 241, 0.15)', // Warna biru khas WA saat dipilih
+    },
+    selectionIndicator: {
+        width: scale(30),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(5),
+    },
+    checkbox: {
+        width: scale(20),
+        height: scale(20),
+        borderRadius: scale(10),
+        borderWidth: 2,
+        borderColor: '#8696A0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+    },
+    checkboxSelected: {
+        backgroundColor: '#00A884', // Warna hijau WA
+        borderColor: '#00A884',
+    },
+    // Media Viewer Styles
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height,
+    },
+    viewerVideo: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height,
+    },
+    viewerCloseBtn: {
+        position: 'absolute',
+        top: verticalScale(50),
+        left: scale(20),
+        padding: scale(10),
+        zIndex: 10,
+    },
+    viewerDownloadBtn: {
+        position: 'absolute',
+        bottom: verticalScale(50),
+        right: scale(20),
+        padding: scale(10),
+        zIndex: 10,
+    },
+    // Recording Styles
+    recordingInputMain: {
+        justifyContent: 'flex-start',
+        gap: scale(10),
+    },
+    recordingTimer: {
+        fontSize: moderateScale(18),
+        color: '#000',
+        fontWeight: '500',
+        marginLeft: scale(5),
+    },
+    cancelRecordBtn: {
+        marginLeft: 'auto',
+        paddingHorizontal: scale(15),
+        paddingVertical: verticalScale(5),
+    },
+    cancelRecordText: {
+        color: '#e53935',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    // Options Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    optionsContainer: {
+        backgroundColor: '#fff',
+        borderRadius: scale(12),
+        width: '70%',
+        paddingVertical: verticalScale(8),
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    optionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: scale(20),
+        gap: scale(15),
+    },
+    optionText: {
+        fontSize: moderateScale(16),
+        color: '#333',
+    },
+    // Selection Styles
+    selectionHeader: {
+        backgroundColor: '#fff',
+        elevation: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f1f1',
+    },
+    selectionCount: {
+        fontSize: moderateScale(20),
+        fontWeight: '500',
+        color: '#1F2937',
+        marginLeft: scale(10),
     },
     // Media Preview Styles
     previewModalContainer: {
@@ -1916,9 +2457,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: verticalScale(50),
-        paddingBottom: verticalScale(20),
-        paddingHorizontal: scale(20),
+        paddingTop: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+        paddingHorizontal: scale(15),
+        zIndex: 10,
     },
     previewCloseBtn: {
         padding: scale(5),
@@ -1938,578 +2479,32 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     previewFooter: {
-        padding: scale(20),
-        paddingBottom: verticalScale(40),
+        paddingHorizontal: scale(10),
+        paddingBottom: Platform.OS === 'ios' ? verticalScale(30) : verticalScale(15),
         backgroundColor: 'rgba(0,0,0,0.5)',
     },
     previewInputWrapper: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: scale(25),
-        paddingLeft: scale(20),
-        paddingRight: scale(5),
-        paddingVertical: verticalScale(5),
+        gap: scale(10),
     },
     previewInput: {
         flex: 1,
-        color: '#fff',
-        fontSize: moderateScale(16),
-        maxHeight: verticalScale(100),
+        backgroundColor: '#fff',
+        borderRadius: scale(25),
+        paddingHorizontal: scale(15),
         paddingVertical: verticalScale(10),
+        fontSize: moderateScale(16),
+        color: '#000',
+        maxHeight: verticalScale(100),
     },
     previewSendBtn: {
-        marginLeft: scale(10),
-        marginBottom: verticalScale(5),
-    },
-    previewSendGradient: {
-        width: scale(45),
-        height: scale(45),
-        borderRadius: scale(22.5),
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    messageOuterContainer: {
-        width: '100%',
-        paddingHorizontal: scale(5),
-    },
-    selectedMessageBg: {
-        backgroundColor: 'rgba(99, 102, 241, 0.08)',
-    },
-    selectionIndicator: {
-        justifyContent: 'center',
-        paddingRight: scale(10),
-    },
-    selectionIndicatorMe: {
-        paddingRight: 0,
-        paddingLeft: scale(10),
-    },
-    selectionIndicatorThem: {
-        paddingRight: scale(10),
-    },
-    checkbox: {
-        width: scale(20),
-        height: scale(20),
-        borderRadius: scale(10),
-        borderWidth: 2,
-        borderColor: '#6366F1',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    checkboxSelected: {
-        backgroundColor: '#6366F1',
-    },
-    headerSelectionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    headerSelectionCount: {
-        fontSize: moderateScale(18),
-        fontWeight: 'bold',
-        color: '#1F2937',
-        marginLeft: scale(15),
-    },
-    headerActionBtn: {
-        padding: scale(8),
-    },
-    headerName: {
-        fontSize: moderateScale(18),
-        fontWeight: '800',
-        color: '#1F2937',
-        letterSpacing: 0.3,
-    },
-    headerStatus: {
-        fontSize: moderateScale(12),
-        color: '#6B7280',
-        fontWeight: '600',
-        marginTop: verticalScale(1),
-    },
-    chatBackground: {
-        flex: 1,
-        backgroundColor: '#EEF0F5',
-        overflow: 'hidden',
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    messageList: {
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(15),
-    },
-    messageContainer: {
-        marginVertical: verticalScale(4),
-        maxWidth: '80%',
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    myMessageContainer: {
-        alignSelf: 'flex-end',
-    },
-    theirMessageContainer: {
-        alignSelf: 'flex-start',
-    },
-    bubble: {
-        paddingHorizontal: scale(13),
-        paddingVertical: verticalScale(9),
-        borderRadius: scale(20),
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: verticalScale(1) },
-        shadowOpacity: 0.06,
-        shadowRadius: scale(4),
-    },
-    myBubble: {
-        backgroundColor: '#DCFCE7',
-        borderBottomRightRadius: scale(4),
-    },
-    theirBubble: {
-        backgroundColor: '#fff',
-        borderBottomLeftRadius: scale(4),
-    },
-    imageContainer: {
-        borderRadius: scale(12),
-        overflow: 'hidden',
-        marginVertical: verticalScale(2),
-        width: scale(220),
-        height: scale(200), // Ukuran standar bubble
-        backgroundColor: '#f3f4f6',
-    },
-    messageImage: {
-        width: '100%',
-        height: '100%',
-    },
-    imageCaptionContainer: {
-        paddingTop: verticalScale(6),
-        paddingHorizontal: scale(4),
-    },
-    imageCaptionText: {
-        fontSize: moderateScale(15),
-        color: '#1F2937',
-    },
-    messageText: {
-        fontSize: moderateScale(16),
-        color: '#1F2937',
-    },
-    messageTime: {
-        fontSize: moderateScale(11),
-        color: '#888',
-        alignSelf: 'flex-end',
-        marginTop: verticalScale(2),
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(10),
-        alignItems: 'flex-end',
-        backgroundColor: 'transparent',
-    },
-    inputWrapper: {
-        flex: 1,
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderRadius: scale(28),
-        paddingHorizontal: scale(6),
-        alignItems: 'center',
-        minHeight: verticalScale(50),
-    },
-    input: {
-        flex: 1,
-        paddingVertical: verticalScale(10),
-        paddingHorizontal: scale(12),
-        fontSize: moderateScale(16),
-        maxHeight: verticalScale(120),
-        color: '#1F2937',
-        fontWeight: '500',
-    },
-    iconButton: {
-        padding: scale(10),
-    },
-    sendButton: {
-        width: scale(50),
-        height: scale(50),
-        borderRadius: scale(18),
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: scale(8),
-    },
-    sendButtonActive: {
-        backgroundColor: '#6366F1',
-    },
-    micButtonActive: {
-        backgroundColor: '#6366F1',
-    },
-    optionsOverlay: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 999,
-        backgroundColor: 'rgba(0,0,0,0.35)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    optionsBox: {
-        backgroundColor: '#fff',
-        borderRadius: scale(16),
-        paddingVertical: verticalScale(6),
-        minWidth: scale(180),
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: scale(10),
-    },
-    optionsBoxMe: { alignSelf: 'flex-end', marginRight: scale(20) },
-    optionsBoxThem: { alignSelf: 'flex-start', marginLeft: scale(20) },
-    optionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: scale(18),
-        paddingVertical: verticalScale(13),
-    },
-    optionText: {
-        fontSize: moderateScale(15),
-        color: '#222',
-        fontWeight: '500',
-        marginLeft: scale(12),
-    },
-    dangerText: {
-        color: '#e53935',
-    },
-    optionDivider: {
-        height: 1,
-        backgroundColor: '#f0f0f0',
-        marginHorizontal: scale(12),
-    },
-    replyBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#fff',
-        paddingHorizontal: scale(14),
-        paddingVertical: verticalScale(8),
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-        borderLeftWidth: 4,
-        borderLeftColor: '#6366F1',
-    },
-    replyBannerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    replyBannerText: { flex: 1, marginLeft: scale(10) },
-    replyBannerTitle: {
-        fontSize: moderateScale(13),
-        fontWeight: 'bold',
-        color: '#6366F1',
-    },
-    replyBannerMessage: {
-        fontSize: moderateScale(13),
-        color: '#555',
-    },
-    replyPreviewBubble: {
-        borderRadius: scale(10),
-        padding: scale(7),
-        marginBottom: verticalScale(6),
-        borderLeftWidth: 3,
-    },
-    replyPreviewMe: {
-        backgroundColor: 'rgba(99,102,241,0.1)',
-        borderLeftColor: '#8B5CF6',
-    },
-    replyPreviewThem: {
-        backgroundColor: 'rgba(99,102,241,0.1)',
-        borderLeftColor: '#6366F1',
-    },
-    replyPreviewUser: {
-        fontSize: moderateScale(12),
-        fontWeight: 'bold',
-        color: '#6366F1',
-    },
-    replyPreviewText: {
-        fontSize: moderateScale(12),
-        color: '#555',
-    },
-    messageFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginTop: verticalScale(2),
-    },
-    editedLabel: {
-        fontSize: moderateScale(10),
-        color: '#888',
-        fontStyle: 'italic',
-        marginRight: scale(4),
-    },
-    deletedBubble: {
-        opacity: 0.65,
-    },
-    deletedText: {
-        fontStyle: 'italic',
-        color: '#888',
-    },
-    recordingBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff0f0',
-        paddingHorizontal: scale(16),
-        paddingVertical: verticalScale(10),
-        borderTopWidth: 1,
-        borderTopColor: '#ffcccc',
-        gap: scale(10),
-    },
-    recordingPulse: {
-        width: scale(12),
-        height: scale(12),
-        borderRadius: scale(6),
-        backgroundColor: '#e53935',
-    },
-    recordingBannerCancel: {
-        backgroundColor: '#fff1f0',
-        borderColor: '#ffa39e',
-        borderTopWidth: 1,
-    },
-    recordingCancelBtnRaw: {
-        backgroundColor: '#fff',
-        borderWidth: 2,
-        borderColor: '#ff4d4f',
-    },
-    recordingText: {
-        flex: 1,
-        fontSize: moderateScale(14),
-        fontWeight: '600',
-        color: '#e53935',
-    },
-    recordingHint: {
-        fontSize: moderateScale(12),
-        color: '#888',
-    },
-    recordingCancelBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: verticalScale(5),
-        paddingHorizontal: scale(10),
-        backgroundColor: '#fff',
-        borderRadius: scale(15),
-        borderWidth: 1,
-        borderColor: '#ffcccc',
-    },
-    recordingCancelText: {
-        fontSize: moderateScale(13),
-        color: '#e53935',
-        fontWeight: 'bold',
-        marginLeft: scale(4),
-    },
-    audioPlayer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: verticalScale(8),
-        paddingHorizontal: scale(2),
-        minWidth: scale(200),
-        gap: scale(12),
-    },
-    audioPlayBtn: {
-        width: scale(44),
-        height: scale(44),
-        borderRadius: scale(22),
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: verticalScale(2) },
-        shadowOpacity: 0.1,
-        shadowRadius: scale(4),
-        elevation: 2,
-    },
-    audioPlayBtnMe: {
-        backgroundColor: '#7C3AED',
-    },
-    audioPlayBtnThem: {
-        backgroundColor: '#6366F1',
-    },
-    audioWaveContainer: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    waveformContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: verticalScale(30),
-        gap: scale(3),
-        marginBottom: verticalScale(4),
-    },
-    waveBar: {
-        width: scale(3),
-        backgroundColor: 'rgba(0,0,0,0.1)',
-        borderRadius: scale(1.5),
-    },
-    waveBarActiveMe: {
-        backgroundColor: '#7C3AED',
-    },
-    waveBarActiveThem: {
-        backgroundColor: '#6366F1',
-    },
-    audioMetaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    audioDurationText: {
-        fontSize: moderateScale(11),
-        color: '#6B7280',
-        fontWeight: '600',
-    },
-    attachmentMenu: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        paddingVertical: verticalScale(15),
-        paddingHorizontal: scale(20),
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
-        justifyContent: 'space-around',
-    },
-    attachmentItem: {
-        alignItems: 'center',
-        gap: verticalScale(6),
-    },
-    attachmentIcon: {
         width: scale(50),
         height: scale(50),
         borderRadius: scale(25),
+        backgroundColor: '#075e54',
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-    },
-    attachmentText: {
-        fontSize: moderateScale(12),
-        color: '#4B5563',
-        fontWeight: '600',
-    },
-    videoPlaceholder: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#1F2937',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    videoWrapper: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    playOverlay: {
-        position: 'absolute',
-        width: scale(50),
-        height: scale(50),
-        borderRadius: scale(25),
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#fff',
-        alignSelf: 'center',
-    },
-    fileContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F3F4F6',
-        padding: scale(10),
-        borderRadius: scale(12),
-        width: scale(220),
-        gap: scale(12),
-    },
-    fileIconBox: {
-        width: scale(40),
-        height: scale(40),
-        borderRadius: scale(10),
-        backgroundColor: '#fff',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    fileInfo: {
-        flex: 1,
-    },
-    fileName: {
-        fontSize: moderateScale(14),
-        fontWeight: 'bold',
-        color: '#1F2937',
-    },
-    fileSize: {
-        fontSize: moderateScale(11),
-        color: '#6B7280',
-    },
-    viewerContainer: {
-        flex: 1,
-        backgroundColor: '#000',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    viewerCloseBtn: {
-        position: 'absolute',
-        top: verticalScale(50),
-        right: scale(20),
-        zIndex: 10,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: scale(25),
-        padding: scale(8),
-    },
-    viewerImage: {
-        width: Dimensions.get('window').width,
-        height: Dimensions.get('window').height,
-    },
-    viewerVideo: {
-        width: Dimensions.get('window').width,
-        height: Dimensions.get('window').width * (16 / 9),
-        maxHeight: Dimensions.get('window').height,
-    },
-    viewerDownloadBtn: {
-        position: 'absolute',
-        bottom: verticalScale(50),
-        alignSelf: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: scale(30),
-        padding: scale(15),
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
-    },
-    uploadOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    uploadProgressText: {
-        color: '#fff',
-        fontSize: moderateScale(14),
-        fontWeight: 'bold',
-        marginTop: verticalScale(5),
-    },
-    emojiContainer: {
-        height: verticalScale(250),
-        backgroundColor: '#f8f9fa',
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
-    },
-    emojiList: {
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(10),
-        alignItems: 'center',
-    },
-    emojiItem: {
-        width: Dimensions.get('window').width / 8.5,
-        height: scale(45),
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emojiText: {
-        fontSize: moderateScale(26),
     },
 });
 

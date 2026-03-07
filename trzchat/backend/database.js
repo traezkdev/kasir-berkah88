@@ -172,10 +172,34 @@ async function initDB() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         chat_id INT,
         user_id INT,
+        is_archived TINYINT(1) DEFAULT 0,
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (chat_id) REFERENCES chats(id),
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
+    `);
+
+    // Migration: Add is_archived to chat_participants if missing
+    const [cpColumns] = await connection.query(`SHOW COLUMNS FROM chat_participants`);
+    const cpColumnNames = cpColumns.map(c => c.Field);
+    if (!cpColumnNames.includes('is_archived')) {
+      await connection.query(`ALTER TABLE chat_participants ADD COLUMN is_archived TINYINT(1) DEFAULT 0 AFTER user_id`);
+      console.log('Added is_archived column to chat_participants table');
+    }
+
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS calls (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        caller_id INT,
+        receiver_id INT,
+        type ENUM('audio', 'video') DEFAULT 'audio',
+        status ENUM('missed', 'completed', 'rejected', 'busy') DEFAULT 'missed',
+        duration INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (caller_id) REFERENCES users(id),
+        FOREIGN KEY (receiver_id) REFERENCES users(id)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
 
     connection.release();

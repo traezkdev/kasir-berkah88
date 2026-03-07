@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../AppIcon';
 import PremiumModal from './PremiumModal';
 
-const ExpenseModal = ({ isOpen, onClose, onSave, accountType }) => {
+const ExpenseModal = ({ isOpen, onClose, onSave, accountType, title, subtitle }) => {
     // Standardize date to YYYY-MM-DDTHH:mm for datetime-local input
     const getNowFormatted = () => {
         const now = new Date();
@@ -36,8 +36,8 @@ const ExpenseModal = ({ isOpen, onClose, onSave, accountType }) => {
         <PremiumModal
             isOpen={isOpen}
             onClose={onClose}
-            title="Catat Pengeluaran"
-            subtitle={`Dana Keluar ${accountType === 'owner' ? 'Owner' : 'Lapak'}`}
+            title={title || "Catat Pengeluaran"}
+            subtitle={subtitle || `Dana Keluar ${accountType === 'owner' ? 'Owner' : 'Lapak'}`}
             variant="rose"
         >
             <div className="space-y-6">

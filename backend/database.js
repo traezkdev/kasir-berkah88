@@ -513,7 +513,8 @@ const setupDatabase = async () => {
       ('cashier_dashboard_title', 'Dasbor Kasir'),
       ('dashboard_running_text', 'Selamat datang di POS Berkah 88! Semangat berjualan hari ini!'),
       ('dashboard_running_text_enabled', '1'),
-      ('dashboard_watermark_enabled', '1');
+      ('dashboard_watermark_enabled', '1'),
+      ('audit_start_date', '');
     `;
     await connection.query(insertDefaultSettings);
 
@@ -1893,22 +1894,7 @@ const setupDatabase = async () => {
     `;
     await connection.query(ensurePointsSetting);
 
-    // Create points_history table
-    const createPointsHistoryTable = `
-      CREATE TABLE IF NOT EXISTS points_history (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        transaction_id VARCHAR(255) NULL,
-        amount DECIMAL(10, 2) NOT NULL,
-        type ENUM('earn', 'spend') NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
-      );
-    `;
-    await connection.query(createPointsHistoryTable);
-    console.log('points_history table is ready.');
+    // Removed duplicate points_history creation from here
 
 
     // Check and add points column to users if it doesn't exist
@@ -2168,6 +2154,83 @@ const setupDatabase = async () => {
       }
     } catch (err) {
       console.error('Error migrating information table:', err);
+    }
+
+    // --- Closing Sessions (Tutup Buku) Setup ---
+    try {
+      const createClosingSessionsTable = `
+        CREATE TABLE IF NOT EXISTS closing_sessions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+          closed_by_user_id INT NULL,
+          total_sales DECIMAL(15, 2) DEFAULT 0,
+          total_expenses DECIMAL(15, 2) DEFAULT 0,
+          total_profit DECIMAL(15, 2) DEFAULT 0,
+          lapak_balance_at_closing DECIMAL(15, 2) DEFAULT 0,
+          owner_balance_at_closing DECIMAL(15, 2) DEFAULT 0,
+          initial_capital_next_day DECIMAL(15, 2) DEFAULT 0,
+          notes TEXT,
+          FOREIGN KEY (closed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB;
+      `;
+      // Jika tabel sudah ada tapi bukan InnoDB, kita perlu ubah (atau drop dan recreate untuk kemudahan migrasi awal)
+      const [sessionsStatus] = await connection.query("SHOW TABLE STATUS LIKE 'closing_sessions'");
+      if (sessionsStatus.length > 0 && sessionsStatus[0].Engine !== 'InnoDB') {
+        console.log('Converting closing_sessions to InnoDB...');
+        await connection.query("ALTER TABLE closing_sessions ENGINE=InnoDB");
+      }
+
+      await connection.query(createClosingSessionsTable);
+      console.log('closing_sessions table is ready.');
+
+      // Tables to add closing_session_id
+      const tablesToArchive = [
+        'transactions',
+        'orders',
+        'expenses',
+        'account_transactions',
+        'simple_transactions',
+        'simple_transaction_items',
+        'cash_reconciliations',
+        'employee_credits',
+        'raw_material_stock_history'
+      ];
+
+      for (const tableName of tablesToArchive) {
+        try {
+          // Ensure table is InnoDB before adding FK
+          const [tableStatus] = await connection.query(`SHOW TABLE STATUS LIKE ?`, [tableName]);
+          if (tableStatus.length > 0 && tableStatus[0].Engine !== 'InnoDB') {
+            console.log(`Converting ${tableName} to InnoDB to support foreign keys...`);
+            await connection.query(`ALTER TABLE ${tableName} ENGINE=InnoDB`);
+          }
+
+          const checkColSql = `
+            SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'closing_session_id';
+          `;
+          const [rows] = await connection.query(checkColSql, [tableName]);
+          if (rows[0].count === 0) {
+            console.log(`Adding closing_session_id to ${tableName}...`);
+            await connection.query(`ALTER TABLE ${tableName} ADD COLUMN closing_session_id INT NULL`);
+          }
+
+          // Check if constraint exists already
+          const checkFkSql = `
+            SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?;
+          `;
+          const [fkRows] = await connection.query(checkFkSql, [tableName, `fk_${tableName}_closing_session`]);
+          if (fkRows[0].count === 0) {
+            console.log(`Adding foreign key constraint to ${tableName}...`);
+            await connection.query(`ALTER TABLE ${tableName} ADD CONSTRAINT fk_${tableName}_closing_session FOREIGN KEY (closing_session_id) REFERENCES closing_sessions(id) ON DELETE SET NULL`);
+          }
+        } catch (tableErr) {
+          console.error(`Error processing table ${tableName} for archiving:`, tableErr.message);
+        }
+      }
+    } catch (err) {
+      console.error('Error setting up closing sessions:', err);
     }
 
     connection.release();

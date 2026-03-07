@@ -55,7 +55,7 @@ io.use((socket, next) => {
             console.error(`Socket Auth Error: Invalid token from ${socket.id}`, err.message);
             return next(new Error('Authentication error: Invalid token'));
         }
-        socket.userId = decoded.id;
+        socket.userId = Number(decoded.id);
         next();
     });
 });
@@ -119,6 +119,92 @@ io.on('connection', async (socket) => {
 
     socket.on('error', (err) => {
         console.error(`Socket ${socket.id} error:`, err);
+    });
+
+    // --- WebRTC Signaling Events ---
+    socket.on('call-user', async ({ targetUserId, offer, type }) => {
+        const callerName = await getUserName(userId);
+        const callerAvatar = await getUserAvatar(userId);
+        console.log(`[Call] User ${userId} (${callerName}) calling ${targetUserId} (${type})`);
+
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+
+        if (recipientSockets && recipientSockets.size > 0) {
+            console.log(`[Call] Sending incoming-call via socket ke ${recipientSockets.size} soket User ${targetId}`);
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('incoming-call', {
+                    from: userId,
+                    offer,
+                    type,
+                    callerName: callerName,
+                    callerAvatar: callerAvatar
+                });
+            });
+        } else {
+            console.log(`[Call] Target user ${targetId} offline, mengirim FCM panggilan...`);
+            socket.emit('call-rejected', { reason: 'offline' });
+        }
+
+        // Selalu kirim FCM untuk panggilan – agar muncul meski app sedang di-background/killed
+        sendPushNotification(
+            targetId,
+            `📞 Panggilan ${type === 'video' ? 'Video' : 'Suara'} Masuk`,
+            `${callerName} sedang menghubungi Anda`,
+            {
+                type: 'incoming_call',
+                callType: type,
+                callerId: String(userId),
+                callerName: callerName,
+                callerAvatar: callerAvatar || '',
+            },
+            {
+                channelId: 'calls',   // Channel khusus panggilan
+                ttl: 30,              // Kedaluwarsa 30 detik – tidak ada gunanya setelah itu
+                priority: 'high',
+            }
+        );
+    });
+
+    socket.on('answer-call', ({ targetUserId, answer }) => {
+        const targetId = Number(targetUserId);
+        console.log(`[Call] User ${userId} answered call from ${targetId}`);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('call-answered', { from: userId, answer });
+            });
+        }
+    });
+
+    socket.on('ice-candidate', ({ targetUserId, candidate }) => {
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('ice-candidate', { from: userId, candidate });
+            });
+        }
+    });
+
+    socket.on('reject-call', ({ targetUserId }) => {
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('call-rejected', { from: userId });
+            });
+        }
+    });
+
+    socket.on('end-call', ({ targetUserId }) => {
+        const targetId = Number(targetUserId);
+        const recipientSockets = onlineUsers.get(targetId);
+        if (recipientSockets) {
+            recipientSockets.forEach(sid => {
+                io.to(sid).emit('call-ended', { from: userId });
+            });
+        }
     });
 
     socket.on('disconnect', async (reason) => {
@@ -413,54 +499,58 @@ app.post('/api/users/upload-avatar', authenticateToken, upload.single('avatar'),
 });
 
 // Helper function to send push notifications
-const sendPushNotification = async (targetUserId, title, body, data = {}) => {
+const sendPushNotification = async (targetUserId, title, body, data = {}, options = {}) => {
     try {
         const [users] = await pool.query('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
         if (users.length > 0 && users[0].fcm_token) {
             const token = users[0].fcm_token;
-            console.log(`[Push] Menyiapkan pengiriman ke User ${targetUserId}...`);
+            const channelId = options.channelId || 'messages';
+            const ttl = options.ttl !== undefined ? options.ttl : 86400; // Default: 24 jam
+            const priority = options.priority || 'high';
 
-            // Pastikan URL gambar aman (HTTPS atau URL valid)
+            console.log(`[Push] Mengirim notifikasi ke User ${targetUserId} via channel '${channelId}'...`);
+
             const senderAvatar = data.senderAvatar && data.senderAvatar.startsWith('http') ? data.senderAvatar : null;
 
             const message = {
                 notification: {
                     title: title,
                     body: body,
-                    ...(senderAvatar ? { image: String(senderAvatar) } : {}),
                 },
                 android: {
-                    priority: 'high',
-                    ttl: 0,
+                    priority: priority,
+                    ttl: ttl * 1000, // Dikonversi ke milidetik
                     notification: {
-                        channelId: 'default',
-                        sound: 'default',
+                        channelId: channelId,
+                        sound: channelId === 'calls' ? 'ringtone' : 'default',
                         priority: 'max',
                         visibility: 'public',
-                        ...(senderAvatar ? { imageUrl: String(senderAvatar) } : {}),
+                        imageUrl: senderAvatar || undefined,
+                        tag: channelId === 'calls' ? `call_${data.callerId || 'unknown'}` : undefined,
                     }
                 },
                 apns: {
                     headers: {
                         'apns-priority': '10',
+                        'apns-push-type': 'alert',
+                        'apns-expiration': ttl === 0 ? '0' : String(Math.floor(Date.now() / 1000) + ttl),
                     },
                     payload: {
                         aps: {
                             sound: 'default',
                             contentAvailable: true,
-                            mutableContent: true, // Diperlukan agar gambar tampil di iOS
+                            mutableContent: true,
                         }
                     },
                     fcmOptions: {
-                        image: senderAvatar ? String(senderAvatar) : undefined
+                        image: senderAvatar || undefined
                     }
                 },
                 data: {
-                    ...data,
-                    chatId: String(data.chatId),
-                    senderName: String(title),
-                    senderAvatar: String(senderAvatar || ''),
-                    type: String(data.type || 'text'),
+                    ...Object.fromEntries(
+                        Object.entries(data).map(([k, v]) => [k, String(v ?? '')])
+                    ),
+                    channelId: channelId,
                 },
                 token: token,
             };
@@ -473,11 +563,16 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
         }
     } catch (error) {
         console.error(`[Push] GAGAL mengirim ke User ${targetUserId}:`, error.message);
-        if (error.code === 'messaging/registration-token-not-registered') {
-            console.log(`[Push] Token User ${targetUserId} sudah tidak valid. Perlu login ulang.`);
+        // Jika token tidak valid, hapus dari database
+        if (error.code === 'messaging/registration-token-not-registered' ||
+            error.code === 'messaging/invalid-registration-token') {
+            console.log(`[Push] Token tidak valid untuk User ${targetUserId}, menghapus dari DB...`);
+            await pool.query('UPDATE users SET fcm_token = NULL WHERE id = ?', [targetUserId]).catch(() => { });
         }
     }
 };
+
+
 
 const getUserAvatar = async (userId) => {
     try {
@@ -535,7 +630,7 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
             JOIN chat_participants cp1 ON c.id = cp1.chat_id
             JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id != cp1.user_id
             JOIN users u ON cp2.user_id = u.id
-            WHERE cp1.user_id = ?
+            WHERE cp1.user_id = ? AND cp1.is_archived = 0
             GROUP BY c.id
             ORDER BY c.last_message_time DESC
         `;
@@ -608,6 +703,65 @@ app.delete('/api/chats/:id', authenticateToken, async (req, res) => {
         res.json({ message: 'Chat deleted successfully' });
     } catch (error) {
         console.error('Error deleting chat:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Archived Chats
+app.get('/api/chats/archived', authenticateToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT c.*, 
+            JSON_OBJECT('id', u.id, 'name', u.full_name, 'avatar', u.avatar, 'online', u.status) as otherUser,
+            (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.id AND m.sender_id != ? AND m.status != 'read') as unread_count
+            FROM chats c
+            JOIN chat_participants cp1 ON c.id = cp1.chat_id
+            JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id != cp1.user_id
+            JOIN users u ON cp2.user_id = u.id
+            WHERE cp1.user_id = ? AND cp1.is_archived = 1
+            GROUP BY c.id
+            ORDER BY c.last_message_time DESC
+        `;
+        const [rows] = await pool.query(query, [req.user.id, req.user.id]);
+        const processedRows = rows.map(row => {
+            if (typeof row.otherUser === 'string') {
+                try { row.otherUser = JSON.parse(row.otherUser); } catch (e) { }
+            }
+            return row;
+        });
+        res.json(processedRows);
+    } catch (error) {
+        console.error('Error fetching archived chats:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Toggle Archive Chat
+app.post('/api/chats/:id/archive', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { archive } = req.body; // true to archive, false to unarchive
+    try {
+        await pool.query(
+            'UPDATE chat_participants SET is_archived = ? WHERE chat_id = ? AND user_id = ?',
+            [archive ? 1 : 0, id, req.user.id]
+        );
+        res.json({ message: archive ? 'Chat archived' : 'Chat unarchived' });
+    } catch (error) {
+        console.error('Error archiving chat:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Archived Count
+app.get('/api/chats/archived/count', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT COUNT(*) as count FROM chat_participants WHERE user_id = ? AND is_archived = 1',
+            [req.user.id]
+        );
+        res.json({ count: rows[0].count });
+    } catch (error) {
+        console.error('Error fetching archived count:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

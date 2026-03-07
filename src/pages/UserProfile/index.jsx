@@ -36,7 +36,7 @@ const ProfileCard = ({ icon, title, description, onClick, isDestructive = false 
     onClick={onClick}
     className={`
       relative overflow-hidden bg-card p-5 rounded-[1.5rem] shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-gray-100 dark:border-slate-800
-      transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer group hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)]
+      transition-all duration-500 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer group hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)]
       ${isDestructive
         ? 'hover:border-destructive/30'
         : 'hover:border-blue-500/30'

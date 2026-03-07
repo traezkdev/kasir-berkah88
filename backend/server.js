@@ -1089,6 +1089,7 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
             SELECT t.id, t.timestamp, t.items, t.total
             FROM transactions t
             WHERE t.timestamp BETWEEN ? AND ?
+            AND t.closing_session_id IS NULL
             AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
             ORDER BY t.timestamp DESC
         `;
@@ -1135,6 +1136,7 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
             SELECT category, SUM(amount) as total
             FROM expenses
             WHERE date BETWEEN ? AND ?
+            AND closing_session_id IS NULL
             GROUP BY category
         `;
         const [expensesByCategory] = await db.query(expenseSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
@@ -1144,6 +1146,7 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
              SELECT name, amount, category, date
              FROM expenses
              WHERE date BETWEEN ? AND ?
+             AND closing_session_id IS NULL
              ORDER BY amount DESC
              LIMIT 10
         `;
@@ -2507,7 +2510,7 @@ app.get('/api/settings/:key', async (req, res) => {
 });
 
 // Update master password
-app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { currentMasterPassword, newMasterPassword } = req.body;
 
@@ -2547,6 +2550,26 @@ app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admi
 
         res.json({ message: "Master password updated successfully" });
 
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Reset Master Password (without knowing current password) - Admin/Owner Only
+app.put("/api/admin/master-password/reset", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { newMasterPassword } = req.body;
+
+        if (!newMasterPassword) {
+            return res.status(400).json({ error: "Kata sandi master baru diperlukan" });
+        }
+
+        const hashedNewMasterPassword = await bcrypt.hash(newMasterPassword, 10);
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['master_password', hashedNewMasterPassword]);
+
+        res.json({ message: "Master password has been reset successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
@@ -2865,7 +2888,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
         const { startDate, endDate, paymentMethod, minTotal, maxTotal, search } = req.query; // Extract paymentMethod and Amount Range
         const offset = (page - 1) * limit;
 
-        let whereClauses = ['t.deleted_at IS NULL'];
+        let whereClauses = ['t.deleted_at IS NULL', 't.closing_session_id IS NULL'];
         let queryParams = [];
 
         if (startDate) {
@@ -2956,7 +2979,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const { startDate, endDate, paymentMethod } = req.query; // Extract startDate and endDate and paymentMethod
 
-        let whereClauses = ['t.deleted_at IS NULL'];
+        let whereClauses = ['t.deleted_at IS NULL']; // Sengaja tidak filter closing_session_id agar data arsip ikut tampil di chart
         let queryParams = [];
 
         if (startDate) {
@@ -3817,8 +3840,24 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
 // Get all expenses without pagination
 app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user', 'guest'), async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
+        let whereClauses = []; // Sengaja tidak filter closing_session_id agar data arsip ikut tampil di chart
+        let queryParams = [];
+
+        if (startDate) {
+            whereClauses.push('e.date >= ?');
+            queryParams.push(startDate);
+        }
+
+        if (endDate) {
+            whereClauses.push('e.date <= ?');
+            queryParams.push(`${endDate} 23:59:59`);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         const dataSql = `
             SELECT 
@@ -3832,10 +3871,10 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
-            ${lastClosingDate ? 'WHERE e.date >= ?' : ''}
+            ${whereSql}
             ORDER BY e.date DESC
         `;
-        const [rows] = await db.query(dataSql, lastClosingDate ? [lastClosingDate] : []);
+        const [rows] = await db.query(dataSql, queryParams);
 
         res.json({
             "message": "success",
@@ -3854,7 +3893,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'ka
         const { startDate, endDate } = req.query;
         const offset = (page - 1) * limit;
 
-        let whereClauses = [];
+        let whereClauses = ['e.closing_session_id IS NULL'];
         let queryParams = [];
 
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
@@ -4058,7 +4097,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         if (accountName === 'lapak_deposit') {
             allowedRoles = ['admin', 'user', 'kasir', 'owner']; // Owner can also view lapak deposit
         } else if (accountName === 'owner_deposit') {
-            allowedRoles = ['admin', 'owner'];
+            allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller']; // Expanded roles for Owner account as requested
         } else {
             return res.status(400).json({ error: "Invalid account name" });
         }
@@ -4068,7 +4107,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
 
         // Fetch transactions for this account with filtering
         const { type, startDate, endDate, search } = req.query;
-        let whereClauses = ['at.account_id = ?'];
+        let whereClauses = ['at.account_id = ?', 'at.closing_session_id IS NULL'];
         let queryParams = [account.id];
 
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
@@ -4083,10 +4122,6 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
             // User requested a specific start date. Honor it strictly (00:00:00)
             whereClauses.push('at.created_at >= ?');
             queryParams.push(startDate.includes(':') ? startDate : `${startDate} 00:00:00`);
-        } else if (lastClosingDate) {
-            // Default view (no filters): show only since last closing
-            whereClauses.push('at.created_at >= ?');
-            queryParams.push(lastClosingDate);
         }
 
         if (endDate) {
@@ -4159,7 +4194,7 @@ app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
         if (account_name === 'lapak_deposit') {
             allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
-            allowedRoles = ['admin', 'owner'];
+            allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
         } else {
             return res.status(400).json({ error: "Invalid account name" });
         }
@@ -4218,7 +4253,7 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
         if (account_name === 'lapak_deposit') {
             allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
-            allowedRoles = ['admin', 'owner'];
+            allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
         } else {
             return res.status(400).json({ error: "Invalid account name" });
         }
@@ -4300,8 +4335,9 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
         const accountId = transaction.account_id;
         const type = transaction.type; // 'deposit' or 'expense'
 
-        // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
+        // Check ownership or admin/authorized roles
+        const authorizedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
+        if (transaction.created_by_user_id !== userId && !authorizedRoles.includes(req.user.role)) {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
         }
@@ -4357,8 +4393,9 @@ app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res)
         }
         const transaction = transRows[0];
 
-        // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
+        // Check ownership or admin/authorized roles
+        const authorizedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller'];
+        if (transaction.created_by_user_id !== userId && !authorizedRoles.includes(req.user.role)) {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to delete this transaction" });
         }
@@ -4748,8 +4785,9 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
-        // Always hide soft-deleted orders
+        // Always hide soft-deleted orders and archived orders
         whereClauses.push('deleted_at IS NULL');
+        whereClauses.push('closing_session_id IS NULL');
 
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
@@ -6089,7 +6127,7 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
 // --- Data Management Endpoints (Admin Only) ---
 
 // Delete all transactions, expenses, and reset menu item stock
-app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     const connection = await db.getConnection();
     try {
         const { masterPassword } = req.body;
@@ -6100,7 +6138,20 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         const [masterPassRow] = await connection.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
-        if (!storedMasterPassword || !(await bcrypt.compare(masterPassword, storedMasterPassword))) {
+        if (!storedMasterPassword) {
+            return res.status(401).json({ error: "Kata sandi master belum diatur. Silakan atur di Pengaturan." });
+        }
+
+        let isPasswordValid = false;
+        const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+
+        if (isStoredPassHashed) {
+            isPasswordValid = await bcrypt.compare(masterPassword, storedMasterPassword);
+        } else {
+            isPasswordValid = (masterPassword === storedMasterPassword);
+        }
+
+        if (!isPasswordValid) {
             return res.status(401).json({ error: "Kata sandi master salah" });
         }
 
@@ -6384,10 +6435,10 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
             const dateClause = effectiveEndDate ? "BETWEEN ? AND ?" : ">= ?";
             const params = effectiveEndDate ? [effectiveStartDate, effectiveEndDate] : [effectiveStartDate];
 
-            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp ${dateClause} ORDER BY timestamp DESC, id DESC`;
-            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date ${dateClause} ORDER BY date DESC, id DESC`;
-            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at ${dateClause} ORDER BY at.created_at DESC, at.id DESC`;
-            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at ${dateClause} ORDER BY at.created_at DESC, at.id DESC`;
+            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp ${dateClause} AND closing_session_id IS NULL ORDER BY timestamp DESC, id DESC`;
+            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date ${dateClause} AND closing_session_id IS NULL ORDER BY date DESC, id DESC`;
+            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at ${dateClause} AND at.closing_session_id IS NULL ORDER BY at.created_at DESC, at.id DESC`;
+            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at ${dateClause} AND at.closing_session_id IS NULL ORDER BY at.created_at DESC, at.id DESC`;
 
             queryParams = params;
         }
@@ -6857,7 +6908,7 @@ app.post("/api/customers/points/manual", authenticateToken, authorizeRoles('admi
 // Get all credits
 app.get("/api/credits", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const sql = "SELECT * FROM employee_credits ORDER BY credit_date DESC";
+        const sql = "SELECT * FROM employee_credits WHERE closing_session_id IS NULL ORDER BY credit_date DESC";
         const [rows] = await db.query(sql);
         res.json({ message: "success", data: rows });
     } catch (err) {
@@ -8158,6 +8209,373 @@ app.use((err, req, res, next) => {
         error: message,
         stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
     });
+});
+
+// --- Tutup Buku (Closing Session) Endpoints ---
+
+// Process Tutup Buku
+app.post("/api/settings/close-book", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { masterPassword, notes, initialCapitalNextDay } = req.body;
+    let connection;
+
+    try {
+        // 1. Verify Master Password
+        const [masterPwdRow] = await db.query("SELECT value FROM settings WHERE `key` = 'master_password'");
+        const storedMasterPassword = masterPwdRow.length > 0 ? masterPwdRow[0].value : '123456';
+
+        let isPasswordValid = false;
+        const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+
+        if (isStoredPassHashed) {
+            isPasswordValid = await bcrypt.compare(masterPassword, storedMasterPassword);
+        } else {
+            isPasswordValid = (masterPassword === storedMasterPassword);
+        }
+
+        if (!isPasswordValid) {
+            return res.status(403).json({ error: "Master password salah!" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 2. Calculate summary for the closing session (Active data only)
+        const [salesRow] = await connection.query("SELECT SUM(total) as total FROM transactions WHERE closing_session_id IS NULL AND deleted_at IS NULL");
+        const totalSales = parseFloat(salesRow[0].total || 0);
+
+        const [expensesRow] = await connection.query("SELECT SUM(amount) as total FROM expenses WHERE closing_session_id IS NULL");
+        const totalExpenses = parseFloat(expensesRow[0].total || 0);
+
+        const [lapakAccount] = await connection.query("SELECT id, balance FROM accounts WHERE name = 'lapak_deposit'");
+        const [ownerAccount] = await connection.query("SELECT id, balance FROM accounts WHERE name = 'owner_deposit'");
+
+        const lapakBalance = lapakAccount.length > 0 ? parseFloat(lapakAccount[0].balance) : 0;
+        const ownerBalance = ownerAccount.length > 0 ? parseFloat(ownerAccount[0].balance) : 0;
+
+        // 3. Create Closing Session Record
+        const insertSessionSql = `
+            INSERT INTO closing_sessions 
+            (closed_by_user_id, total_sales, total_expenses, total_profit, lapak_balance_at_closing, owner_balance_at_closing, initial_capital_next_day, notes) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const [sessionResult] = await connection.query(insertSessionSql, [
+            req.user.userId,
+            totalSales,
+            totalExpenses,
+            totalSales - totalExpenses,
+            lapakBalance,
+            ownerBalance,
+            parseFloat(initialCapitalNextDay || 0),
+            notes || ''
+        ]);
+        const sessionId = sessionResult.insertId;
+
+        // 4. Archive all active data
+        const tablesToArchive = [
+            'transactions',
+            'orders',
+            'expenses',
+            'account_transactions',
+            'simple_transactions',
+            'simple_transaction_items',
+            'cash_reconciliations',
+            'employee_credits',
+            'raw_material_stock_history'
+        ];
+
+        for (const tableName of tablesToArchive) {
+            await connection.query(`UPDATE ${tableName} SET closing_session_id = ? WHERE closing_session_id IS NULL`, [sessionId]);
+        }
+
+        // 5. Reset Accounts & Set Initial Capital
+        if (lapakAccount.length > 0) {
+            // Reset balance to the new initial capital
+            await connection.query("UPDATE accounts SET balance = ? WHERE id = ?", [parseFloat(initialCapitalNextDay || 0), lapakAccount[0].id]);
+
+            // Record this as the first transaction of the new session
+            await connection.query(
+                "INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, closing_session_id) VALUES (?, ?, ?, ?, ?, NULL)",
+                [lapakAccount[0].id, 'deposit', parseFloat(initialCapitalNextDay || 0), 'Modal Awal Pasca Tutup Buku', req.user.userId]
+            );
+        }
+
+        // Update last_closing_date in settings
+        const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).replace(' ', 'T');
+        await connection.query("INSERT INTO settings (`key`, `value`) VALUES ('last_closing_date', ?) ON DUPLICATE KEY UPDATE `value` = ?", [nowStr, nowStr]);
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Tutup Buku', 'closing_session', sessionId, `Tutup buku berhasil. Sesi #${sessionId}. Omzet: Rp ${totalSales.toLocaleString('id-ID')}`);
+
+        res.json({ message: "Tutup buku berhasil!", sessionId });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Error in Tutup Buku:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Get all closing sessions (Archive List)
+app.get("/api/archive/sessions", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT cs.*, u.username as closed_by_username 
+            FROM closing_sessions cs
+            LEFT JOIN users u ON cs.closed_by_user_id = u.id
+            ORDER BY cs.timestamp DESC
+        `);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get detail of a specific session summary
+app.get("/api/archive/sessions/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.query(`
+            SELECT cs.*, u.username as closed_by_username 
+            FROM closing_sessions cs
+            LEFT JOIN users u ON cs.closed_by_user_id = u.id
+            WHERE cs.id = ?
+        `, [id]);
+
+        if (rows.length === 0) return res.status(404).json({ error: "Sesi arsip tidak ditemukan" });
+        res.json({ message: "success", data: rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get archived records by type and session
+app.get("/api/archive/sessions/:id/data/:type", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id, type } = req.params;
+    try {
+        let sql = "";
+        switch (type) {
+            case 'transactions':
+                sql = "SELECT t.*, u.username as cashier_name FROM transactions t LEFT JOIN users u ON t.user_id = u.id WHERE t.closing_session_id = ? ORDER BY t.timestamp DESC";
+                break;
+            case 'expenses':
+                sql = "SELECT e.*, u.username as recorded_by FROM expenses e LEFT JOIN users u ON e.user_id = u.id WHERE e.closing_session_id = ? ORDER BY e.date DESC";
+                break;
+            case 'orders':
+                sql = "SELECT * FROM orders WHERE closing_session_id = ? ORDER BY created_at DESC";
+                break;
+            case 'account_transactions':
+                sql = "SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id WHERE at.closing_session_id = ? ORDER BY at.created_at DESC";
+                break;
+            case 'credits':
+                sql = "SELECT * FROM employee_credits WHERE closing_session_id = ? ORDER BY credit_date DESC";
+                break;
+            default:
+                return res.status(400).json({ error: "Tipe data arsip tidak valid" });
+        }
+
+        const [rows] = await db.query(sql, [id]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Preview jumlah data yang akan di-restore (GET)
+app.get("/api/archive/sessions/:id/restore/preview", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    try {
+        const buildDateFilter = (dateCol) => {
+            if (startDate && endDate) return ` AND DATE(\`${dateCol}\`) BETWEEN ? AND ?`;
+            if (startDate) return ` AND DATE(\`${dateCol}\`) >= ?`;
+            if (endDate) return ` AND DATE(\`${dateCol}\`) <= ?`;
+            return '';
+        };
+        const dateParams = [];
+        if (startDate) dateParams.push(startDate);
+        if (endDate) dateParams.push(endDate);
+
+        const countTable = async (table, dateCol) => {
+            const filter = buildDateFilter(dateCol);
+            const sql = `SELECT COUNT(*) as total FROM ${table} WHERE closing_session_id = ?${filter}`;
+            const [rows] = await db.query(sql, [id, ...dateParams]);
+            return rows[0].total;
+        };
+
+        const [transactions, expenses, orders, account_transactions, credits] = await Promise.all([
+            countTable('transactions', 'timestamp'),
+            countTable('expenses', 'date'),
+            countTable('orders', 'created_at'),
+            countTable('account_transactions', 'created_at'),
+            countTable('employee_credits', 'credit_date'),
+        ]);
+
+        const total = transactions + expenses + orders + account_transactions + credits;
+
+        res.json({
+            message: "success",
+            data: { transactions, expenses, orders, account_transactions, credits, total }
+        });
+    } catch (err) {
+        console.error("Error restore preview:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eksekusi Restore (POST) - kembalikan data arsip ke live
+app.post("/api/archive/sessions/:id/restore", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    const { startDate, endDate } = req.body;
+    let connection;
+
+    try {
+        const buildDateFilter = (dateCol) => {
+            if (startDate && endDate) return ` AND DATE(\`${dateCol}\`) BETWEEN ? AND ?`;
+            if (startDate) return ` AND DATE(\`${dateCol}\`) >= ?`;
+            if (endDate) return ` AND DATE(\`${dateCol}\`) <= ?`;
+            return '';
+        };
+        const dateParams = [];
+        if (startDate) dateParams.push(startDate);
+        if (endDate) dateParams.push(endDate);
+
+        // Validasi sesi ada
+        const [sessionRows] = await db.query("SELECT id FROM closing_sessions WHERE id = ?", [id]);
+        if (sessionRows.length === 0) {
+            return res.status(404).json({ error: "Sesi arsip tidak ditemukan" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Tabel dan kolom tanggalnya
+        const tables = [
+            { table: 'transactions', dateCol: 'timestamp' },
+            { table: 'expenses', dateCol: 'date' },
+            { table: 'orders', dateCol: 'created_at' },
+            { table: 'account_transactions', dateCol: 'created_at' },
+            { table: 'simple_transactions', dateCol: 'created_at' },
+            { table: 'employee_credits', dateCol: 'credit_date' },
+            { table: 'cash_reconciliations', dateCol: 'created_at' },
+        ];
+
+        let totalRestored = 0;
+        const detail = {};
+
+        for (const { table, dateCol } of tables) {
+            const filter = buildDateFilter(dateCol);
+            const sql = `UPDATE ${table} SET closing_session_id = NULL WHERE closing_session_id = ?${filter}`;
+            const [result] = await connection.query(sql, [id, ...dateParams]);
+            detail[table] = result.affectedRows;
+            totalRestored += result.affectedRows;
+        }
+
+        // Jika semua data pada sesi ini sudah di-restore, hapus sesi closing-nya
+        const [remaining] = await connection.query(
+            "SELECT COUNT(*) as cnt FROM transactions WHERE closing_session_id = ?",
+            [id]
+        );
+        if (remaining[0].cnt === 0 && !startDate && !endDate) {
+            await connection.query("DELETE FROM closing_sessions WHERE id = ?", [id]);
+        }
+
+        // ── Recalculate account balances ──────────────────────────────────
+        // Setelah account_transactions di-restore (closing_session_id = NULL),
+        // hitung ulang balance setiap akun dari semua transaksinya agar
+        // card "Saldo Lapak" & "Saldo Owner" menampilkan nilai yang benar.
+        const [accountBalances] = await connection.query(`
+            SELECT
+                account_id,
+                SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) AS calculated_balance
+            FROM account_transactions
+            GROUP BY account_id
+        `);
+        for (const row of accountBalances) {
+            await connection.query(
+                "UPDATE accounts SET balance = ? WHERE id = ?",
+                [parseFloat(row.calculated_balance) || 0, row.account_id]
+            );
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        await connection.commit();
+
+
+        const filterDesc = startDate || endDate
+            ? ` (filter: ${startDate || '?'} s/d ${endDate || '?'})`
+            : ' (semua data)';
+        await logActivity(req.user.userId, 'Restore Arsip', 'closing_session', id,
+            `Restore sesi #${id}${filterDesc}. Total: ${totalRestored} record.`);
+
+        res.json({
+            message: `Berhasil merestore ${totalRestored} data dari sesi #${id}`,
+            data: { restored: totalRestored, detail }
+        });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Error restore archive:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Hapus permanen satu sesi arsip beserta semua datanya
+app.delete("/api/archive/sessions/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    let connection;
+    try {
+        const [sessionRows] = await db.query("SELECT id FROM closing_sessions WHERE id = ?", [id]);
+        if (sessionRows.length === 0) {
+            return res.status(404).json({ error: "Sesi arsip tidak ditemukan" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Hapus semua record di tabel yang berelasi dengan sesi ini
+        const tables = [
+            'raw_material_stock_history',
+            'cash_reconciliations',
+            'simple_transaction_items',
+            'simple_transactions',
+            'employee_credits',
+            'account_transactions',
+            'expenses',
+            'orders',
+            'transactions',
+        ];
+
+        let totalDeleted = 0;
+        for (const table of tables) {
+            const [result] = await connection.query(
+                `DELETE FROM ${table} WHERE closing_session_id = ?`, [id]
+            );
+            totalDeleted += result.affectedRows;
+        }
+
+        // Hapus record closing_sessions itu sendiri
+        await connection.query("DELETE FROM closing_sessions WHERE id = ?", [id]);
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Hapus Arsip', 'closing_session', id,
+            `Sesi arsip #${id} dihapus permanen. Total data dihapus: ${totalDeleted} record.`);
+
+        res.json({
+            message: `Sesi arsip #${id} berhasil dihapus permanen`,
+            data: { deleted: totalDeleted }
+        });
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Error delete archive session:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
 });
 
 // Default response for any other request

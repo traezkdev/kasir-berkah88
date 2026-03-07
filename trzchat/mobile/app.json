@@ -60,6 +60,13 @@
           "icon": "./assets/iconlogo.png",
           "color": "#6366F1"
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Izinkan aplikasi untuk menyimpan foto ke galeri Anda.",
+          "savePhotosPermission": "Izinkan aplikasi untuk menyimpan foto ke galeri Anda."
+        }
       ]
     ],
     "web": {

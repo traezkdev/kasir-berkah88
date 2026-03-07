@@ -15,6 +15,10 @@ export const fixUrl = (url) => {
     if (fixedUrl.includes('localhost') || fixedUrl.includes('127.0.0.1')) {
         fixedUrl = fixedUrl.replace(/http:\/\/localhost:5000|http:\/\/127.0.0.1:5000/g, BASE_URL);
     }
+    // Jika path diawali dengan /, tambahkan BASE_URL
+    if (fixedUrl.startsWith('/')) {
+        fixedUrl = `${BASE_URL}${fixedUrl}`;
+    }
     // Force HTTPS in production for Android compatibility
     if (IS_PROD && fixedUrl.startsWith('http://')) {
         fixedUrl = fixedUrl.replace('http://', 'https://');

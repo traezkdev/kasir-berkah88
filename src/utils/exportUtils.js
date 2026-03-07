@@ -632,30 +632,30 @@ export const prepareCombinedDataForExport = (reportData, units = []) => {
   const { sales = {}, expenses = {}, stock = {}, rawMetrics, balances = {}, allTime = {} } = reportData;
   const sections = [];
 
-  // --- NEW: Audit & Financial Summary Section ---
+  // --- audit & financial summary section based on period ---
   const initialCap = parseFloat(sales.initialCapital || 0);
-  const totalRevAllTime = parseFloat(allTime.totalRevenue || 0);
-  const totalExpAllTime = parseFloat(allTime.totalExpenses || 0);
-  const netProfitAllTime = totalRevAllTime - totalExpAllTime;
+  const totalRevPeriod = parseFloat(sales.totalRevenue || 0);
+  const totalExpPeriod = parseFloat(expenses.summary?.totalExpenses || 0);
+  const netProfitPeriod = totalRevPeriod - totalExpPeriod;
 
   const ownerBal = parseFloat(balances.ownerBalance || 0);
   const lapakBal = parseFloat(balances.lapakBalance || 0);
   const currentCash = ownerBal + lapakBal;
 
-  const expectedCash = initialCap + totalRevAllTime - totalExpAllTime;
+  const expectedCash = initialCap + totalRevPeriod - totalExpPeriod;
   const auditDiff = currentCash - expectedCash;
   const stockVal = rawMetrics?.totalStockValue || 0;
-  const workingModal = initialCap + totalRevAllTime + stockVal - totalExpAllTime;
-  const equity = initialCap + netProfitAllTime;
+  const workingModal = initialCap + totalRevPeriod + stockVal - totalExpPeriod;
+  const equity = initialCap + netProfitPeriod;
 
   sections.push({
-    title: 'Ringkasan Audit & Keuangan (Keseluruhan)',
+    title: 'Ringkasan Audit & Keuangan (Periode Terpilih)',
     headers: ['Keterangan', 'Nilai'],
     rows: [
       ['Modal Awal (Setoran)', formatCurrency(initialCap)],
-      ['Total Pendapatan (All Time)', formatCurrency(totalRevAllTime)],
-      ['Total Pengeluaran (All Time)', formatCurrency(totalExpAllTime)],
-      ['Laba Bersih Kumulatif', formatCurrency(netProfitAllTime)],
+      ['Total Pendapatan (Periode Ini)', formatCurrency(totalRevPeriod)],
+      ['Total Pengeluaran (Periode Ini)', formatCurrency(totalExpPeriod)],
+      ['Laba Bersih Periode', formatCurrency(netProfitPeriod)],
       ['Saldo Kas Saat Ini (Actual)', formatCurrency(currentCash)],
       ['Saldo Kas Seharusnya (System)', formatCurrency(expectedCash)],
       ['Selisih Audit (Audit Variance)', `${formatCurrency(auditDiff)} ${auditDiff < 0 ? '(Kurang)' : auditDiff > 0 ? '(Lebih)' : '(Pas)'}`],
@@ -666,9 +666,6 @@ export const prepareCombinedDataForExport = (reportData, units = []) => {
   });
 
   // --- Combined Analytics Section (Current Period) ---
-  const totalRevPeriod = parseFloat(sales.totalRevenue || 0);
-  const totalExpPeriod = parseFloat(expenses.summary?.totalExpenses || 0);
-  const netProfitPeriod = totalRevPeriod - totalExpPeriod;
   const capitalGrowth = initialCap > 0 ? (netProfitPeriod / initialCap) * 100 : 0;
 
   sections.push({
