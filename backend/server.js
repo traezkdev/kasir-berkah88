@@ -8482,7 +8482,27 @@ app.post("/api/archive/sessions/:id/restore", authenticateToken, authorizeRoles(
             await connection.query("DELETE FROM closing_sessions WHERE id = ?", [id]);
         }
 
+        // ── Recalculate account balances ──────────────────────────────────
+        // Setelah account_transactions di-restore (closing_session_id = NULL),
+        // hitung ulang balance setiap akun dari semua transaksinya agar
+        // card "Saldo Lapak" & "Saldo Owner" menampilkan nilai yang benar.
+        const [accountBalances] = await connection.query(`
+            SELECT
+                account_id,
+                SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) AS calculated_balance
+            FROM account_transactions
+            GROUP BY account_id
+        `);
+        for (const row of accountBalances) {
+            await connection.query(
+                "UPDATE accounts SET balance = ? WHERE id = ?",
+                [parseFloat(row.calculated_balance) || 0, row.account_id]
+            );
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         await connection.commit();
+
 
         const filterDesc = startDate || endDate
             ? ` (filter: ${startDate || '?'} s/d ${endDate || '?'})`

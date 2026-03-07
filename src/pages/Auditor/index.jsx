@@ -399,99 +399,251 @@ export default function AuditorPage() {
                     ) : null}
                 </div>
 
-                {/* Main Audit Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-                    {/* Section 1: Cash Reconciliation */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                                <Icon name="Wallet" size={24} />
-                            </div>
-                            <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Rekonsiliasi Kas (Uang)</h3>
-                        </div>
+                {/* ===== RINGKASAN KARTU AUDIT ===== */}
+                <div className="mb-4">
+                    <h3 className="text-sm font-black text-text-primary tracking-widest uppercase flex items-center gap-2">
+                        <Icon name="BarChart3" size={16} />
+                        Ringkasan Data Keuangan
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-1">Data berikut diambil berdasarkan rentang tanggal yang dipilih. Semua angka mengacu pada catatan transaksi di sistem.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
 
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
-                                <span className="text-sm font-bold text-gray-500">Uang Fisik (Lapak + Owner)</span>
-                                <span className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.physicalCash)}</span>
+                    {/* Modal Awal */}
+                    {(() => {
+                        const capitalGrowth = data.metrics.physicalCash - data.metrics.initialCapital;
+                        const capitalGrowthPercent = data.metrics.initialCapital > 0
+                            ? ((capitalGrowth / data.metrics.initialCapital) * 100).toFixed(1)
+                            : 0;
+                        return (
+                            <div className="p-5 rounded-2xl border border-border bg-purple-500/10 transition-all hover:shadow-md flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500">
+                                            <Icon name="PiggyBank" size={18} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Modal Awal</span>
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${capitalGrowth >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                        {capitalGrowth >= 0 ? `▲ +${capitalGrowthPercent}%` : `▼ ${capitalGrowthPercent}%`}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-mono font-black text-purple-500 tracking-tight">{formatCurrency(data.metrics.initialCapital)}</p>
+                                    <p className="text-xs text-text-secondary mt-1 leading-relaxed">Uang yang pertama kali disetor untuk memulai bisnis ini. Nilai ini menjadi <strong>patokan awal</strong> dalam semua kalkulasi audit.</p>
+                                </div>
+                                <div className="pt-3 border-t border-purple-500/20">
+                                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Status Pertumbuhan Kas</p>
+                                    <p className={`text-xs font-bold ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                        {capitalGrowth >= 0
+                                            ? `Kas aktual saat ini lebih besar ${formatCurrency(capitalGrowth)} dari modal awal. Uang berkembang!`
+                                            : `Kas aktual saat ini kurang ${formatCurrency(Math.abs(capitalGrowth))} dari modal awal. Perlu investigasi.`
+                                        }
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
-                                <span className="text-sm font-bold text-gray-500">Estimasi Sistem (Target)</span>
-                                <span className="text-lg font-black text-blue-600">{formatCurrency(data.metrics.expectedCash)}</span>
-                            </div>
-                            <div className="h-[2px] bg-gray-100 mx-4"></div>
-                            <div className={`flex justify-between items-center p-4 rounded-2xl ${data.metrics.cashDifference >= 0 ? 'bg-emerald-50' : 'bg-rose-50'
-                                }`}>
-                                <span className="text-sm font-black uppercase tracking-widest">Selisih Kas</span>
-                                <span className={`text-xl font-black ${data.metrics.cashDifference >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                                    }`}>
-                                    {data.metrics.cashDifference > 0 ? '+' : ''}{formatCurrency(data.metrics.cashDifference)}
-                                </span>
-                            </div>
-                        </div>
+                        );
+                    })()}
 
-                        <div className="mt-8 pt-6 border-t border-gray-100">
-                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Breakdown Target Kas</h4>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="p-3">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Modal Awal</p>
-                                    <p className="text-xs font-black text-gray-900">{formatCurrency(data.metrics.initialCapital)}</p>
+                    {/* Total Pendapatan */}
+                    <div className="p-5 rounded-2xl border border-border bg-indigo-500/10 transition-all hover:shadow-md flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-500">
+                                <Icon name="TrendingUp" size={18} />
+                            </div>
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Total Pendapatan</span>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-mono font-black text-indigo-500 tracking-tight">{formatCurrency(data.metrics.totalRevenue)}</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">Total uang masuk dari semua penjualan yang tercatat di sistem pada periode ini. Ini adalah <strong>pemasukan kotor</strong> sebelum dikurangi pengeluaran.</p>
+                        </div>
+                        <div className="pt-3 border-t border-indigo-500/20">
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Catatan</p>
+                            <p className="text-xs text-text-secondary">Transaksi dengan metode pembayaran <em>"Makan Karyawan"</em> tidak dihitung karena bukan pemasukan tunai.</p>
+                        </div>
+                    </div>
+
+                    {/* Total Pengeluaran */}
+                    <div className="p-5 rounded-2xl border border-border bg-rose-500/10 transition-all hover:shadow-md flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-rose-500/20 text-rose-500">
+                                <Icon name="TrendingDown" size={18} />
+                            </div>
+                            <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Total Pengeluaran</span>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-mono font-black text-rose-500 tracking-tight">{formatCurrency(data.metrics.totalExpenses)}</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">Total uang keluar yang dicatat sebagai pengeluaran pada periode ini. Ini mencakup belanja bahan, biaya operasional, dan semua pengeluaran lainnya.</p>
+                        </div>
+                        <div className="pt-3 border-t border-rose-500/20">
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Catatan</p>
+                            <p className="text-xs text-text-secondary">Pastikan semua bon belanja sudah dicatat. Pengeluaran yang tidak tercatat akan menyebabkan selisih audit.</p>
+                        </div>
+                    </div>
+
+                    {/* Laba Bersih */}
+                    <div className={`p-5 rounded-2xl border border-border transition-all hover:shadow-md flex flex-col gap-3 ${data.metrics.netProfit >= 0 ? 'bg-emerald-600/10' : 'bg-rose-600/10'}`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className={`p-2 rounded-lg ${data.metrics.netProfit >= 0 ? 'bg-emerald-600/20 text-emerald-600' : 'bg-rose-600/20 text-rose-600'}`}>
+                                    <Icon name="ChartColumn" size={18} />
                                 </div>
-                                <div className="p-3">
-                                    <p className="text-[10px] font-bold text-emerald-400 uppercase mb-1">Penjualan</p>
-                                    <p className="text-xs font-black text-emerald-600">+{formatCurrency(data.metrics.totalRevenue)}</p>
-                                </div>
-                                <div className="p-3">
-                                    <p className="text-[10px] font-bold text-rose-400 uppercase mb-1">Pengeluaran</p>
-                                    <p className="text-xs font-black text-rose-600">-{formatCurrency(data.metrics.totalExpenses)}</p>
-                                </div>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${data.metrics.netProfit >= 0 ? 'text-emerald-500' : 'text-rose-400'}`}>Laba Bersih</span>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${data.metrics.netProfit >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                {data.metrics.netProfit >= 0 ? 'Untung' : 'Rugi'}
+                            </span>
+                        </div>
+                        <div>
+                            <p className={`text-2xl font-mono font-black tracking-tight ${data.metrics.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(data.metrics.netProfit)}</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                                {data.metrics.netProfit >= 0
+                                    ? 'Bisnis menghasilkan keuntungan pada periode ini. Uang yang dihasilkan melebihi biaya yang dikeluarkan.'
+                                    : 'Bisnis mengalami kerugian pada periode ini. Biaya yang dikeluarkan melebihi pendapatan yang masuk.'}
+                            </p>
+                        </div>
+                        <div className={`pt-3 border-t ${data.metrics.netProfit >= 0 ? 'border-emerald-500/20' : 'border-rose-500/20'}`}>
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1.5">Cara Hitung</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-mono bg-white/50 dark:bg-slate-800/50 px-2 py-0.5 rounded text-indigo-600 font-bold">{formatCurrency(data.metrics.totalRevenue)}</span>
+                                <span className="text-xs text-text-secondary font-bold">−</span>
+                                <span className="text-[11px] font-mono bg-white/50 dark:bg-slate-800/50 px-2 py-0.5 rounded text-rose-500 font-bold">{formatCurrency(data.metrics.totalExpenses)}</span>
+                                <span className="text-xs text-text-secondary font-bold">=</span>
+                                <span className={`text-[11px] font-mono px-2 py-0.5 rounded font-black ${data.metrics.netProfit >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{formatCurrency(data.metrics.netProfit)}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 2: Business Wealth (Equity) */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-                                <Icon name="ShieldCheck" size={24} />
+                    {/* Nilai Stok */}
+                    <div className="p-5 rounded-2xl border border-border bg-blue-600/10 transition-all hover:shadow-md flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-blue-600/20 text-blue-600">
+                                <Icon name="Package" size={18} />
                             </div>
-                            <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Kekayaan Bisnis (Equity)</h3>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nilai Stok Barang</span>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-mono font-black text-blue-600 tracking-tight">{formatCurrency(data.metrics.stockValue)}</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">Modal bisnis yang saat ini <strong>tidak berbentuk uang tunai</strong>, melainkan tersimpan dalam bentuk bahan baku dan stok menu yang siap jual.</p>
+                        </div>
+                        <div className="pt-3 border-t border-blue-500/20">
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Artinya</p>
+                            <p className="text-xs text-text-secondary">Jika semua stok terjual / dipakai, nilainya akan berubah menjadi kas. Stok yang terlalu besar bisa menandakan pembelian berlebih.</p>
+                        </div>
+                    </div>
+
+                    {/* Kas Aktual */}
+                    <div className="p-5 rounded-2xl border border-border bg-teal-500/10 transition-all hover:shadow-md flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-teal-500/20 text-teal-500">
+                                <Icon name="Wallet" size={18} />
+                            </div>
+                            <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">Kas Aktual (Uang Nyata)</span>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-mono font-black text-teal-500 tracking-tight">{formatCurrency(data.metrics.physicalCash)}</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">Total uang yang <strong>benar-benar ada secara fisik</strong> saat ini, yaitu gabungan dari uang di tangan Owner dan uang di kas lapak.</p>
+                        </div>
+                        <div className="pt-3 border-t border-teal-500/20 space-y-2">
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Rincian Sumber Kas</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="User" size={11} /> Saldo Owner (Pemilik)</span>
+                                <span className="text-xs font-black text-teal-600 font-mono">{formatCurrency(data.metrics.ownerBalance)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="Store" size={11} /> Saldo Lapak (Kasir)</span>
+                                <span className="text-xs font-black text-teal-600 font-mono">{formatCurrency(data.metrics.lapakBalance)}</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-teal-500/20">
+                                <span className="text-xs font-black text-text-primary">Total</span>
+                                <span className="text-xs font-black text-teal-500 font-mono">{formatCurrency(data.metrics.physicalCash)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Hasil Audit — Full Width */}
+                    <div className={`lg:col-span-3 p-6 rounded-2xl border-2 transition-all shadow-sm ${data.metrics.cashDifference < 0 ? 'bg-red-500/10 border-red-500/30' : data.metrics.cashDifference > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${data.metrics.cashDifference < 0 ? 'bg-red-500/20 text-red-500' : data.metrics.cashDifference > 0 ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
+                                    <Icon name={data.metrics.cashDifference === 0 ? 'CheckCircle' : 'AlertTriangle'} size={22} />
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-black uppercase tracking-widest ${data.metrics.cashDifference < 0 ? 'text-red-500' : data.metrics.cashDifference > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>Hasil Audit Kas</p>
+                                    <p className="text-[10px] text-text-secondary font-bold uppercase tracking-widest">Perbandingan Uang Nyata vs Catatan Sistem</p>
+                                </div>
+                            </div>
+                            <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border ${data.metrics.cashDifference < 0 ? 'bg-red-500/10 text-red-500 border-red-500/30' : data.metrics.cashDifference > 0 ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'}`}>
+                                {data.metrics.cashDifference < 0 ? '⚠ Uang Kurang' : data.metrics.cashDifference > 0 ? '↑ Uang Lebih' : '✓ Pas / Akurat'}
+                            </span>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
-                                <span className="text-sm font-bold text-gray-500">Nilai Aset (Kas + Stok)</span>
-                                <span className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.currentEquity)}</span>
-                            </div>
-                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
-                                <span className="text-sm font-bold text-gray-500">Target Kekayaan (Sistem)</span>
-                                <span className="text-lg font-black text-purple-600">{formatCurrency(data.metrics.targetEquity)}</span>
-                            </div>
-                            <div className="h-[2px] bg-gray-100 mx-4"></div>
-                            <div className="flex justify-between items-center p-4 bg-indigo-50 rounded-2xl">
-                                <span className="text-sm font-black uppercase tracking-widest">Kesehatan Bisnis</span>
-                                <span className="text-xl font-black text-indigo-600">
-                                    {((data.metrics.currentEquity / data.metrics.targetEquity) * 100).toFixed(1)}%
-                                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-lg ${Math.abs(data.metrics.equityDifference) <= 1000
-                                        ? 'bg-emerald-100 text-emerald-600'
-                                        : data.metrics.equityDifference > 0
-                                            ? 'bg-blue-100 text-blue-600'
-                                            : 'bg-rose-100 text-rose-600'
-                                        }`}>
-                                        {Math.abs(data.metrics.equityDifference) <= 1000
-                                            ? 'Akurat'
-                                            : data.metrics.equityDifference > 0
-                                                ? 'Surplus'
-                                                : 'Selisih'}
-                                    </span>
-                                </span>
+                        {/* Nilai Selisih Besar */}
+                        <div className="mb-6">
+                            <p className={`text-4xl font-mono font-black tracking-tighter ${data.metrics.cashDifference < 0 ? 'text-red-500' : data.metrics.cashDifference > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                {data.metrics.cashDifference > 0 ? '+' : ''}{formatCurrency(data.metrics.cashDifference)}
+                            </p>
+                            <p className="text-sm text-text-secondary mt-1">
+                                {data.metrics.cashDifference < 0
+                                    ? `Uang yang ada di tangan kurang ${formatCurrency(Math.abs(data.metrics.cashDifference))} dari yang seharusnya ada berdasarkan catatan transaksi.`
+                                    : data.metrics.cashDifference > 0
+                                        ? `Uang yang ada di tangan lebih ${formatCurrency(data.metrics.cashDifference)} dari catatan sistem. Kemungkinan ada transaksi yang belum tercatat.`
+                                        : 'Uang yang ada di tangan sama persis dengan catatan sistem. Audit dinyatakan berhasil.'}
+                            </p>
+                        </div>
+
+                        {/* Alur Kalkulasi Step by Step */}
+                        <div className="mb-5">
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-3">📊 Alur Kalkulasi (Langkah demi Langkah)</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Kolom Kiri: Kas yang Seharusnya Ada */}
+                                <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary mb-3">💡 Kas yang Seharusnya Ada</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-text-secondary">Modal Awal (setoran)</span>
+                                        <span className="text-xs font-black font-mono text-purple-500">{formatCurrency(data.metrics.initialCapital)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-text-secondary">+ Pendapatan masuk</span>
+                                        <span className="text-xs font-black font-mono text-indigo-500">+{formatCurrency(data.metrics.totalRevenue)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-text-secondary">− Pengeluaran keluar</span>
+                                        <span className="text-xs font-black font-mono text-rose-500">-{formatCurrency(data.metrics.totalExpenses)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                                        <span className="text-xs font-black text-text-primary">= Seharusnya Ada</span>
+                                        <span className="text-xs font-black font-mono text-blue-600">{formatCurrency(data.metrics.expectedCash)}</span>
+                                    </div>
+                                </div>
+                                {/* Kolom Kanan: Kas Aktual */}
+                                <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary mb-3">💵 Kas yang Benar-Benar Ada</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-text-secondary">Saldo Owner (pemilik)</span>
+                                        <span className="text-xs font-black font-mono text-teal-500">{formatCurrency(data.metrics.ownerBalance)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-text-secondary">+ Saldo Lapak (kasir)</span>
+                                        <span className="text-xs font-black font-mono text-teal-500">+{formatCurrency(data.metrics.lapakBalance)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                                        <span className="text-xs font-black text-text-primary">= Kas Aktual</span>
+                                        <span className="text-xs font-black font-mono text-teal-600">{formatCurrency(data.metrics.physicalCash)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mt-8 pt-6 border-t border-gray-100">
-                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Metode Perhitungan</h4>
-                            <p className="text-[11px] text-gray-500 font-medium italic">
-                                Kekayaan real saat ini adalah total uang fisik di semua akun ditambah dengan nilai stok barang yang ada di gudang. Dibandingkan dengan modal awal ditambah keuntungan/kerugian bersih.
+                        {/* Kesimpulan */}
+                        <div className={`flex items-start gap-3 p-4 rounded-xl ${data.metrics.cashDifference < 0 ? 'bg-red-500/10' : data.metrics.cashDifference > 0 ? 'bg-amber-500/10' : 'bg-emerald-500/10'}`}>
+                            <Icon name={data.metrics.cashDifference === 0 ? 'CheckCircle' : 'Info'} size={16} className={data.metrics.cashDifference < 0 ? 'text-red-500 mt-0.5 shrink-0' : data.metrics.cashDifference > 0 ? 'text-amber-500 mt-0.5 shrink-0' : 'text-emerald-500 mt-0.5 shrink-0'} />
+                            <p className="text-xs text-text-secondary leading-relaxed">
+                                <strong>Formula Audit:</strong> Kas Aktual ({formatCurrency(data.metrics.physicalCash)}) − Seharusnya ({formatCurrency(data.metrics.expectedCash)}) = <strong className={data.metrics.cashDifference < 0 ? 'text-red-500' : data.metrics.cashDifference > 0 ? 'text-amber-500' : 'text-emerald-500'}>{formatCurrency(data.metrics.cashDifference)}</strong>.
+                                {data.metrics.cashDifference < 0 && ' Kemungkinan ada pengeluaran yang belum dicatat, uang dipakai tanpa izin, atau modal awal yang tidak sesuai.'}
+                                {data.metrics.cashDifference > 0 && ' Kemungkinan ada pemasukan yang belum dicatat di sistem.'}
+                                {data.metrics.cashDifference === 0 && ' Semua catatan transaksi sudah sinkron dengan uang fisik yang ada.'}
                             </p>
                         </div>
                     </div>
