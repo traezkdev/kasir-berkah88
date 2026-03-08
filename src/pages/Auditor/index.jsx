@@ -26,7 +26,7 @@ export default function AuditorPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
     const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [isSavingDefault, setIsSavingDefault] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
@@ -43,9 +43,12 @@ export default function AuditorPage() {
     }, []);
 
     const fetchData = async (currentStart, currentEnd) => {
+        // Today's date as default fallback for end
+        const today = new Date().toISOString().split('T')[0];
+
         // Safeguard against objects (like React events) being passed as arguments
         const start = typeof currentStart === 'string' ? currentStart : startDate;
-        const end = typeof currentEnd === 'string' ? currentEnd : endDate;
+        const end = typeof currentEnd === 'string' ? currentEnd : (endDate || today);
 
         setLoading(true);
         try {
@@ -88,13 +91,19 @@ export default function AuditorPage() {
                 precisionRes.json()
             ]);
 
-            // Auto-initialize startDate from settings on first load
+            // Auto-initialize dates from settings on first load
             if (!isInitialized) {
                 setIsInitialized(true);
-                const defaultStartDate = settings.data?.audit_start_date;
+
+                // Priority 1: Specifically saved audit start date
+                // Priority 2: Master initial capital date
+                const auditStart = settings.data?.audit_start_date;
+                const capitalStart = settings.data?.initial_capital_date ? settings.data.initial_capital_date.split(' ')[0] : null;
+                const defaultStartDate = auditStart || capitalStart;
+
                 if (defaultStartDate && !startDate && !currentStart) {
                     setStartDate(defaultStartDate);
-                    // Re-fetch immediately with the default date
+                    // Re-fetch immediately with the default dates (start from settings, end is today)
                     return fetchData(defaultStartDate, end);
                 }
             }
@@ -444,11 +453,11 @@ export default function AuditorPage() {
                                     </p>
                                 </div>
                                 <div className="pt-3 border-t border-purple-500/20">
-                                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Status Pertumbuhan Kas</p>
-                                    <p className={`text-xs font-bold ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Status Pergerakan Saldo</p>
+                                    <p className={`text-xs font-bold ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-amber-500'}`}>
                                         {capitalGrowth >= 0
-                                            ? `Kas aktual saat ini lebih besar ${formatCurrency(capitalGrowth)} dari modal awal. Uang berkembang!`
-                                            : `Kas aktual saat ini kurang ${formatCurrency(Math.abs(capitalGrowth))} dari modal awal. Perlu investigasi.`
+                                            ? `Kas aktual saat ini lebih besar ${formatCurrency(capitalGrowth)} dari saldo awal.`
+                                            : `Saldo menyusut ${formatCurrency(Math.abs(capitalGrowth))} (Wajar jika operasional tinggi).`
                                         }
                                     </p>
                                 </div>
@@ -561,13 +570,13 @@ export default function AuditorPage() {
                             </p>
                         </div>
                         <div className="pt-3 border-t border-teal-500/20 space-y-2">
-                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Rincian Sumber Kas</p>
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Rincian Saldo Sekarang</p>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="User" size={11} /> Saldo Owner (Pemilik)</span>
+                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="CreditCard" size={11} /> Saldo Transfer (Bank)</span>
                                 <span className="text-xs font-black text-teal-600 font-mono">{formatCurrency(data.metrics.ownerBalance)}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="Store" size={11} /> Saldo Lapak (Kasir)</span>
+                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="Wallet" size={11} /> Saldo Tunai (Lapak)</span>
                                 <span className="text-xs font-black text-teal-600 font-mono">{formatCurrency(data.metrics.lapakBalance)}</span>
                             </div>
                             <div className="flex items-center justify-between pt-1 border-t border-teal-500/20">
@@ -637,11 +646,11 @@ export default function AuditorPage() {
                                 <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary mb-3">💵 Kas yang Benar-Benar Ada</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-text-secondary">Saldo Owner (pemilik)</span>
+                                        <span className="text-xs text-text-secondary">Saldo Transfer (Bank)</span>
                                         <span className="text-xs font-black font-mono text-teal-500">{formatCurrency(data.metrics.ownerBalance)}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-text-secondary">+ Saldo Lapak (kasir)</span>
+                                        <span className="text-xs text-text-secondary">+ Saldo Tunai (Lapak)</span>
                                         <span className="text-xs font-black font-mono text-teal-500">+{formatCurrency(data.metrics.lapakBalance)}</span>
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -657,7 +666,7 @@ export default function AuditorPage() {
                             <Icon name={data.metrics.cashDifference === 0 ? 'CheckCircle' : 'Info'} size={16} className={data.metrics.cashDifference < 0 ? 'text-red-500 mt-0.5 shrink-0' : data.metrics.cashDifference > 0 ? 'text-amber-500 mt-0.5 shrink-0' : 'text-emerald-500 mt-0.5 shrink-0'} />
                             <p className="text-xs text-text-secondary leading-relaxed">
                                 <strong>Formula Audit:</strong> Kas Aktual ({formatCurrency(data.metrics.physicalCash)}) − Seharusnya ({formatCurrency(data.metrics.expectedCash)}) = <strong className={data.metrics.cashDifference < 0 ? 'text-red-500' : data.metrics.cashDifference > 0 ? 'text-amber-500' : 'text-emerald-500'}>{formatCurrency(data.metrics.cashDifference)}</strong>.
-                                {data.metrics.cashDifference < 0 && ' Kemungkinan ada pengeluaran yang belum dicatat, uang dipakai tanpa izin, atau modal awal yang tidak sesuai.'}
+                                {data.metrics.cashDifference < 0 && ' (Peringatan: Selisih ini mengacu pada uang yang hilang dari catatan, bukan karena penyusutan modal oleh biaya operasional).'}
                                 {data.metrics.cashDifference > 0 && ' Kemungkinan ada pemasukan yang belum dicatat di sistem.'}
                                 {data.metrics.cashDifference === 0 && ' Semua catatan transaksi sudah sinkron dengan uang fisik yang ada.'}
                             </p>
