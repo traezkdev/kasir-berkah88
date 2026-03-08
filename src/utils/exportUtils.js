@@ -629,39 +629,42 @@ export const prepareSoldStockDataForExport = (soldItems) => {
 
 export const prepareCombinedDataForExport = (reportData, units = []) => {
 
-  const { sales = {}, expenses = {}, stock = {}, rawMetrics, balances = {}, allTime = {} } = reportData;
+  const { sales = {}, expenses = {}, stock = {}, rawMetrics, balances = {}, allTime = {}, precision = {} } = reportData;
   const sections = [];
 
   // --- audit & financial summary section based on period ---
-  const initialCap = parseFloat(sales.initialCapital || 0);
-  const totalRevPeriod = parseFloat(sales.totalRevenue || 0);
-  const totalExpPeriod = parseFloat(expenses.summary?.totalExpenses || 0);
+  // Use precision metrics from backend if available for accuracy
+  const initialCap = precision.openingBalance !== undefined ? precision.openingBalance : parseFloat(sales.initialCapital || 0);
+  const totalRevPeriod = precision.periodRevenue !== undefined ? precision.periodRevenue : parseFloat(sales.totalRevenue || 0);
+  const totalExpPeriod = precision.periodExpenses !== undefined ? precision.periodExpenses : parseFloat(expenses.summary?.totalExpenses || 0);
   const netProfitPeriod = totalRevPeriod - totalExpPeriod;
 
   const ownerBal = parseFloat(balances.ownerBalance || 0);
   const lapakBal = parseFloat(balances.lapakBalance || 0);
-  const currentCash = ownerBal + lapakBal;
+  const currentCash = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (ownerBal + lapakBal);
 
-  const expectedCash = initialCap + totalRevPeriod - totalExpPeriod;
+  const expectedCash = precision.expectedClosingBalance !== undefined ? precision.expectedClosingBalance : (initialCap + totalRevPeriod - totalExpPeriod);
   const auditDiff = currentCash - expectedCash;
   const stockVal = rawMetrics?.totalStockValue || 0;
-  const workingModal = initialCap + totalRevPeriod + stockVal - totalExpPeriod;
-  const equity = initialCap + netProfitPeriod;
+
+  // Wealth = Modal Awal + Profit + Stock (What the business actually has)
+  const workingModal = currentCash + stockVal;
+  // Equity = Modal Awal + Laba Bersih (The target value)
+  const equity = expectedCash + stockVal;
 
   sections.push({
     title: 'Ringkasan Audit & Keuangan (Periode Terpilih)',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Modal Awal (Setoran)', formatCurrency(initialCap)],
-      ['Total Pendapatan (Periode Ini)', formatCurrency(totalRevPeriod)],
-      ['Total Pengeluaran (Periode Ini)', formatCurrency(totalExpPeriod)],
-      ['Laba Bersih Periode', formatCurrency(netProfitPeriod)],
-      ['Saldo Kas Saat Ini (Actual)', formatCurrency(currentCash)],
-      ['Saldo Kas Seharusnya (System)', formatCurrency(expectedCash)],
-      ['Selisih Audit (Audit Variance)', `${formatCurrency(auditDiff)} ${auditDiff < 0 ? '(Kurang)' : auditDiff > 0 ? '(Lebih)' : '(Pas)'}`],
-      ['Total Nilai Stok Inventori', formatCurrency(stockVal)],
-      ['Modal Berjalan (Wealth)', formatCurrency(workingModal)],
-      ['Kekayaan Bisnis (Equity)', formatCurrency(equity)],
+      ['Modal Awal', formatCurrency(initialCap)],
+      ['Total Pendapatan', formatCurrency(totalRevPeriod)],
+      ['Total Pengeluaran', formatCurrency(totalExpPeriod)],
+      ['Laba Bersih', formatCurrency(netProfitPeriod)],
+      ['Nilai Stok Barang', formatCurrency(stockVal)],
+      ['Kas Aktual', formatCurrency(currentCash)],
+      ['Hasil Audit Kas', `${formatCurrency(auditDiff)} ${auditDiff < 0 ? '(Kurang)' : auditDiff > 0 ? '(Lebih)' : '(Pas ✓)'}`],
+      ['Kekayaan Bisnis (Equity)', formatCurrency(expectedCash)],
+      ['Modal Berjalan (Wealth)', formatCurrency(expectedCash + stockVal)],
     ],
   });
 

@@ -355,6 +355,31 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
         processReportData();
     }, [transactions, menuItems, expenses, settings, selectedDateRange, isLoading]);
 
+    // NEW: Fetch high-precision audit data when date range changes
+    useEffect(() => {
+        const fetchPrecisionData = async () => {
+            if (isLoading) return;
+            try {
+                // Ensure we use the correct date format for API
+                const startStr = formatInTimeZone(selectedDateRange.startDate, 'Asia/Jakarta', 'yyyy-MM-dd');
+                const endStr = formatInTimeZone(selectedDateRange.endDate, 'Asia/Jakarta', 'yyyy-MM-dd');
+
+                const res = await authFetch(`${apiUrl}/api/audit/calculate-accuracy?startDate=${startStr}&endDate=${endStr}`);
+                const precision = await res.json();
+
+                if (precision.message === 'success') {
+                    setReportData(prev => ({
+                        ...prev,
+                        precision: precision.data
+                    }));
+                }
+            } catch (err) {
+                console.error("Error fetching precision audit data:", err);
+            }
+        };
+        fetchPrecisionData();
+    }, [selectedDateRange, isLoading]);
+
     const handleDateRangeChange = (dateRange) => {
         setSelectedDateRange(dateRange);
     };

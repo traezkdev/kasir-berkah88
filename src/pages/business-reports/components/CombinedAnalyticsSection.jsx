@@ -7,18 +7,21 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'curre
 const CombinedAnalyticsSection = ({ reportData, onExportCombined }) => {
   if (!reportData || !reportData.sales || !reportData.expenses || !reportData.stock) return null;
 
-  const { sales, expenses, rawMetrics, balances } = reportData;
-  const { totalRevenue, initialCapital } = sales;
-  const totalExpenses = expenses.summary.totalExpenses;
+  const { sales, expenses, rawMetrics, balances, precision = {} } = reportData;
+
+  // High Precision Metrics from Audit Backend
+  const initialCapital = precision.openingBalance !== undefined ? precision.openingBalance : (sales?.initialCapital || 0);
+  const totalRevenue = precision.periodRevenue !== undefined ? precision.periodRevenue : (sales?.totalRevenue || 0);
+  const totalExpenses = precision.periodExpenses !== undefined ? precision.periodExpenses : (expenses?.summary?.totalExpenses || 0);
   const netProfit = totalRevenue - totalExpenses;
 
   // Kas aktual (Saldo Owner + Saldo Lapak)
   const ownerBalance = balances?.ownerBalance || 0;
   const lapakBalance = balances?.lapakBalance || 0;
-  const currentEndingCapital = ownerBalance + lapakBalance;
+  const currentEndingCapital = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (ownerBalance + lapakBalance);
 
   // Kas yang seharusnya ada (Modal Awal + Pendapatan Periode - Pengeluaran Periode)
-  const expectedEndingCapital = (initialCapital || 0) + totalRevenue - totalExpenses;
+  const expectedEndingCapital = precision.expectedClosingBalance !== undefined ? precision.expectedClosingBalance : (initialCapital + totalRevenue - totalExpenses);
   const auditDifference = currentEndingCapital - expectedEndingCapital;
 
   // Nilai stok barang
@@ -37,7 +40,7 @@ const CombinedAnalyticsSection = ({ reportData, onExportCombined }) => {
     ? ((capitalGrowth / initialCapital) * 100).toFixed(1)
     : 0;
 
-  // 7 kartu inti yang paling penting
+  // 9 kartu inti yang paling penting
   const auditCards = [
     {
       title: 'Modal Awal',
@@ -95,6 +98,24 @@ const CombinedAnalyticsSection = ({ reportData, onExportCombined }) => {
       icon: 'Wallet',
       color: 'text-teal-500',
       bgColor: 'bg-teal-500/10'
+    },
+    {
+      title: 'Kekayaan Bisnis (Equity)',
+      value: formatCurrency(expectedEndingCapital),
+      desc: 'Target nilai bisnis (Modal + Laba)',
+      formula: `Modal Awal ${formatCurrency(initialCapital)} + Laba ${formatCurrency(netProfit)}`,
+      icon: 'ShieldCheck',
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10'
+    },
+    {
+      title: 'Modal Berjalan (Wealth)',
+      value: formatCurrency(expectedEndingCapital + stockValue),
+      desc: 'Total potensi nilai (Equity + Stok)',
+      formula: `Equity ${formatCurrency(expectedEndingCapital)} + Stok ${formatCurrency(stockValue)}`,
+      icon: 'Briefcase',
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-600/10'
     },
     {
       title: 'Hasil Audit Kas',
