@@ -55,7 +55,8 @@ const DailyReport = ({ navigation }) => {
         const isSameDate = (dateString, targetDate) => {
             try {
                 if (!dateString) return false;
-                const date = new Date(dateString);
+                const normalizedDateStr = dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString;
+                const date = new Date(normalizedDateStr);
                 if (isNaN(date.getTime())) return false;
 
                 const year = date.getFullYear();

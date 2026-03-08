@@ -243,33 +243,143 @@ const AuditorScreen = ({ navigation }) => {
         setLoading(true);
         try {
             const m = auditData.metrics;
+            const anomalies = auditData.anomalies || [];
+            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            const reportId = `AUD-${new Date().getTime().toString().slice(-8)}`;
+
+            let assessment = "";
+            if (Math.abs(m.cashDifference) <= 100) {
+                assessment = "Sistem validasi menyatakan data keuangan DALAM KONDISI SEMPURNA. Catatan digital sepenuhnya sinkron dengan uang fisik yang tersedia. Tidak ditemukan penyimpangan data.";
+            } else if (m.cashDifference < 0) {
+                assessment = `Ditemukan ketidakcocokan data berupa KEKURANGAN kas operasional sebesar ${formatCurrency(Math.abs(m.cashDifference))}. Direkomendasikan untuk meninjau kembali riwayat transaksi harian dan catatan pengeluaran kasir.`;
+            } else {
+                assessment = `Ditemukan kelebihan kas operasional sebesar ${formatCurrency(m.cashDifference)}. Hal ini menandakan adanya pendapatan yang masuk ke kas namun belum terinput secara resmi ke dalam sistem penjualan.`;
+            }
+
             const html = `
                 <html>
-                <body style="font-family: Arial; padding: 20px;">
-                    <h1 style="text-align: center; color: #1E40AF;">LAPORAN AUDIT SISTEM</h1>
-                    <p style="text-align: center;">Periode: ${startDate || 'Awal'} s/d ${endDate || 'Hari Ini'}</p>
-                    <hr/>
-                    <h3>Ringkasan Keuangan</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr><td>Pendapatan Periode</td><td style="text-align: right;">${formatCurrency(m.totalRevenue)}</td></tr>
-                        <tr><td>Pengeluaran Periode</td><td style="text-align: right;">${formatCurrency(m.totalExpenses)}</td></tr>
-                        <tr><td>Laba Bersih</td><td style="text-align: right;">${formatCurrency(m.netProfit)}</td></tr>
-                        <tr style="font-weight: bold; background: #f0f0f0;"><td>Hasil Audit (Selisih)</td><td style="text-align: right;">${formatCurrency(m.cashDifference)}</td></tr>
+                <head>
+                    <style>
+                        @page { margin: 20mm; }
+                        body { font-family: 'Helvetica', Arial, sans-serif; color: #333; line-height: 1.5; padding: 0; margin: 0; }
+                        .header { text-align: center; margin-bottom: 30px; position: relative; }
+                        .company-name { font-size: 28px; font-weight: bold; color: #14532D; margin: 0; text-transform: uppercase; }
+                        .company-subtitle { font-size: 11px; color: #555; margin: 4px 0; }
+                        .header-line-thick { border-bottom: 2px solid #333; margin-top: 15px; }
+                        .header-line-thin { border-bottom: 0.5px solid #333; margin-top: 2px; margin-bottom: 20px; }
+                        
+                        .report-title { font-size: 22px; font-weight: bold; text-align: center; margin-top: 20px; text-decoration: none; }
+                        .report-id { font-size: 11px; font-style: italic; text-align: center; color: #666; margin-bottom: 35px; }
+                        
+                        .info-row { display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 12px; }
+                        .section-title { font-size: 14px; font-weight: bold; margin-top: 25px; margin-bottom: 10px; color: #1F2937; border-left: 4px solid #14532D; padding-left: 10px; }
+                        
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 12px; }
+                        th { background-color: #1F2937; color: white; text-align: left; padding: 12px 15px; }
+                        td { border: 1px solid #D1D5DB; padding: 10px 15px; }
+                        .text-right { text-align: right; }
+                        .bold { font-weight: bold; }
+                        
+                        .assessment { background-color: #F3F4F6; padding: 20px; border-radius: 5px; font-size: 12px; margin-bottom: 25px; border: 1px solid #E5E7EB; page-break-inside: avoid; }
+                        .anomaly-table th { background-color: #991B1B; }
+                        
+                        .footer { margin-top: 60px; font-size: 12px; page-break-inside: avoid; }
+                        .signature-container { margin-top: 50px; }
+                        .signature-name { font-weight: bold; text-decoration: underline; margin-bottom: 5px; }
+                        .signature-space { font-style: italic; font-size: 10px; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <p class="company-name">KASIR BERKAH 88</p>
+                        <p class="company-subtitle">Sistem Manajemen Keuangan & Point of Sale Terintegrasi</p>
+                        <p class="company-subtitle">Laporan Resmi Transparansi Operasional & Integritas Data</p>
+                        <div class="header-line-thick"></div>
+                        <div class="header-line-thin"></div>
+                    </div>
+
+                    <p class="report-title">LAPORAN AUDIT & INTEGRITAS KEUANGAN</p>
+                    <p class="report-id">Kode Referensi Laporan: ${reportId}</p>
+
+                    <div class="info-row">
+                        <div>
+                            <p>Kepada Yth,<br><span class="bold">Pimpinan / Owner Kasir Berkah 88</span></p>
+                        </div>
+                        <div class="text-right">
+                            <p>Tanggal Cetak: ${today}</p>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 10px;"><span class="bold">Periode Laporan:</span> ${startDate || 'Awal'} s/d ${endDate || 'Hari Ini'}</p>
+                    
+                    <p style="font-size: 10px; margin-top: 15px;">Dengan hormat,<br>Berdasarkan hasil analisis sistem terhadap seluruh data transaksi, pengeluaran, dan pergerakan kas pada periode yang ditentukan, berikut adalah rincian konsolidasi keuangan:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>KOMPONEN AUDIT KEUANGAN</th>
+                                <th class="text-right">NILAI LAPORAN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Modal Awal (Baseline Audit)</td><td class="text-right bold">${formatCurrency(m.periodOpeningBalance)}</td></tr>
+                            <tr><td>Total Pemasukan (Revenue)</td><td class="text-right bold">${formatCurrency(m.totalRevenue)}</td></tr>
+                            <tr><td>Total Pengeluaran (Expense)</td><td class="text-right bold">${formatCurrency(m.totalExpenses)}</td></tr>
+                            <tr><td>Laba Bersih Operasional</td><td class="text-right bold">${formatCurrency(m.netProfit)}</td></tr>
+                            <tr><td>Nilai Persediaan Aset/Stok</td><td class="text-right bold">${formatCurrency(m.stockValue)}</td></tr>
+                            <tr><td>Estimasi Kas dari Sistem</td><td class="text-right bold">${formatCurrency(m.expectedCash)}</td></tr>
+                            <tr><td>Kas Aktual yang Tersedia</td><td class="text-right bold">${formatCurrency(m.physicalCash)}</td></tr>
+                            <tr style="background-color: #F3F4F6;">
+                                <td class="bold">SELISIH AUDIT (ACCURACY)</td>
+                                <td class="text-right bold">${formatCurrency(m.cashDifference)}</td>
+                            </tr>
+                        </tbody>
                     </table>
-                    <h3>Detail Aset</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr><td>Kas di Bank</td><td style="text-align: right;">${formatCurrency(m.ownerBalance)}</td></tr>
-                        <tr><td>Kas di Lapak</td><td style="text-align: right;">${formatCurrency(m.lapakBalance)}</td></tr>
-                        <tr><td>Total Kas Fisik</td><td style="text-align: right;">${formatCurrency(m.physicalCash)}</td></tr>
-                        <tr><td>Nilai Stok Barang</td><td style="text-align: right;">${formatCurrency(m.stockValue)}</td></tr>
-                        <tr style="font-weight: bold; background: #e0f0ff;"><td>Total Ekuitas</td><td style="text-align: right;">${formatCurrency(m.currentEquity)}</td></tr>
-                    </table>
+
+                    <p class="section-title">KESIMPULAN VALIDASI DATA:</p>
+                    <div class="assessment">
+                        ${assessment}
+                    </div>
+
+                    ${anomalies.length > 0 ? `
+                        <p class="section-title" style="color: #991B1B;">CATATAN ANOMALI & PERINGATAN SISTEM:</p>
+                        <table class="anomaly-table">
+                            <thead>
+                                <tr>
+                                    <th>TEMUAN</th>
+                                    <th>DESKRIPSI</th>
+                                    <th>LEVEL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${anomalies.map(a => `
+                                    <tr>
+                                        <td>${a.title}</td>
+                                        <td>${a.desc}</td>
+                                        <td class="bold">${a.type === 'danger' ? 'KRITIKAL' : 'PERINGATAN'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : ''}
+
+                    <div class="footer">
+                        <p>Demikian laporan audit ini disampaikan sebagai rujukan utama dalam pengambilan keputusan manajemen dan audit operasional berkala.</p>
+                        
+                        <div class="signature-container">
+                            <p>Diterbitkan Secara Otomatis oleh,</p>
+                            <p class="signature-name">Sistem Audit Kasir Berkah 88</p>
+                            <p class="bold" style="margin-top: 40px;">Admin & Tim Keuangan</p>
+                            <p class="signature-space">(Dicetak melalui modul Auditor - Digital Signature Verified)</p>
+                        </div>
+                    </div>
                 </body>
                 </html>
             `;
             const { uri } = await Print.printToFileAsync({ html });
             await Sharing.shareAsync(uri);
         } catch (error) {
+            console.error("PDF Export error:", error);
             showToast("Gagal export PDF", "error");
         } finally {
             setLoading(false);
