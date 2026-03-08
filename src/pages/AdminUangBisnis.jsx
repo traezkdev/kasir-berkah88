@@ -32,6 +32,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // State untuk konfirmasi hapus
     const [transactionToDelete, setTransactionToDelete] = useState(null); // State untuk transaksi yang dihapus
     const [userRole, setUserRole] = useState(null); // State for user role
+    const [activeMode, setActiveMode] = useState('transfer'); // 'transfer' atau 'tunai'
 
     // State untuk Pagination Transaksi Owner
     const [currentPage, setCurrentPage] = useState(1);
@@ -226,10 +227,19 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
     // --- End Edit and Delete Transaction Handlers ---
 
     // Logika Pagination
+    const activeTransactions = activeMode === 'transfer'
+        ? ownerAccount?.transactions
+        : lapakAccount?.transactions;
+
     const indexOfLastTransaction = currentPage * transactionsPerPage;
     const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
-    const currentTransactions = ownerAccount?.transactions?.slice(indexOfFirstTransaction, indexOfLastTransaction) || [];
-    const totalPages = Math.ceil((ownerAccount?.transactions?.length || 0) / transactionsPerPage);
+    const currentTransactions = activeTransactions?.slice(indexOfFirstTransaction, indexOfLastTransaction) || [];
+    const totalPages = Math.ceil((activeTransactions?.length || 0) / transactionsPerPage);
+
+    const handleModeChange = (mode) => {
+        setActiveMode(mode);
+        setCurrentPage(1); // Reset ke halaman pertama saat ganti mode
+    };
 
     const nextPage = () => {
         if (currentPage < totalPages) {
@@ -290,20 +300,27 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 -mt-12 lg:mt-0 relative z-20">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 -mt-12 lg:mt-0 relative z-20">
                         <MetricsCard
-                            title="Saldo Owner"
+                            title="Uang Transfer"
                             value={formatCurrency(ownerAccount?.account?.balance || 0)}
-                            icon="Wallet"
+                            icon="CreditCard"
                             color="success"
-                            description="Total dana tersedia untuk owner"
+                            description="Saldo rekening transfer owner"
                         />
                         <MetricsCard
-                            title="Saldo Lapak"
+                            title="Uang Tunai"
                             value={formatCurrency(lapakAccount?.account?.balance || 0)}
-                            icon="Wallet"
+                            icon="Banknote"
                             color="info"
-                            description="Total dana tersedia untuk operasional lapak"
+                            description="Kas tunai operasional lapak"
+                        />
+                        <MetricsCard
+                            title="Total Uang Bisnis"
+                            value={formatCurrency((Number(ownerAccount?.account?.balance) || 0) + (Number(lapakAccount?.account?.balance) || 0))}
+                            icon="TrendingUp"
+                            color="warning"
+                            description="Total keseluruhan uang bisnis"
                         />
                     </div>
 
@@ -320,15 +337,42 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
 
                     {/* Transaction List */}
                     <div className="mt-8">
-                        <div className="flex items-center justify-between mb-6 px-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 px-1 gap-4">
                             <div>
-                                <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight">Riwayat Transaksi Owner</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Catatan dana keluar masuk owner</p>
+                                <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight">
+                                    {activeMode === 'transfer' ? 'Riwayat Uang Transfer' : 'Riwayat Uang Tunai'}
+                                </h2>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                    {activeMode === 'transfer' ? 'Catatan dana keluar masuk owner' : 'Catatan kas tunai operasional lapak'}
+                                </p>
+                            </div>
+                            {/* Toggle Mode */}
+                            <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-slate-800 rounded-2xl self-start sm:self-auto">
+                                <button
+                                    onClick={() => handleModeChange('transfer')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-200 ${activeMode === 'transfer'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-md'
+                                            : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                        }`}
+                                >
+                                    <Icon name="CreditCard" size={14} />
+                                    Uang Transfer
+                                </button>
+                                <button
+                                    onClick={() => handleModeChange('tunai')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-200 ${activeMode === 'tunai'
+                                            ? 'bg-white dark:bg-slate-700 text-green-600 shadow-md'
+                                            : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                        }`}
+                                >
+                                    <Icon name="Banknote" size={14} />
+                                    Uang Tunai
+                                </button>
                             </div>
                         </div>
 
                         <div className="relative min-h-[400px]">
-                            {ownerAccount?.transactions?.length > 0 ? (
+                            {activeTransactions?.length > 0 ? (
                                 <>
                                     <ul className="space-y-4">
                                         {currentTransactions.map((transaction) => (

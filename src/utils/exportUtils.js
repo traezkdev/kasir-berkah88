@@ -656,7 +656,8 @@ export const prepareCombinedDataForExport = (reportData, units = []) => {
     title: 'Ringkasan Audit & Keuangan (Periode Terpilih)',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Modal Awal', formatCurrency(initialCap)],
+      ['Modal Awal Bisnis (Master)', formatCurrency(parseFloat(sales.initialCapital || 0))],
+      ['Modal Awal Periode (Baseline)', formatCurrency(initialCap)],
       ['Total Pendapatan', formatCurrency(totalRevPeriod)],
       ['Total Pengeluaran', formatCurrency(totalExpPeriod)],
       ['Laba Bersih', formatCurrency(netProfitPeriod)],
@@ -871,7 +872,8 @@ export const prepareAuditDataForExport = (auditData) => {
     headers: ['Keterangan', 'Nilai'],
     rows: [
       ['Status Integritas', Math.abs(metrics.cashDifference) <= 100 ? 'Sangat Akurat (PAS)' : `Selisih Rp ${new Intl.NumberFormat('id-ID').format(Math.abs(metrics.cashDifference))}`],
-      ['Modal Awal Periode', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.initialCapital)],
+      ['Modal Awal Bisnis (Master)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.masterInitialCapital)],
+      ['Modal Awal Periode (Baseline)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.periodOpeningBalance)],
       ['Total Pendapatan', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.totalRevenue)],
       ['Total Pengeluaran', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.totalExpenses)],
       ['Laba Bersih', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.netProfit)],
@@ -1002,7 +1004,7 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
     startY: currentY,
     head: [['KOMPONEN AUDIT KEUANGAN', 'NILAI LAPORAN']],
     body: [
-      ['Modal Awal (Baseline Audit)', currencyFormat.format(metrics.initialCapital)],
+      ['Modal Awal (Baseline Audit)', currencyFormat.format(metrics.periodOpeningBalance)],
       ['Total Pemasukan (Revenue)', currencyFormat.format(metrics.totalRevenue)],
       ['Total Pengeluaran (Expense)', currencyFormat.format(metrics.totalExpenses)],
       ['Laba Bersih Operasional', currencyFormat.format(metrics.netProfit)],

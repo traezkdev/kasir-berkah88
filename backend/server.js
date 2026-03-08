@@ -1206,6 +1206,7 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             FROM transactions 
             WHERE timestamp BETWEEN ? AND ? 
             AND (payment_method != 'employee_meal' OR payment_method IS NULL)
+            AND closing_session_id IS NULL
         `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
         const revenue = parseFloat(revenueRows[0].revenue || 0);
 
@@ -1214,6 +1215,7 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             SELECT SUM(amount) as total 
             FROM expenses 
             WHERE date BETWEEN ? AND ?
+            AND closing_session_id IS NULL
         `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
         const expenses = parseFloat(expenseRows[0].total || 0);
 
@@ -1223,6 +1225,7 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             FROM expenses 
             WHERE date BETWEEN ? AND ? 
             AND (category = 'Bahan Baku' OR category = 'Belanja Pasar' OR category = 'Stok')
+            AND closing_session_id IS NULL
         `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
         const cogs = parseFloat(cogsRows[0].total || 0);
 
@@ -2124,15 +2127,7 @@ app.put("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owne
         }
 
         // Check if is_active is provided, otherwise keep it as is (need to fetch first? No, default to what user sent or if undefined dont update it?
-        // Better: if undefined, assume we keep it. But usually frontend sends full object.
-        // Let's assume if it is active it is sent. But wait, standard PUT replaces.
-        // Let's check if undefined.
-        // Simplified: The frontend for edit usually sends everything.
-        // But to be safe from "undefined" converting to 0 or 1 incorrectly:
-        // Let's use logic: if undefined, do we update?
-        // SQL needs value.
-        // Let's just default to keeping it active if not specified, OR fetch current.
-        // For efficiency, let's required frontend to send it. Or default 1.
+        // Better: if undefined, let's required frontend to send it. Or default 1.
         const activeVal = (is_active === 'false' || is_active === false || is_active === '0' || is_active === 0) ? 0 : 1;
 
         const sql = 'UPDATE information SET title = ?, content = ?, image_url = ?, link_type = ?, link_value = ?, is_active = ? WHERE id = ?';
@@ -2979,7 +2974,11 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const { startDate, endDate, paymentMethod } = req.query; // Extract startDate and endDate and paymentMethod
 
-        let whereClauses = ['t.deleted_at IS NULL']; // Sengaja tidak filter closing_session_id agar data arsip ikut tampil di chart
+        const filterClosed = req.query.filterClosed === 'true';
+        let whereClauses = ['t.deleted_at IS NULL'];
+        if (filterClosed) {
+            whereClauses.push('t.closing_session_id IS NULL');
+        }
         let queryParams = [];
 
         if (startDate) {
@@ -3021,6 +3020,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
                 t.order_id,
                 t.user_id,
                 t.manual_discount,
+                t.closing_session_id,
                 u.username AS cashier_name
             FROM transactions t
             LEFT JOIN users u ON t.user_id = u.id
@@ -3960,7 +3960,12 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
 
-        let whereClauses = []; // Sengaja tidak filter closing_session_id agar data arsip ikut tampil di chart
+        // Default filterClosed to true if not provided
+        const filterClosed = req.query.filterClosed === undefined ? true : req.query.filterClosed === 'true';
+        let whereClauses = [];
+        if (filterClosed) {
+            whereClauses.push('e.closing_session_id IS NULL');
+        }
         let queryParams = [];
 
         if (startDate) {
@@ -6651,6 +6656,7 @@ app.get("/api/cash-reconciliation/summary", authenticateToken, async (req, res) 
             FROM transactions
             WHERE timestamp >= ? AND timestamp <= ?
             AND (isEmployeeMeal = 0 OR isEmployeeMeal IS NULL)
+            AND closing_session_id IS NULL
         `;
 
         const [rows] = await db.query(sql, [startDate, endDate]);
@@ -6705,6 +6711,7 @@ app.post("/api/cash-reconciliation/save", authenticateToken, async (req, res) =>
             FROM transactions
             WHERE timestamp >= ? AND timestamp <= ?
             AND (isEmployeeMeal = 0 OR isEmployeeMeal IS NULL)
+            AND closing_session_id IS NULL
         `;
 
         const [summaryRows] = await db.query(summarySql, [startDate, endDate]);
@@ -7118,7 +7125,7 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
 
         // Hitung total penjualan hari ini dari tabel transactions
         const [salesRows] = await db.query(
-            "SELECT SUM(total) as total_sales, COUNT(*) as total_transactions FROM transactions WHERE DATE(timestamp) = ?",
+            "SELECT SUM(total) as total_sales, COUNT(*) as total_transactions FROM transactions WHERE DATE(timestamp) = ? AND closing_session_id IS NULL",
             [today]
         );
 
@@ -7859,6 +7866,7 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             FROM transactions t
             WHERE t.timestamp BETWEEN ? AND ?
             AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
+            AND t.closing_session_id IS NULL
         `;
         const [transactions] = await db.query(transSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
 
@@ -7879,7 +7887,8 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
         const expSql = `
             SELECT SUM(amount) as total
             FROM expenses
-            WHERE date BETWEEN ? AND ?
+            WHERE (date BETWEEN ? AND ?)
+            AND closing_session_id IS NULL
         `;
         const [expRows] = await db.query(expSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
         const totalExpenses = parseFloat(expRows[0]?.total || 0);
@@ -8358,28 +8367,50 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
     try {
         const { startDate, endDate } = req.query;
 
+        const parseDateTime = (d, isEnd) => {
+            if (!d) return null;
+            // Handle ISO strings with T or space
+            let cleaned = d.replace('T', ' ').split('.')[0];
+            if (cleaned.length <= 10) {
+                return isEnd ? `${cleaned} 23:59:59` : `${cleaned} 00:00:00`;
+            }
+            return cleaned;
+        };
+
+        const periodStartRaw = parseDateTime(startDate, false);
+        const periodEndRaw = parseDateTime(endDate, true);
+
         // 1. Get Initial Capital Baseline
         const [capitalSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'initial_capital'");
         const [capitalDateSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'initial_capital_date'");
 
         const initialCapital = parseFloat(capitalSetting[0]?.value || 0);
-        const initialCapitalDate = capitalDateSetting[0]?.value || '1970-01-01 00:00:00';
+        const initialCapitalDate = capitalDateSetting[0]?.value ? capitalDateSetting[0].value.replace('T', ' ').split('.')[0] : '1970-01-01 00:00:00';
 
         // 2. Calculate Opening Balance (Balance right before startDate)
-        let openingBalance = initialCapital;
-        if (startDate) {
-            // Revenue BEFORE startDate
-            const [revBefore] = await db.query(
-                "SELECT SUM(total) as total FROM transactions WHERE timestamp >= ? AND timestamp < ? AND isEmployeeMeal = 0 AND deleted_at IS NULL",
-                [initialCapitalDate, startDate]
+        // --- NEW: Better Opening balance logic (includes V1, V2, and Expenses) ---
+        let openingBalance = parseFloat(initialCapital);
+        if (periodStartRaw) {
+            // Revenue BEFORE startDate (V1 & V2)
+            // If periodStartRaw is earlier than initialCapitalDate, we'll get inaccurate results 
+            // but for current session it works.
+            const [revBeforeV1] = await db.query(
+                "SELECT SUM(total) as total FROM transactions WHERE timestamp >= ? AND timestamp < ? AND isEmployeeMeal = 0 AND deleted_at IS NULL AND closing_session_id IS NULL",
+                [initialCapitalDate, periodStartRaw]
             );
+            const [revBeforeV2] = await db.query(
+                "SELECT SUM(total_amount) as total FROM simple_transactions WHERE created_at >= ? AND created_at < ? AND closing_session_id IS NULL",
+                [initialCapitalDate, periodStartRaw]
+            );
+            const totalRevBefore = parseFloat(revBeforeV1[0].total || 0) + parseFloat(revBeforeV2[0].total || 0);
+
             // Expenses BEFORE startDate
             const [expBefore] = await db.query(
-                "SELECT SUM(amount) as total FROM expenses WHERE date >= ? AND date < ?",
-                [initialCapitalDate, startDate]
+                "SELECT SUM(amount) as total FROM expenses WHERE date >= ? AND date < ? AND closing_session_id IS NULL",
+                [initialCapitalDate, periodStartRaw]
             );
-            // Manual Account adjustments BEFORE startDate (that aren't archived/closing related)
-            // We EXCLUDE account transactions created by the sales/expense sync to avoid double counting
+
+            // Manual Account adjustments BEFORE startDate
             const [accBefore] = await db.query(
                 `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
                  FROM account_transactions 
@@ -8387,80 +8418,95 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                  AND description NOT LIKE 'Penjualan TRZ%' 
                  AND description NOT LIKE 'Pengeluaran:%' 
                  AND description NOT LIKE 'Pembatalan Transaksi TRZ%'
-                 AND description NOT LIKE 'Penjualan V2 #%'`,
-                [initialCapitalDate, startDate]
+                 AND description NOT LIKE 'Penjualan V2 #%'
+                 AND closing_session_id IS NULL`,
+                [initialCapitalDate, periodStartRaw]
             );
 
-            // Wait, if we use transactions and expenses table directly, we might double count if they also exist in account_transactions.
-            // Based on my analysis, sales DO NOT go to account_transactions automatically.
-            // So: OpeningBalance = Capital + AllSales(before) - AllExpenses(before) + ManualAdjustments(before)
-            openingBalance = initialCapital + parseFloat(revBefore[0].total || 0) - parseFloat(expBefore[0].total || 0) + parseFloat(accBefore[0].total || 0);
+            openingBalance = parseFloat(initialCapital) + totalRevBefore - parseFloat(expBefore[0].total || 0) + parseFloat(accBefore[0].total || 0);
         }
 
-        // 3. Current Account Balances (Physical/Bank)
+        // 3. Current Physical status
         const [accounts] = await db.query("SELECT id, name, balance FROM accounts");
         const physicalCashNow = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
-        const lapakBalance = accounts.find(a => a.name === 'lapak_deposit')?.balance || 0;
-        const ownerBalance = accounts.find(a => a.name === 'owner_deposit')?.balance || 0;
+        const lapakBalanceNow = parseFloat(accounts.find(a => a.name === 'lapak_deposit')?.balance || 0);
+        const ownerBalanceNow = parseFloat(accounts.find(a => a.name === 'owner_deposit')?.balance || 0);
 
-        // 4. Calculate actual cash as of endDate (if endDate is in the past)
+        // 4. Calculate backtracked balances as of endDate (if endDate is in the past)
+        let lapakAtEnd = lapakBalanceNow;
+        let ownerAtEnd = ownerBalanceNow;
         let physicalCashAtEnd = physicalCashNow;
-        if (endDate) {
-            const endDateTime = `${endDate} 23:59:59`;
-            // If endDateTime is before now, we need to backtrack
+
+        if (periodEndRaw) {
             const now = new Date();
-            const end = new Date(endDateTime);
+            const end = new Date(periodEndRaw);
+
             if (end < now) {
-                // Find all changes after endDateTime to revert them
-                const [revAfter] = await db.query(
-                    "SELECT SUM(total) as total FROM transactions WHERE timestamp > ? AND isEmployeeMeal = 0 AND deleted_at IS NULL",
-                    [endDateTime]
-                );
-                const [expAfter] = await db.query(
-                    "SELECT SUM(amount) as total FROM expenses WHERE date > ?",
-                    [endDateTime]
-                );
-                const [accAfter] = await db.query(
+                // IMPORTANT: To backtrack correctly to the past, WE MUST summation ALL transactions 
+                // including archived ones (the reset/clearing transactions).
+                const [lapakAfter] = await db.query(
                     `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
                      FROM account_transactions 
-                     WHERE created_at > ?
-                     AND description NOT LIKE 'Penjualan TRZ%' 
-                     AND description NOT LIKE 'Pengeluaran:%' 
-                     AND description NOT LIKE 'Pembatalan Transaksi TRZ%'
-                     AND description NOT LIKE 'Penjualan V2 #%'`,
-                    [endDateTime]
+                     WHERE created_at > ? 
+                     AND account_id = (SELECT id FROM accounts WHERE name = 'lapak_deposit')`,
+                    [periodEndRaw]
                 );
+                lapakAtEnd = lapakBalanceNow - parseFloat(lapakAfter[0].total || 0);
 
-                // Revert: BalanceAtEnd = CurrentBalance - InflowAfter + OutgoAfter
-                physicalCashAtEnd = physicalCashNow - (parseFloat(revAfter[0].total || 0) + parseFloat(accAfter[0].total || 0)) + parseFloat(expAfter[0].total || 0);
+                const [ownerAfter] = await db.query(
+                    `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
+                     FROM account_transactions 
+                     WHERE created_at > ? 
+                     AND account_id = (SELECT id FROM accounts WHERE name = 'owner_deposit')`,
+                    [periodEndRaw]
+                );
+                ownerAtEnd = ownerBalanceNow - parseFloat(ownerAfter[0].total || 0);
+
+                physicalCashAtEnd = lapakAtEnd + ownerAtEnd;
             }
         }
 
         // 5. Period performance
-        const periodStart = startDate ? startDate : initialCapitalDate;
-        const periodEnd = endDate ? `${endDate} 23:59:59` : new Date().toISOString().replace('T', ' ').split('.')[0];
+        const pStart = periodStartRaw || initialCapitalDate;
+        const pEnd = periodEndRaw || new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).replace('T', ' ').split('.')[0];
 
-        const [periodRev] = await db.query(
-            "SELECT SUM(total) as total FROM transactions WHERE timestamp >= ? AND timestamp <= ? AND isEmployeeMeal = 0 AND deleted_at IS NULL",
-            [periodStart, periodEnd]
+        // Period Revenue (V1 + V2)
+        const [periodRevV1] = await db.query(
+            "SELECT SUM(total) as total FROM transactions WHERE timestamp >= ? AND timestamp <= ? AND isEmployeeMeal = 0 AND deleted_at IS NULL AND closing_session_id IS NULL",
+            [pStart, pEnd]
         );
+        const [periodRevV2] = await db.query(
+            "SELECT SUM(total_amount) as total FROM simple_transactions WHERE created_at >= ? AND created_at <= ? AND closing_session_id IS NULL",
+            [pStart, pEnd]
+        );
+        const totalPeriodRev = parseFloat(periodRevV1[0].total || 0) + parseFloat(periodRevV2[0].total || 0);
+
         const [periodExp] = await db.query(
-            "SELECT SUM(amount) as total FROM expenses WHERE date >= ? AND date <= ?",
-            [periodStart, periodEnd]
+            "SELECT SUM(amount) as total FROM expenses WHERE date >= ? AND date <= ? AND closing_session_id IS NULL",
+            [pStart, pEnd]
         );
+
+        const expectedClosingBalance = openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0);
+        const gap = physicalCashAtEnd - expectedClosingBalance;
+        const accuracy = expectedClosingBalance === 0
+            ? (physicalCashAtEnd === 0 ? 100 : 0)
+            : Math.max(0, Math.min(100, (1 - Math.abs(gap) / expectedClosingBalance) * 100));
 
         res.json({
             message: "success",
             data: {
                 openingBalance,
-                periodRevenue: parseFloat(periodRev[0].total || 0),
+                periodRevenue: totalPeriodRev,
                 periodExpenses: parseFloat(periodExp[0].total || 0),
-                expectedClosingBalance: openingBalance + parseFloat(periodRev[0].total || 0) - parseFloat(periodExp[0].total || 0),
+                expectedClosingBalance,
                 physicalCashAtEnd,
-                currentLapakBalance: lapakBalance,
-                currentOwnerBalance: ownerBalance,
-                auditStartDate: periodStart,
-                auditEndDate: periodEnd
+                currentLapakBalance: lapakAtEnd,
+                currentOwnerBalance: ownerAtEnd,
+                auditStartDate: pStart,
+                auditEndDate: pEnd,
+                gap: parseFloat(gap.toFixed(2)),
+                accuracy: parseFloat(accuracy.toFixed(2)),
+                isAccurate: accuracy >= 99
             }
         });
 
@@ -8546,18 +8592,49 @@ app.post("/api/settings/close-book", authenticateToken, authorizeRoles('admin', 
 
         // 5. Reset Accounts & Set Initial Capital
         if (lapakAccount.length > 0) {
-            // Reset balance to the new initial capital
+            // First, clear the previous session balance history (Withdrawal transaction for old balance)
+            await connection.query(
+                "INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, closing_session_id) VALUES (?, ?, ?, ?, ?, ?)",
+                [lapakAccount[0].id, 'withdrawal', parseFloat(lapakAccount[0].balance), 'Kliring Saldo Lama Pasca Tutup Buku', req.user.userId, sessionId]
+            );
+
+            // Reset balance to the new initial capital in accounts table
             await connection.query("UPDATE accounts SET balance = ? WHERE id = ?", [parseFloat(initialCapitalNextDay || 0), lapakAccount[0].id]);
 
-            // Record this as the first transaction of the new session
+            // Record this as the first transaction of the new session (Deposit transaction with NULL sessionId)
             await connection.query(
                 "INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, closing_session_id) VALUES (?, ?, ?, ?, ?, NULL)",
                 [lapakAccount[0].id, 'deposit', parseFloat(initialCapitalNextDay || 0), 'Modal Awal Pasca Tutup Buku', req.user.userId]
             );
         }
 
-        // Update last_closing_date in settings
+        if (ownerAccount.length > 0) {
+            // Catat transaksi clearing agar history balance tetap sinkron dan TERARSIP ke sesi lama
+            // Kita gunakan sessionId (bukan NULL) agar transaksi ini tidak muncul di periode baru
+            await connection.query(
+                "INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, closing_session_id) VALUES (?, ?, ?, ?, ?, ?)",
+                [ownerAccount[0].id, 'withdrawal', parseFloat(ownerAccount[0].balance), 'Reset Saldo Owner Pasca Tutup Buku', req.user.userId, sessionId]
+            );
+
+            // Reset balance Uang Transfer (Owner) ke 0 di database
+            await connection.query("UPDATE accounts SET balance = 0 WHERE id = ?", [ownerAccount[0].id]);
+        }
+
+        // 6. Update initial_capital & initial_capital_date in settings
+        //    sehingga laporan audit periode berikutnya menggunakan modal awal yang benar
+        const newCapitalStr = String(parseFloat(initialCapitalNextDay || 0));
         const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).replace(' ', 'T');
+
+        await connection.query(
+            "INSERT INTO settings (`key`, `value`) VALUES ('initial_capital', ?) ON DUPLICATE KEY UPDATE `value` = ?",
+            [newCapitalStr, newCapitalStr]
+        );
+        await connection.query(
+            "INSERT INTO settings (`key`, `value`) VALUES ('initial_capital_date', ?) ON DUPLICATE KEY UPDATE `value` = ?",
+            [nowStr, nowStr]
+        );
+
+        // Update last_closing_date in settings
         await connection.query("INSERT INTO settings (`key`, `value`) VALUES ('last_closing_date', ?) ON DUPLICATE KEY UPDATE `value` = ?", [nowStr, nowStr]);
 
         await connection.commit();

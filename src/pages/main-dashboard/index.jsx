@@ -78,16 +78,17 @@ const MainDashboard = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (!token) return; // Exit if no token
     try {
-      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes] = await Promise.all([
+      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes, precisionRes] = await Promise.all([
         authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
-        authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
+        authFetch(`${apiUrl}/api/transactions/all?filterClosed=false`), // Fetch all transactions for all-time metrics
         authFetch(`${apiUrl}/api/menu-items/all`),
-        authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
+        authFetch(`${apiUrl}/api/expenses/all?filterClosed=false`), // Fetch all expenses
         authFetch(`${apiUrl}/api/all-settings`),
         authFetch(`${apiUrl}/api/accounts/owner_deposit`),
         authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
         authFetch(`${apiUrl}/api/raw-materials`), // Fetch raw materials
-        authFetch(`${apiUrl}/api/units`) // Fetch units
+        authFetch(`${apiUrl}/api/units`), // Fetch units
+        authFetch(`${apiUrl}/api/audit/calculate-accuracy?filterClosed=true`) // Fetch audit accuracy
       ]);
 
       let paginatedTransactionsData = [];
@@ -99,6 +100,7 @@ const MainDashboard = ({ headerTitle }) => {
       let lapakAccountData = null;
       let rawMaterialsData = []; // Initialize rawMaterialsData
       let unitsData = []; // Initialize unitsData
+      let auditData = null; // Initialize auditData
 
       // Handle paginated transactions data (for recent transactions list)
 
@@ -196,15 +198,18 @@ const MainDashboard = ({ headerTitle }) => {
         }
       } else {
         console.error("Failed to fetch units data:", unitsRes.status, unitsRes.statusText);
+      }      // Handle audit data
+      if (typeof precisionRes !== 'undefined' && precisionRes.ok) {
+        const precision = await precisionRes.json();
+        if (precision.message === 'success') {
+          auditData = precision.data;
+        }
       }
-
-
-
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
       if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0 || rawMaterialsData.length > 0) {
-        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData);
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData, auditData);
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
@@ -283,7 +288,7 @@ const MainDashboard = ({ headerTitle }) => {
     return location.pathname.startsWith(path === '/transaksi-sederhana' ? '/transaksi-sederhana' : path);
   };
 
-  const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData = []) => {
+  const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData = [], auditData = null) => {
     // --- Date and Filter Logic ---
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     let startDate, endDate;
@@ -330,14 +335,14 @@ const MainDashboard = ({ headerTitle }) => {
       ? allTransactions
       : allTransactions.filter(t => {
         const transactionDate = new Date(t.timestamp);
-        return transactionDate >= startDate && transactionDate <= endDate;
+        return transactionDate >= startDate && transactionDate <= endDate && (t.closing_session_id === null || t.closing_session_id === undefined);
       });
 
     const filteredExpenses = filterType === 'all_time'
       ? expenses
       : expenses.filter(e => {
         const expenseDate = new Date(e.date);
-        return expenseDate >= startDate && expenseDate <= endDate;
+        return expenseDate >= startDate && expenseDate <= endDate && (e.closing_session_id === null || e.closing_session_id === undefined);
       });
 
     const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
@@ -421,11 +426,11 @@ const MainDashboard = ({ headerTitle }) => {
     const netProfit = allTimeRevenue - allTimeExpenses + totalCombinedRawMaterialValue;
 
     // --- Daily Stats Calculation (Unaffected by filter) ---
-    const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal');
+    const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal' && (t.closing_session_id === null || t.closing_session_id === undefined));
     const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
 
-    const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal');
+    const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal' && (t.closing_session_id === null || t.closing_session_id === undefined));
     const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
 
@@ -490,7 +495,7 @@ const MainDashboard = ({ headerTitle }) => {
 
 
 
-    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === todayString).reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === todayString && (e.closing_session_id === null || e.closing_session_id === undefined)).reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
     setDashboardData({
       metrics: {
@@ -543,7 +548,8 @@ const MainDashboard = ({ headerTitle }) => {
         rawMaterials: settings?.raw_materials_last_updated,
         lapakFunds: settings?.lapak_funds_last_updated
       },
-      settings: settings || {}
+      settings: settings || {},
+      auditData: auditData
     });
   };
   const formatCurrency = (amount) => {

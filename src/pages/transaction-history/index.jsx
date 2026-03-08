@@ -121,6 +121,9 @@ const TransactionHistory = ({ headerTitle }) => {
       params.append('paymentMethod', filters.paymentMethod);
     }
 
+    // Add filterClosed to query params to hide closed sessions in metrics cards
+    params.append('filterClosed', 'true');
+
     try {
       // Request all transactions by not setting limit
       const url = `${apiUrl}/api/transactions/all?${params.toString()}`;
@@ -602,8 +605,8 @@ const TransactionHistory = ({ headerTitle }) => {
     const calculateRevenue = (transactions) => {
       if (!transactions || transactions.length === 0) return 0;
 
-      // Filter out employee meals for revenue
-      const validTransactions = transactions.filter(t => t.payment_method !== 'employee_meal');
+      // Filter out employee meals for revenue AND filter out closed book transactions
+      const validTransactions = transactions.filter(t => t.payment_method !== 'employee_meal' && !t.closing_session_id);
       return validTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     };
 
@@ -707,7 +710,8 @@ const TransactionHistory = ({ headerTitle }) => {
     // Helper to calculate counts
     const calculateCount = (transactions) => {
       if (!transactions) return 0;
-      return transactions.length;
+      // Filter out closed book transactions
+      return transactions.filter(t => !t.closing_session_id).length;
     };
 
     if (dateRange.startDate && dateRange.endDate) {

@@ -26,8 +26,11 @@ export default function AuditorPage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
+    const getJakartaDate = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
+    const getJakartaNow = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).replace(' ', 'T');
+
     const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(getJakartaDate());
     const [isSavingDefault, setIsSavingDefault] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
@@ -44,8 +47,8 @@ export default function AuditorPage() {
     }, []);
 
     const fetchData = async (currentStart, currentEnd) => {
-        // Today's date as default fallback for end
-        const today = new Date().toISOString().split('T')[0];
+        // Jakarta date as default fallback for end
+        const today = getJakartaDate();
 
         // Safeguard against objects (like React events) being passed as arguments
         const start = typeof currentStart === 'string' ? currentStart : startDate;
@@ -56,6 +59,7 @@ export default function AuditorPage() {
             const params = new URLSearchParams();
             if (start) params.append('startDate', start);
             if (end) params.append('endDate', end);
+            params.append('filterClosed', 'true');
             const queryString = params.toString() ? `?${params.toString()}` : '';
 
             const [allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes, precisionRes] = await Promise.all([
@@ -97,9 +101,9 @@ export default function AuditorPage() {
                 setIsInitialized(true);
 
                 // Priority 1: Specifically saved audit start date
-                // Priority 2: Master initial capital date
+                // Priority 2: Master initial capital date (KEEP FULL TIMESTAMP)
                 const auditStart = settings.data?.audit_start_date;
-                const capitalStart = settings.data?.initial_capital_date ? settings.data.initial_capital_date.split(' ')[0] : null;
+                const capitalStart = settings.data?.initial_capital_date || null;
                 const defaultStartDate = auditStart || capitalStart;
 
                 if (defaultStartDate && !startDate && !currentStart) {
@@ -155,7 +159,8 @@ export default function AuditorPage() {
     const processAuditData = (raw) => {
         // High Precision Metrics from Backend
         const precision = raw.precision || {};
-        const initialCapital = precision.openingBalance || parseFloat(raw.settings.initial_capital) || 0;
+        const masterInitialCapital = parseFloat(raw.settings.initial_capital) || 0;
+        const periodOpeningBalance = precision.openingBalance !== undefined ? precision.openingBalance : masterInitialCapital;
 
         // Revenue logic (exclude employee meals and non-monetary)
         const totalRevenue = precision.periodRevenue !== undefined ? precision.periodRevenue : raw.transactions
@@ -164,11 +169,13 @@ export default function AuditorPage() {
 
         const totalExpenses = precision.periodExpenses !== undefined ? precision.periodExpenses : raw.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-        // Expected Cash Formula
-        const expectedCash = precision.expectedClosingBalance || (initialCapital + totalRevenue - totalExpenses);
+        // Expected Cash Formula (Based on Period Data)
+        const expectedCash = precision.expectedClosingBalance || (periodOpeningBalance + totalRevenue - totalExpenses);
 
         // Physical Cash (Bank + Cash as of the END of period)
         const physicalCash = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (parseFloat(raw.ownerBalance) + parseFloat(raw.lapakBalance));
+        const finalOwnerBalance = precision.currentOwnerBalance !== undefined ? precision.currentOwnerBalance : raw.ownerBalance;
+        const finalLapakBalance = precision.currentLapakBalance !== undefined ? precision.currentLapakBalance : raw.lapakBalance;
 
         const cashDifference = physicalCash - expectedCash;
 
@@ -189,8 +196,6 @@ export default function AuditorPage() {
         }, 0);
 
         // Business Equity (Real Wealth)
-        // Profit Bersih = Pendapatan - (Pengeluaran - Stok yang masih ada)
-        // Target Equity = Modal Awal + Profit Bersih
         const netProfit = totalRevenue - totalExpenses;
         const targetEquity = expectedCash + stockValue;
         const currentEquity = physicalCash + stockValue;
@@ -201,7 +206,7 @@ export default function AuditorPage() {
         if (Math.abs(cashDifference) > 1000) {
             anomalies.push({
                 title: "Selisih Uang Signifikan",
-                desc: `Terdapat selisih Rp ${formatNumber(Math.abs(cashDifference))} antara uang fisik dan catatan.`,
+                desc: `Terdapat selisih Rp ${formatCurrency(Math.abs(cashDifference))} antara uang fisik dan catatan.`,
                 type: "danger"
             });
         }
@@ -229,7 +234,8 @@ export default function AuditorPage() {
 
         setData({
             metrics: {
-                initialCapital,
+                masterInitialCapital,
+                periodOpeningBalance,
                 totalRevenue,
                 totalExpenses,
                 expectedCash,
@@ -240,8 +246,8 @@ export default function AuditorPage() {
                 targetEquity,
                 currentEquity,
                 equityDifference,
-                ownerBalance: raw.ownerBalance,
-                lapakBalance: raw.lapakBalance
+                ownerBalance: finalOwnerBalance,
+                lapakBalance: finalLapakBalance
             },
             anomalies
         });
@@ -500,9 +506,9 @@ export default function AuditorPage() {
 
                     {/* Modal Awal */}
                     {(() => {
-                        const capitalGrowth = data.metrics.physicalCash - data.metrics.initialCapital;
-                        const capitalGrowthPercent = data.metrics.initialCapital > 0
-                            ? ((capitalGrowth / data.metrics.initialCapital) * 100).toFixed(1)
+                        const capitalGrowth = data.metrics.physicalCash - data.metrics.masterInitialCapital;
+                        const capitalGrowthPercent = data.metrics.masterInitialCapital > 0
+                            ? ((capitalGrowth / data.metrics.masterInitialCapital) * 100).toFixed(1)
                             : 0;
                         return (
                             <div className="p-5 rounded-2xl border border-border bg-purple-500/10 transition-all hover:shadow-md flex flex-col gap-3">
@@ -518,22 +524,30 @@ export default function AuditorPage() {
                                     </span>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-mono font-black text-purple-500 tracking-tight">{formatCurrency(data.metrics.initialCapital)}</p>
+                                    <p className="text-2xl font-mono font-black text-purple-500 tracking-tight">{formatCurrency(data.metrics.masterInitialCapital)}</p>
                                     <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                                        {startDate
-                                            ? <span>Saldo akhir sebelum <strong>{new Date(startDate).toLocaleDateString('id-ID')}</strong>. Nilai ini menjadi baseline audit periode ini.</span>
-                                            : <span>Uang pertama kali disetor untuk memulai bisnis. Nilai ini menjadi <strong>patokan awal</strong> audit.</span>
-                                        }
+                                        Modal awal utama yang terdaftar di pengaturan sistem.
                                     </p>
                                 </div>
                                 <div className="pt-3 border-t border-purple-500/20">
-                                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Status Pergerakan Saldo</p>
-                                    <p className={`text-xs font-bold ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-amber-500'}`}>
-                                        {capitalGrowth >= 0
-                                            ? `Kas aktual saat ini lebih besar ${formatCurrency(capitalGrowth)} dari saldo awal.`
-                                            : `Saldo menyusut ${formatCurrency(Math.abs(capitalGrowth))} (Wajar jika operasional tinggi).`
-                                        }
+                                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">
+                                        Analisis Pertumbuhan Modal
                                     </p>
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className={`text-[11px] font-black uppercase tracking-tight ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                {capitalGrowth >= 0 ? '💰 Uang Mengembang' : '📉 Uang Menyusut'}
+                                            </span>
+                                            <span className={`text-xs font-mono font-black ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                {capitalGrowth >= 0 ? '+' : ''}{formatCurrency(capitalGrowth)}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] text-text-secondary leading-relaxed opacity-80">
+                                            {capitalGrowth >= 0
+                                                ? `Total kas saat ini lebih besar dari modal awal sistem.`
+                                                : `Total kas saat ini lebih kecil dari modal awal sistem.`}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -644,7 +658,12 @@ export default function AuditorPage() {
                             </p>
                         </div>
                         <div className="pt-3 border-t border-teal-500/20 space-y-2">
-                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Rincian Saldo Sekarang</p>
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">
+                                {endDate && new Date(endDate).toDateString() !== new Date().toDateString()
+                                    ? `Rincian Saldo Per ${new Date(endDate).toLocaleDateString('id-ID')}`
+                                    : "Rincian Saldo Sekarang"
+                                }
+                            </p>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="CreditCard" size={11} /> Saldo Transfer (Bank)</span>
                                 <span className="text-xs font-black text-teal-600 font-mono">{formatCurrency(data.metrics.ownerBalance)}</span>
@@ -700,8 +719,8 @@ export default function AuditorPage() {
                                 <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary mb-3">💡 Kas yang Seharusnya Ada</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-text-secondary">{startDate ? 'Saldo Awal Periode' : 'Modal Awal (setoran)'}</span>
-                                        <span className="text-xs font-black font-mono text-purple-500">{formatCurrency(data.metrics.initialCapital)}</span>
+                                        <span className="text-xs text-text-secondary">Saldo Awal (Baseline)</span>
+                                        <span className="text-xs font-black font-mono text-purple-500">{formatCurrency(data.metrics.periodOpeningBalance)}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs text-text-secondary">+ Pendapatan masuk</span>

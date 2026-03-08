@@ -34,7 +34,8 @@ import {
     Megaphone,
     Star,
     Database,
-    Trash2
+    Trash2,
+    ShieldCheck
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -60,6 +61,7 @@ const MENU_ITEMS = [
     { label: 'Manajemen HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppManagement' },
     { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
+    { label: 'Audit', icon: ShieldCheck, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Auditor' },
     { label: 'Review', icon: Star, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ReviewManagement' },
     { label: 'Sampah Pesanan', icon: Trash2, color: '#EF4444', bgColor: '#FEF2F2', target: 'OrderTrash' },
     { label: 'Sampah Transaksi', icon: Trash2, color: '#DC2626', bgColor: '#FEF2F2', target: 'TransactionTrash' },

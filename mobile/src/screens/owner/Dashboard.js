@@ -31,7 +31,9 @@ import {
     CreditCard,
     Database,
     ArrowRight,
-    Briefcase
+    Briefcase,
+    ShieldCheck,
+    AlertTriangle
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiService, { API_URL } from '../../api/apiService';
@@ -61,6 +63,7 @@ const OwnerDashboard = ({ navigation }) => {
             profit: 0
         }
     });
+    const [auditStatus, setAuditStatus] = useState({ accurate: true, diff: 0 });
 
     // Helper: Format Currency
     const formatCurrency = (amount) => {
@@ -100,6 +103,14 @@ const OwnerDashboard = ({ navigation }) => {
                     revenue: yData.summary?.totalRevenue || 0,
                     profit: yData.summary?.netIncome || 0
                 }
+            });
+
+            // 3. Get Audit Accuracy
+            const auditRes = await apiService.get(`/api/audit/calculate-accuracy?startDate=${today}&endDate=${today}`);
+            const aData = auditRes.data.data || {};
+            setAuditStatus({
+                accurate: Math.abs(aData.difference || 0) <= 100,
+                diff: aData.difference || 0
             });
 
         } catch (error) {
@@ -209,6 +220,24 @@ const OwnerDashboard = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={[styles.bodyContent, { paddingBottom: 40 }]}>
+                    {/* Audit Status Banner */}
+                    <TouchableOpacity
+                        style={[styles.auditBanner, { backgroundColor: auditStatus.accurate ? '#ECFDF5' : '#FEF2F2' }]}
+                        onPress={() => navigation.navigate('Auditor')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={[styles.auditIconBox, { backgroundColor: auditStatus.accurate ? '#D1FAE5' : '#FEE2E2' }]}>
+                            {auditStatus.accurate ? <ShieldCheck size={20} color="#10B981" /> : <AlertTriangle size={20} color="#EF4444" />}
+                        </View>
+                        <View style={styles.auditInfo}>
+                            <Text style={styles.auditTitle}>Status Audit Sistem</Text>
+                            <Text style={[styles.auditSubtitle, { color: auditStatus.accurate ? '#059669' : '#B91C1C' }]}>
+                                {auditStatus.accurate ? 'Data Terverifikasi Akurat' : `Selisih: ${formatCurrency(auditStatus.diff)}`}
+                            </Text>
+                        </View>
+                        <ChevronRight size={18} color={auditStatus.accurate ? '#10B981' : '#EF4444'} />
+                    </TouchableOpacity>
+
                     {/* Insights Section */}
                     <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Breakdown Data</Text>
                     <View style={styles.insightGrid}>
@@ -290,6 +319,12 @@ const OwnerDashboard = ({ navigation }) => {
                             label="Data"
                             color="#8B5CF6"
                             onPress={() => navigation.navigate('DatabaseManagement')}
+                        />
+                        <QuickButton
+                            icon={ShieldCheck}
+                            label="Audit"
+                            color="#F59E0B"
+                            onPress={() => navigation.navigate('Auditor')}
                         />
                     </View>
 
@@ -638,6 +673,38 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#334155',
     },
+    auditBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 20,
+        marginTop: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.02)',
+    },
+    auditIconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    auditInfo: {
+        flex: 1,
+    },
+    auditTitle: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#64748B',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    auditSubtitle: {
+        fontSize: 14,
+        fontWeight: '900',
+        marginTop: 2,
+    }
 });
 
 export default OwnerDashboard;

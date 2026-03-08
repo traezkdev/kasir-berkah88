@@ -1,7 +1,7 @@
 const FORCE_PROD = true; // Ubah ke true untuk paksa pakai API produksi saat debug dan false untuk pakai API lokal
 
 const BASE_URL = (__DEV__ && !FORCE_PROD)
-    ? 'http://192.168.1.2:5000'
+    ? 'http://192.168.1.4:5000'
     : 'https://api2.inviteshare.my.id';
 
 export const API_URL = `${BASE_URL}/api`;

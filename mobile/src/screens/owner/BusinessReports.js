@@ -175,9 +175,9 @@ const BusinessReports = ({ navigation }) => {
         setLoading(true);
         try {
             const [transRes, menuRes, expenseRes, reconRes, rawRes, accountLapakRes, accountOwnerRes] = await Promise.all([
-                apiService.get('/api/transactions/all'),
+                apiService.get('/api/transactions/all?filterClosed=true'),
                 apiService.get('/api/menu-items/all'),
-                apiService.get('/api/expenses/all'),
+                apiService.get('/api/expenses/all?filterClosed=true'),
                 apiService.get('/api/cash-reconciliation/history?limit=1000'),
                 apiService.get('/api/raw-materials'),
                 apiService.get('/api/accounts/lapak_deposit'),
@@ -214,13 +214,25 @@ const BusinessReports = ({ navigation }) => {
     const reports = useMemo(() => {
         if (loading && dataState.transactions.length === 0) return null;
 
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
+        // Parsing dates securely in local timezone
+        const parseLocalDay = (dateStr) => {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            return new Date(y, m - 1, d, 0, 0, 0, 0);
+        };
+
+        const start = parseLocalDay(startDate);
+        const end = parseLocalDay(endDate);
         end.setHours(23, 59, 59, 999);
 
         const filterByDate = (item) => {
-            const itemDate = new Date(item.timestamp || item.date || item.created_at);
+            const dateStr = item.timestamp || item.date || item.created_at;
+            if (!dateStr) return false;
+
+            // Handle the potential space in timestamp and ensure it is parsed as local if offset is missing
+            const normalizedDateStr = dateStr.includes(' ') ? dateStr.replace(' ', 'T') : dateStr;
+            const itemDate = new Date(normalizedDateStr);
+
+            if (isNaN(itemDate.getTime())) return false;
             return itemDate >= start && itemDate <= end;
         };
 

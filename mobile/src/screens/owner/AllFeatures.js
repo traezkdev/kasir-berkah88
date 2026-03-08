@@ -25,7 +25,8 @@ import {
     LayoutDashboard,
     Wallet,
     TrendingUp,
-    Briefcase
+    Briefcase,
+    ShieldCheck
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -58,6 +59,7 @@ const OwnerAllFeatures = ({ navigation }) => {
                 { id: 'FinancialReport', label: "Laporan Keuangan", icon: DollarSign, color: "#10B981" },
                 { id: 'DailyReport', label: "Laporan Harian", icon: FileText, color: "#349BE5" },
                 { id: 'CashReconciliation', label: "Rekonsiliasi Kas", icon: CreditCard, color: "#6366F1" },
+                { id: 'Auditor', label: "Sistem Audit", icon: ShieldCheck, color: "#F59E0B" },
             ]
         },
         {

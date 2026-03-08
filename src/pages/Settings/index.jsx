@@ -699,6 +699,7 @@ const Settings = () => {
         setCloseBookPassword('');
         setCloseBookNotes('');
         setNextInitialCapital('');
+        await fetchSettings();
         handleModalClose();
         setTimeout(() => navigate(`/admin/archive/${data.sessionId}`), 1500);
       } else {

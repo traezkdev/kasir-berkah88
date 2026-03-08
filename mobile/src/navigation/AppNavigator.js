@@ -74,6 +74,8 @@ import OwnerManageInformation from '../screens/owner/ManageInformation';
 import OwnerProfileScreen from '../screens/owner/ProfileScreen';
 import OwnerAllFeatures from '../screens/owner/AllFeatures';
 import BusinessMoney from '../screens/owner/BusinessMoney';
+import OwnerAuditor from '../screens/owner/Auditor';
+import SellerAuditor from '../screens/seller/Auditor';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -300,6 +302,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="HppManagement" component={HppManagement} />
         <Stack.Screen name="PopupManagement" component={PopupManagement} />
         <Stack.Screen name="ReviewManagement" component={ReviewManagement} />
+        <Stack.Screen name="Auditor" component={SellerAuditor} />
     </Stack.Navigator>
 );
 
@@ -410,6 +413,7 @@ const OwnerDashboardStack = () => (
         <Stack.Screen name="LapakDeposit" component={OwnerLapakDeposit} />
         <Stack.Screen name="CashReconciliation" component={OwnerCashReconciliation} />
         <Stack.Screen name="BusinessMoney" component={BusinessMoney} />
+        <Stack.Screen name="Auditor" component={OwnerAuditor} />
     </Stack.Navigator>
 );
 
