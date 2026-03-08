@@ -531,21 +531,23 @@ export default function AuditorPage() {
                                 </div>
                                 <div className="pt-3 border-t border-purple-500/20">
                                     <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">
-                                        {startDate ? `Baseline Audit (${new Date(startDate).toLocaleDateString('id-ID')})` : 'Status Pergerakan Saldo'}
+                                        Analisis Pertumbuhan Modal
                                     </p>
-                                    {startDate ? (
+                                    <div className="flex flex-col gap-1">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-purple-600">{formatCurrency(data.metrics.periodOpeningBalance)}</span>
-                                            <span className="text-[10px] text-text-secondary italic">Saldo awal periode</span>
+                                            <span className={`text-[11px] font-black uppercase tracking-tight ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                {capitalGrowth >= 0 ? '💰 Uang Mengembang' : '📉 Uang Menyusut'}
+                                            </span>
+                                            <span className={`text-xs font-mono font-black ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                {capitalGrowth >= 0 ? '+' : ''}{formatCurrency(capitalGrowth)}
+                                            </span>
                                         </div>
-                                    ) : (
-                                        <p className={`text-xs font-bold ${capitalGrowth >= 0 ? 'text-emerald-600' : 'text-amber-500'}`}>
+                                        <p className="text-[10px] text-text-secondary leading-relaxed opacity-80">
                                             {capitalGrowth >= 0
-                                                ? `Kas aktual saat ini lebih besar ${formatCurrency(capitalGrowth)} dari modal.`
-                                                : `Saldo menyusut ${formatCurrency(Math.abs(capitalGrowth))} (Wajar jika operasional tinggi).`
-                                            }
+                                                ? `Total kas saat ini lebih besar dari modal awal sistem.`
+                                                : `Total kas saat ini lebih kecil dari modal awal sistem.`}
                                         </p>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                         );
