@@ -259,11 +259,29 @@ export default function AuditorPage() {
         toast.success("Laporan Excel sedang diunduh");
     };
 
-    const handleExportPdf = () => {
+    const handleExportPdf = async () => {
         if (!data) return;
         const filename = `Audit_Laporan_${startDate || 'Awal'}_sd_${endDate || 'Hari_Ini'}`;
         const dateRange = { startDate, endDate };
-        exportAuditorToPdf(data, filename, dateRange);
+
+        // Ambil template dari settings
+        let template = {};
+        try {
+            const res = await authFetch(`${apiUrl}/api/all-settings`);
+            const settingsData = await res.json();
+            if (res.ok && settingsData.data) {
+                Object.keys(settingsData.data).forEach(key => {
+                    if (key.startsWith('audit_pdf_')) {
+                        const templateKey = key.replace('audit_pdf_', '');
+                        template[templateKey] = settingsData.data[key];
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Gagal memuat template PDF, menggunakan default.', e);
+        }
+
+        exportAuditorToPdf(data, filename, dateRange, template);
         toast.success("Laporan PDF sedang diunduh");
     };
 

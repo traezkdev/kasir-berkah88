@@ -18,6 +18,7 @@ import SocialShareSettings from './SocialShareSettings';
 import CategorySettings from './CategorySettings';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import AuditPdfTemplateModal from './AuditPdfTemplateModal';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -179,6 +180,7 @@ const Settings = () => {
   const [closeBookNotes, setCloseBookNotes] = useState('');
   const [nextInitialCapital, setNextInitialCapital] = useState('');
   const [showCloseBookPassword, setShowCloseBookPassword] = useState(false);
+  const [isAuditPdfTemplateModalOpen, setIsAuditPdfTemplateModalOpen] = useState(false);
 
   // --- Effects ---
   useEffect(() => {
@@ -783,12 +785,14 @@ const Settings = () => {
             <SettingsCard icon="BookOpen" title="Tutup Buku" description="Arsip data periode ini sekarang" onClick={() => setActiveModal('closeBook')} disabled={!isAdmin} />
             <SettingsCard icon="Archive" title="Arsip Data" description="Lihat riwayat data yang diarsip" onClick={() => navigate('/admin/archive')} disabled={!isAdmin} />
             <SettingsCard icon="Trash2" title="Bersihkan Data" description="Hapus semua riwayat (Hati-hati!)" onClick={() => setActiveModal('clearAllData')} disabled={!isAdmin} />
+            <SettingsCard icon="FileText" title="Template PDF Audit" description="Kustomisasi teks laporan audit PDF" onClick={() => setIsAuditPdfTemplateModalOpen(true)} disabled={!isAdmin} />
           </div>
         </div>
       </main>
 
       {/* --- ALL MODALS --- */}
       <DataSyncModal isOpen={activeModal === 'dataSync'} onClose={handleModalClose} />
+      <AuditPdfTemplateModal isOpen={isAuditPdfTemplateModalOpen} onClose={() => setIsAuditPdfTemplateModalOpen(false)} />
 
       <SettingsModal title="Branding & Identitas Web" isOpen={activeModal === 'brandingSettings'} onClose={handleModalClose} size="xl">
         <div className="space-y-8">

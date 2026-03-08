@@ -913,23 +913,40 @@ export const prepareAuditDataForExport = (auditData) => {
   return sections;
 };
 
-export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRange = null) => {
+export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRange = null, template = {}) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const { metrics, anomalies } = auditData;
   const currencyFormat = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
 
+  // Gabungkan template dari pengaturan dengan default
+  const DEFAULTS = {
+    company_name: 'KASIR BERKAH 88',
+    company_subtitle: 'Sistem Manajemen Keuangan & Point of Sale Terintegrasi',
+    company_tagline: 'Laporan Resmi Transparansi Operasional & Integritas Data',
+    report_title: 'LAPORAN AUDIT & INTEGRITAS KEUANGAN',
+    recipient_label: 'Pimpinan / Owner Kasir Berkah 88',
+    opening_salutation: 'Dengan hormat,',
+    opening_body: 'Berdasarkan hasil analisis sistem terhadap seluruh data transaksi, pengeluaran, dan pergerakan kas pada periode yang ditentukan, berikut adalah rincian konsolidasi keuangan:',
+    closing_body: 'Demikian laporan audit ini disampaikan sebagai rujukan utama dalam pengambilan keputusan manajemen dan audit operasional berkala.',
+    issuer_label: 'Diterbitkan Secara Otomatis oleh,',
+    issuer_name: 'Sistem Audit Kasir Berkah 88',
+    signer_title: 'Admin & Tim Keuangan',
+    signature_note: '(Dicetak melalui modul Auditor - Digital Signature Verified)',
+  };
+  const T = { ...DEFAULTS, ...template };
+
   // --- Letterhead (Kop Surat) ---
   doc.setFontSize(22);
   doc.setTextColor(20, 83, 45); // Dark Green
   doc.setFont('helvetica', 'bold');
-  doc.text("KASIR BERKAH 88", pageWidth / 2, 20, { align: "center" });
+  doc.text(T.company_name, pageWidth / 2, 20, { align: "center" });
 
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.setFont('helvetica', 'normal');
-  doc.text("Sistem Manajemen Keuangan & Point of Sale Terintegrasi", pageWidth / 2, 26, { align: "center" });
-  doc.text("Laporan Resmi Transparansi Operasional & Integritas Data", pageWidth / 2, 31, { align: "center" });
+  doc.text(T.company_subtitle, pageWidth / 2, 26, { align: "center" });
+  doc.text(T.company_tagline, pageWidth / 2, 31, { align: "center" });
 
   // Line under letterhead
   doc.setDrawColor(40, 40, 40);
@@ -942,7 +959,7 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
   doc.setFontSize(16);
   doc.setTextColor(0);
   doc.setFont('helvetica', 'bold');
-  doc.text("LAPORAN AUDIT & INTEGRITAS KEUANGAN", pageWidth / 2, 48, { align: "center" });
+  doc.text(T.report_title, pageWidth / 2, 48, { align: "center" });
 
   const reportId = `AUD-${new Date().getTime().toString().slice(-8)}`;
   doc.setFontSize(9);
@@ -955,7 +972,7 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
   doc.setTextColor(0);
   doc.text("Kepada Yth,", 14, 65);
   doc.setFont('helvetica', 'bold');
-  doc.text("Pimpinan / Owner Kasir Berkah 88", 14, 70);
+  doc.text(T.recipient_label, 14, 70);
 
   doc.setFont('helvetica', 'normal');
   const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -975,9 +992,9 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
   }
 
   doc.setFont('helvetica', 'normal');
-  doc.text("Dengan hormat,", 14, currentY);
+  doc.text(T.opening_salutation, 14, currentY);
   currentY += 6;
-  doc.text("Berdasarkan hasil analisis sistem terhadap seluruh data transaksi, pengeluaran, dan pergerakan kas pada periode yang ditentukan, berikut adalah rincian konsolidasi keuangan:", 14, currentY, { maxWidth: pageWidth - 28 });
+  doc.text(T.opening_body, 14, currentY, { maxWidth: pageWidth - 28 });
   currentY += 12;
 
   // --- Content Tabular Data ---
@@ -1051,24 +1068,24 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
   // --- Closing ---
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text("Demikian laporan audit ini disampaikan sebagai rujukan utama dalam pengambilan keputusan manajemen dan audit operasional berkala.", 14, currentY, { maxWidth: pageWidth - 28 });
+  doc.text(T.closing_body, 14, currentY, { maxWidth: pageWidth - 28 });
 
   currentY += 25;
-  doc.text("Diterbitkan Secara Otomatis oleh,", 14, currentY);
+  doc.text(T.issuer_label, 14, currentY);
   currentY += 5;
   doc.setFont('helvetica', 'bold');
-  doc.text("Sistem Audit Kasir Berkah 88", 14, currentY);
+  doc.text(T.issuer_name, 14, currentY);
 
   currentY += 25;
   doc.setDrawColor(200);
   doc.line(14, currentY, 80, currentY);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
-  doc.text("(Dicetak melalui modul Auditor - Digital Signature Verified)", 14, currentY + 4);
+  doc.text(T.signature_note, 14, currentY + 4);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text("Admin & Tim Keuangan", 14, currentY - 2);
+  doc.text(T.signer_title, 14, currentY - 2);
 
   doc.save(`${filename}.pdf`);
 };
