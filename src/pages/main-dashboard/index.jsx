@@ -78,7 +78,7 @@ const MainDashboard = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (!token) return; // Exit if no token
     try {
-      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes] = await Promise.all([
+      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes, precisionRes] = await Promise.all([
         authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
         authFetch(`${apiUrl}/api/transactions/all?filterClosed=false`), // Fetch all transactions for all-time metrics
         authFetch(`${apiUrl}/api/menu-items/all`),
@@ -87,7 +87,8 @@ const MainDashboard = ({ headerTitle }) => {
         authFetch(`${apiUrl}/api/accounts/owner_deposit`),
         authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
         authFetch(`${apiUrl}/api/raw-materials`), // Fetch raw materials
-        authFetch(`${apiUrl}/api/units`) // Fetch units
+        authFetch(`${apiUrl}/api/units`), // Fetch units
+        authFetch(`${apiUrl}/api/audit/calculate-accuracy?filterClosed=true`) // Fetch audit accuracy
       ]);
 
       let paginatedTransactionsData = [];
@@ -99,6 +100,7 @@ const MainDashboard = ({ headerTitle }) => {
       let lapakAccountData = null;
       let rawMaterialsData = []; // Initialize rawMaterialsData
       let unitsData = []; // Initialize unitsData
+      let auditData = null; // Initialize auditData
 
       // Handle paginated transactions data (for recent transactions list)
 
@@ -196,15 +198,18 @@ const MainDashboard = ({ headerTitle }) => {
         }
       } else {
         console.error("Failed to fetch units data:", unitsRes.status, unitsRes.statusText);
+      }      // Handle audit data
+      if (typeof precisionRes !== 'undefined' && precisionRes.ok) {
+        const precision = await precisionRes.json();
+        if (precision.message === 'success') {
+          auditData = precision.data;
+        }
       }
-
-
-
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
       if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0 || rawMaterialsData.length > 0) {
-        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData);
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData, auditData);
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
@@ -283,7 +288,7 @@ const MainDashboard = ({ headerTitle }) => {
     return location.pathname.startsWith(path === '/transaksi-sederhana' ? '/transaksi-sederhana' : path);
   };
 
-  const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData = []) => {
+  const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData = [], auditData = null) => {
     // --- Date and Filter Logic ---
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     let startDate, endDate;
@@ -543,7 +548,8 @@ const MainDashboard = ({ headerTitle }) => {
         rawMaterials: settings?.raw_materials_last_updated,
         lapakFunds: settings?.lapak_funds_last_updated
       },
-      settings: settings || {}
+      settings: settings || {},
+      auditData: auditData
     });
   };
   const formatCurrency = (amount) => {

@@ -8486,18 +8486,27 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
             [pStart, pEnd]
         );
 
+        const expectedClosingBalance = openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0);
+        const gap = physicalCashAtEnd - expectedClosingBalance;
+        const accuracy = expectedClosingBalance === 0
+            ? (physicalCashAtEnd === 0 ? 100 : 0)
+            : Math.max(0, Math.min(100, (1 - Math.abs(gap) / expectedClosingBalance) * 100));
+
         res.json({
             message: "success",
             data: {
                 openingBalance,
                 periodRevenue: totalPeriodRev,
                 periodExpenses: parseFloat(periodExp[0].total || 0),
-                expectedClosingBalance: openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0),
+                expectedClosingBalance,
                 physicalCashAtEnd,
                 currentLapakBalance: lapakAtEnd,
                 currentOwnerBalance: ownerAtEnd,
                 auditStartDate: pStart,
-                auditEndDate: pEnd
+                auditEndDate: pEnd,
+                gap: parseFloat(gap.toFixed(2)),
+                accuracy: parseFloat(accuracy.toFixed(2)),
+                isAccurate: accuracy >= 99
             }
         });
 

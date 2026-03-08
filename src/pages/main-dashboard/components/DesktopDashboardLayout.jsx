@@ -125,7 +125,11 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
     });
 
     // Helper for currency
-    const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    const formatCurrency = (val) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+    };
 
     // 1. Prepare Top Metrics
     const metrics = useMemo(() => {
@@ -646,6 +650,91 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                         className="bg-muted/50 p-4 text-center text-xs font-bold uppercase tracking-wider text-text-secondary cursor-pointer hover:bg-muted transition-colors"
                     >
                         Lihat Detail Lengkap
+                    </div>
+                </div>
+            </div>
+
+            {/* Audit & Quick Shortcut Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                {/* Audit Summary Card */}
+                <div className="xl:col-span-1 bg-card text-card-foreground rounded-xl border border-border shadow-sm overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-300">
+                    <div className="p-5 border-b border-border flex justify-between items-center bg-gradient-to-r from-purple-500/5 to-blue-500/5">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                                <Icon name="ShieldCheck" size={18} />
+                            </div>
+                            <h5 className="font-bold text-base">Audit Keamanan</h5>
+                        </div>
+                        <button
+                            onClick={() => navigate('/auditor')}
+                            className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-primary/80 flex items-center gap-1 group/btn"
+                        >
+                            Detail
+                            <Icon name="ArrowRight" size={10} className="group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                        {dashboardData?.auditData ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-text-secondary font-medium">Akurasi Kas</span>
+                                    <span className={`text-base font-black ${dashboardData.auditData.isAccurate ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                        {isNaN(parseFloat(dashboardData.auditData.accuracy)) ? '0' : dashboardData.auditData.accuracy}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ${dashboardData.auditData.isAccurate ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                        style={{ width: `${isNaN(parseFloat(dashboardData.auditData.accuracy)) ? 0 : dashboardData.auditData.accuracy}%` }}
+                                    ></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-1">
+                                    <div className="p-2.5 bg-muted/50 rounded-xl space-y-0.5">
+                                        <p className="text-[9px] font-black text-text-secondary uppercase tracking-tight">Selisih</p>
+                                        <p className={`text-xs font-bold ${dashboardData.auditData.gap === 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                            {formatCurrency(dashboardData.auditData.gap)}
+                                        </p>
+                                    </div>
+                                    <div className="p-2.5 bg-muted/50 rounded-xl space-y-0.5">
+                                        <p className="text-[9px] font-black text-text-secondary uppercase tracking-tight">Status</p>
+                                        <p className="text-xs font-bold text-text-primary">
+                                            {dashboardData.auditData.isAccurate ? '✓ Aman' : '⚠ Cek'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-4 text-center space-y-2">
+                                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center text-text-secondary">
+                                    <Icon name="Activity" size={20} />
+                                </div>
+                                <p className="text-[10px] text-text-secondary font-bold uppercase">Audit hari ini kosong</p>
+                                <button
+                                    onClick={() => navigate('/auditor')}
+                                    className="text-[10px] font-black text-primary uppercase"
+                                >
+                                    Mulai Audit →
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Quick Link Card - Just for better UI balance */}
+                <div className="xl:col-span-3 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl border border-blue-200/20 shadow-sm p-6 flex items-center justify-between group">
+                    <div className="space-y-2">
+                        <h4 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Analisis Keuangan Cepat</h4>
+                        <p className="text-sm text-text-secondary max-w-md">Lakukan pemantauan transaksi, stok bahan baku, dan pengeluaran operasional secara real-time untuk menjaga kesehatan bisnis Anda.</p>
+                        <div className="flex gap-4 pt-2">
+                            <button onClick={() => navigate('/transaksi')} className="text-sm font-bold text-blue-600 hover:underline">Kasir</button>
+                            <button onClick={() => navigate('/transaction-history')} className="text-sm font-bold text-purple-600 hover:underline">Riwayat</button>
+                            <button onClick={() => navigate('/settings')} className="text-sm font-bold text-text-secondary hover:underline">Pengaturan</button>
+                        </div>
+                    </div>
+                    <div className="hidden lg:block">
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform duration-500">
+                            <Icon name="Zap" size={40} />
+                        </div>
                     </div>
                 </div>
             </div>
