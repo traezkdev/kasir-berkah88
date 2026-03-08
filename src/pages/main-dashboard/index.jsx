@@ -80,9 +80,9 @@ const MainDashboard = ({ headerTitle }) => {
     try {
       const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes] = await Promise.all([
         authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
-        authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
+        authFetch(`${apiUrl}/api/transactions/all?filterClosed=false`), // Fetch all transactions for all-time metrics
         authFetch(`${apiUrl}/api/menu-items/all`),
-        authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
+        authFetch(`${apiUrl}/api/expenses/all?filterClosed=false`), // Fetch all expenses
         authFetch(`${apiUrl}/api/all-settings`),
         authFetch(`${apiUrl}/api/accounts/owner_deposit`),
         authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
@@ -330,14 +330,14 @@ const MainDashboard = ({ headerTitle }) => {
       ? allTransactions
       : allTransactions.filter(t => {
         const transactionDate = new Date(t.timestamp);
-        return transactionDate >= startDate && transactionDate <= endDate;
+        return transactionDate >= startDate && transactionDate <= endDate && (t.closing_session_id === null || t.closing_session_id === undefined);
       });
 
     const filteredExpenses = filterType === 'all_time'
       ? expenses
       : expenses.filter(e => {
         const expenseDate = new Date(e.date);
-        return expenseDate >= startDate && expenseDate <= endDate;
+        return expenseDate >= startDate && expenseDate <= endDate && (e.closing_session_id === null || e.closing_session_id === undefined);
       });
 
     const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
@@ -421,11 +421,11 @@ const MainDashboard = ({ headerTitle }) => {
     const netProfit = allTimeRevenue - allTimeExpenses + totalCombinedRawMaterialValue;
 
     // --- Daily Stats Calculation (Unaffected by filter) ---
-    const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal');
+    const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal' && (t.closing_session_id === null || t.closing_session_id === undefined));
     const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
 
-    const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal');
+    const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal' && (t.closing_session_id === null || t.closing_session_id === undefined));
     const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
 
@@ -490,7 +490,7 @@ const MainDashboard = ({ headerTitle }) => {
 
 
 
-    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === todayString).reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === todayString && (e.closing_session_id === null || e.closing_session_id === undefined)).reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
     setDashboardData({
       metrics: {
