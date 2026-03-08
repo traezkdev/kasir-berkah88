@@ -663,7 +663,7 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
                                 <Icon name="ShieldCheck" size={18} />
                             </div>
-                            <h5 className="font-bold text-base">Audit Keamanan</h5>
+                            <h5 className="font-bold text-base">Audit Saldo Kas</h5>
                         </div>
                         <button
                             onClick={() => navigate('/auditor')}
