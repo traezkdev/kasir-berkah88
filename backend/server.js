@@ -3339,6 +3339,44 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
 
         await connection.query(sql, params);
 
+        // --- NEW: Sync Transaction to Account Balance ---
+        try {
+            if (!isEmployeeMeal) {
+                // Determine which account to update
+                // tunai/cash -> lapak_deposit
+                // transfer/gojek/shopee/etc -> owner_deposit
+                const accountName = (finalPaymentMethod.toLowerCase() === 'tunai' || finalPaymentMethod.toLowerCase() === 'cash')
+                    ? 'lapak_deposit'
+                    : 'owner_deposit';
+
+                const [accRows] = await connection.query("SELECT id, balance FROM accounts WHERE name = ?", [accountName]);
+
+                if (accRows.length > 0) {
+                    const accountId = accRows[0].id;
+                    const amountToSync = parseFloat(finalTotal);
+
+                    // 1. Update Account Balance
+                    await connection.query(
+                        "UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        [amountToSync, accountId]
+                    );
+
+                    // 2. Record in account_transactions
+                    await connection.query(
+                        'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                        [accountId, 'deposit', amountToSync, `Penjualan ${newTransactionId}`, finalUserId, timestamp]
+                    );
+
+                    console.log(`[SYNC] Transaction ${newTransactionId} synced to ${accountName} (+${amountToSync})`);
+                }
+            }
+        } catch (syncError) {
+            console.error(`[SYNC] Failed to sync transaction to account:`, syncError);
+            // We don't rollback here because the transaction itself is more important, 
+            // but in a strict system we might want to.
+        }
+        // --- End Sync ---
+
         // Stock should always be reduced, even if ignoring stock for validation
         for (const item of itemsWithDetails) {
             await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
@@ -3596,8 +3634,54 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 // Soft delete a transaction
 app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const sql = 'UPDATE transactions SET deleted_at = ? WHERE id = ?';
-        const [result] = await db.query(sql, [new Date(), req.params.id]);
+        // --- NEW: Reverse Account Balance on Delete ---
+        let connection;
+        let affectedRows = 0;
+        try {
+            connection = await db.getConnection();
+            await connection.beginTransaction();
+
+            const [transRows] = await connection.query("SELECT total, payment_method, isEmployeeMeal FROM transactions WHERE id = ?", [req.params.id]);
+            if (transRows.length > 0 && !transRows[0].isEmployeeMeal) {
+                const trans = transRows[0];
+                const accountName = (trans.payment_method.toLowerCase() === 'tunai' || trans.payment_method.toLowerCase() === 'cash')
+                    ? 'lapak_deposit'
+                    : 'owner_deposit';
+
+                const [accRows] = await connection.query("SELECT id FROM accounts WHERE name = ?", [accountName]);
+                if (accRows.length > 0) {
+                    const accountId = accRows[0].id;
+                    const amountToReverse = parseFloat(trans.total);
+
+                    // 1. Deduct from account
+                    await connection.query(
+                        "UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        [amountToReverse, accountId]
+                    );
+
+                    // 2. Record reversal
+                    await connection.query(
+                        'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                        [accountId, 'expense', amountToReverse, `Pembatalan Transaksi ${req.params.id}`, req.user.userId, new Date()]
+                    );
+
+                    console.log(`[SYNC-DELETE] Transaction ${req.params.id} reversed from ${accountName} (-${amountToReverse})`);
+                }
+            }
+
+            const sql = 'UPDATE transactions SET deleted_at = ? WHERE id = ?';
+            const [result] = await connection.query(sql, [new Date(), req.params.id]);
+            affectedRows = result.affectedRows;
+
+            await connection.commit();
+        } catch (error) {
+            if (connection) await connection.rollback();
+            console.error("Error deleting transaction and syncing account:", error);
+            // It's better to let the outer catch handle the response to keep it consistent
+            throw error;
+        } finally {
+            if (connection) connection.release();
+        }
 
         await logActivity(req.user.userId, 'Menghapus Transaksi', 'transaction', req.params.id, `Transaksi ${req.params.id} dipindahkan ke sampah`);
 
@@ -3611,7 +3695,7 @@ app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'a
             });
         }
 
-        res.json({ "message": "deleted", changes: result.affectedRows });
+        res.json({ "message": "deleted", changes: affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
     }
@@ -3811,6 +3895,38 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
         ]);
         await connection.query(itemsSql, [itemValues]);
 
+        // --- NEW: Sync Simplified Transaction to Account Balance ---
+        try {
+            // Determine which account to update
+            const accountName = (payment_method.toLowerCase() === 'tunai' || payment_method.toLowerCase() === 'cash')
+                ? 'lapak_deposit'
+                : 'owner_deposit';
+
+            const [accRows] = await connection.query("SELECT id FROM accounts WHERE name = ?", [accountName]);
+
+            if (accRows.length > 0) {
+                const accountId = accRows[0].id;
+                const amountToSync = parseFloat(total_amount);
+
+                // 1. Update Account Balance
+                await connection.query(
+                    "UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [amountToSync, accountId]
+                );
+
+                // 2. Record in account_transactions
+                await connection.query(
+                    'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                    [accountId, 'deposit', amountToSync, `Penjualan V2 #${simple_transaction_id}`, user_id, new Date()]
+                );
+
+                console.log(`[SYNC-V2] Transaction #${simple_transaction_id} synced to ${accountName} (+${amountToSync})`);
+            }
+        } catch (syncError) {
+            console.error(`[SYNC-V2] Failed to sync transaction to account:`, syncError);
+        }
+        // --- End Sync ---
+
         await connection.commit();
         await logActivity(user_id, 'Membuat Transaksi V2', 'transaction', simple_transaction_id, `Transaksi V2 senilai Rp ${parseFloat(total_amount).toLocaleString('id-ID')}`);
         res.status(201).json({
@@ -3976,6 +4092,32 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'k
         const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
         const params = [name, parseFloat(amount) || 0, category, cleanDate, notes, req.user.userId];
         const [result] = await db.query(sql, params);
+
+        // --- NEW: Sync Expense to Account Balance (Default to Tunai/Lapak) ---
+        try {
+            const [accRows] = await db.query("SELECT id FROM accounts WHERE name = 'lapak_deposit'");
+            if (accRows.length > 0) {
+                const accountId = accRows[0].id;
+                const amountToDeduct = parseFloat(amount) || 0;
+
+                // 1. Update Account Balance
+                await db.query(
+                    "UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [amountToDeduct, accountId]
+                );
+
+                // 2. Record in account_transactions
+                await db.query(
+                    'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                    [accountId, 'expense', amountToDeduct, `Pengeluaran: ${name}`, req.user.userId, cleanDate || new Date()]
+                );
+
+                console.log(`[SYNC-EXPENSE] Expense ${result.insertId} synced to lapak_deposit (-${amountToDeduct})`);
+            }
+        } catch (syncError) {
+            console.error(`[SYNC-EXPENSE] Failed to sync expense to account:`, syncError);
+        }
+        // --- End Sync ---
 
         await logActivity(req.user.userId, 'Tambah Pengeluaran', 'expense', result.insertId, `Pengeluaran baru: ${name} sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`);
 
@@ -8237,10 +8379,15 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                 [initialCapitalDate, startDate]
             );
             // Manual Account adjustments BEFORE startDate (that aren't archived/closing related)
-            // Note: In this system, account_transactions are archived during closing.
-            // But we need the total flow.
+            // We EXCLUDE account transactions created by the sales/expense sync to avoid double counting
             const [accBefore] = await db.query(
-                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total FROM account_transactions WHERE created_at >= ? AND created_at < ?",
+                `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
+                 FROM account_transactions 
+                 WHERE created_at >= ? AND created_at < ? 
+                 AND description NOT LIKE 'Penjualan TRZ%' 
+                 AND description NOT LIKE 'Pengeluaran:%' 
+                 AND description NOT LIKE 'Pembatalan Transaksi TRZ%'
+                 AND description NOT LIKE 'Penjualan V2 #%'`,
                 [initialCapitalDate, startDate]
             );
 
@@ -8274,7 +8421,13 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                     [endDateTime]
                 );
                 const [accAfter] = await db.query(
-                    "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total FROM account_transactions WHERE created_at > ?",
+                    `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
+                     FROM account_transactions 
+                     WHERE created_at > ?
+                     AND description NOT LIKE 'Penjualan TRZ%' 
+                     AND description NOT LIKE 'Pengeluaran:%' 
+                     AND description NOT LIKE 'Pembatalan Transaksi TRZ%'
+                     AND description NOT LIKE 'Penjualan V2 #%'`,
                     [endDateTime]
                 );
 
