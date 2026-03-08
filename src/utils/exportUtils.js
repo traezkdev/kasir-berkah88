@@ -860,3 +860,232 @@ export const prepareCashReconciliationDataForExport = (history) => {
     };
   });
 };
+
+export const prepareAuditDataForExport = (auditData) => {
+  const { metrics, anomalies } = auditData;
+  const sections = [];
+
+  // Ringkasan Utama
+  sections.push({
+    title: 'Ringkasan Utama Audit',
+    headers: ['Keterangan', 'Nilai'],
+    rows: [
+      ['Status Integritas', Math.abs(metrics.cashDifference) <= 100 ? 'Sangat Akurat (PAS)' : `Selisih Rp ${new Intl.NumberFormat('id-ID').format(Math.abs(metrics.cashDifference))}`],
+      ['Modal Awal Periode', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.initialCapital)],
+      ['Total Pendapatan', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.totalRevenue)],
+      ['Total Pengeluaran', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.totalExpenses)],
+      ['Laba Bersih', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.netProfit)],
+      ['Nilai Stok Barang', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.stockValue)],
+      ['Kas Aktual (Fisik)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.physicalCash)],
+      ['Kas Seharusnya (Sistem)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.expectedCash)],
+      ['Selisih Audit Kas', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.cashDifference)],
+      ['Kekayaan Bisnis (Equity)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.targetEquity)],
+      ['Modal Berjalan (Wealth)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.currentEquity)],
+    ]
+  });
+
+  // Rincian Saldo
+  sections.push({
+    title: 'Rincian Saldo Aktual',
+    headers: ['Sumber Kas', 'Nilai'],
+    rows: [
+      ['Saldo Transfer (Bank/Owner)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.ownerBalance)],
+      ['Saldo Tunai (Lapak/Kasir)', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.lapakBalance)],
+      ['Total Kas Aktual', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(metrics.physicalCash)],
+    ]
+  });
+
+  // Anomali Temuan
+  if (anomalies && anomalies.length > 0) {
+    sections.push({
+      title: 'Temuan Anomali & Peringatan',
+      headers: ['Judul', 'Deskripsi', 'Tingkat'],
+      rows: anomalies.map(a => [a.title, a.desc, a.type === 'danger' ? 'KRITIKAL' : 'PERINGATAN'])
+    });
+  } else {
+    sections.push({
+      title: 'Temuan Anomali & Peringatan',
+      headers: ['Status'],
+      rows: [['Tidak ditemukan anomali data (Sempurna)']]
+    });
+  }
+
+  return sections;
+};
+
+export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRange = null, template = {}) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const { metrics, anomalies } = auditData;
+  const currencyFormat = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+
+  // Gabungkan template dari pengaturan dengan default
+  const DEFAULTS = {
+    company_name: 'KASIR BERKAH 88',
+    company_subtitle: 'Sistem Manajemen Keuangan & Point of Sale Terintegrasi',
+    company_tagline: 'Laporan Resmi Transparansi Operasional & Integritas Data',
+    report_title: 'LAPORAN AUDIT & INTEGRITAS KEUANGAN',
+    recipient_label: 'Pimpinan / Owner Kasir Berkah 88',
+    opening_salutation: 'Dengan hormat,',
+    opening_body: 'Berdasarkan hasil analisis sistem terhadap seluruh data transaksi, pengeluaran, dan pergerakan kas pada periode yang ditentukan, berikut adalah rincian konsolidasi keuangan:',
+    closing_body: 'Demikian laporan audit ini disampaikan sebagai rujukan utama dalam pengambilan keputusan manajemen dan audit operasional berkala.',
+    issuer_label: 'Diterbitkan Secara Otomatis oleh,',
+    issuer_name: 'Sistem Audit Kasir Berkah 88',
+    signer_title: 'Admin & Tim Keuangan',
+    signature_note: '(Dicetak melalui modul Auditor - Digital Signature Verified)',
+  };
+  const T = { ...DEFAULTS, ...template };
+
+  // --- Letterhead (Kop Surat) ---
+  doc.setFontSize(22);
+  doc.setTextColor(20, 83, 45); // Dark Green
+  doc.setFont('helvetica', 'bold');
+  doc.text(T.company_name, pageWidth / 2, 20, { align: "center" });
+
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.setFont('helvetica', 'normal');
+  doc.text(T.company_subtitle, pageWidth / 2, 26, { align: "center" });
+  doc.text(T.company_tagline, pageWidth / 2, 31, { align: "center" });
+
+  // Line under letterhead
+  doc.setDrawColor(40, 40, 40);
+  doc.setLineWidth(0.5);
+  doc.line(14, 35, pageWidth - 14, 35);
+  doc.setLineWidth(1.5);
+  doc.line(14, 36.5, pageWidth - 14, 36.5);
+
+  // --- Document Title & Reference ---
+  doc.setFontSize(16);
+  doc.setTextColor(0);
+  doc.setFont('helvetica', 'bold');
+  doc.text(T.report_title, pageWidth / 2, 48, { align: "center" });
+
+  const reportId = `AUD-${new Date().getTime().toString().slice(-8)}`;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'italic');
+  doc.text(`Kode Referensi Laporan: ${reportId}`, pageWidth / 2, 53, { align: "center" });
+
+  // --- Header Information ---
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0);
+  doc.text("Kepada Yth,", 14, 65);
+  doc.setFont('helvetica', 'bold');
+  doc.text(T.recipient_label, 14, 70);
+
+  doc.setFont('helvetica', 'normal');
+  const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  doc.text(`Tanggal Cetak: ${today}`, pageWidth - 14, 70, { align: 'right' });
+
+  // Date Range Info
+  let currentY = 80;
+  if (dateRange) {
+    const formatDate = (date) => {
+      if (!date) return '-';
+      const d = new Date(date);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Periode Laporan: ${formatDate(dateRange.startDate || dateRange.start)} s/d ${formatDate(dateRange.endDate || dateRange.end)}`, 14, currentY);
+    currentY += 10;
+  }
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(T.opening_salutation, 14, currentY);
+  currentY += 6;
+  doc.text(T.opening_body, 14, currentY, { maxWidth: pageWidth - 28 });
+  currentY += 12;
+
+  // --- Content Tabular Data ---
+  autoTable(doc, {
+    startY: currentY,
+    head: [['KOMPONEN AUDIT KEUANGAN', 'NILAI LAPORAN']],
+    body: [
+      ['Modal Awal (Baseline Audit)', currencyFormat.format(metrics.initialCapital)],
+      ['Total Pemasukan (Revenue)', currencyFormat.format(metrics.totalRevenue)],
+      ['Total Pengeluaran (Expense)', currencyFormat.format(metrics.totalExpenses)],
+      ['Laba Bersih Operasional', currencyFormat.format(metrics.netProfit)],
+      ['Nilai Persediaan Aset/Stok', currencyFormat.format(metrics.stockValue)],
+      ['Estimasi Kas dari Sistem', currencyFormat.format(metrics.expectedCash)],
+      ['Kas Aktual yang Tersedia', currencyFormat.format(metrics.physicalCash)],
+      ['SELISIH AUDIT (ACCURACY)', currencyFormat.format(metrics.cashDifference)],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold', fontSize: 10 },
+    styles: { fontSize: 9, cellPadding: 4 },
+    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+    margin: { left: 14, right: 14 }
+  });
+
+  currentY = doc.lastAutoTable.finalY + 10;
+
+  // --- Assessment / Conclusion ---
+  doc.setFont('helvetica', 'bold');
+  doc.text("KESIMPULAN VALIDASI DATA:", 14, currentY);
+  currentY += 6;
+  doc.setFont('helvetica', 'normal');
+
+  let assessment = "";
+  if (Math.abs(metrics.cashDifference) <= 100) {
+    assessment = "Sistem validasi menyatakan data keuangan DALAM KONDISI SEMPURNA. Catatan digital sepenuhnya sinkron dengan uang fisik yang tersedia. Tidak ditemukan penyimpangan data.";
+  } else if (metrics.cashDifference < 0) {
+    assessment = `Ditemukan ketidakcocokan data berupa KEKURANGAN kas operasional sebesar ${currencyFormat.format(Math.abs(metrics.cashDifference))}. Direkomendasikan untuk meninjau kembali riwayat transaksi harian dan catatan pengeluaran kasir.`;
+  } else {
+    assessment = `Ditemukan kelebihan kas operasional sebesar ${currencyFormat.format(metrics.cashDifference)}. Hal ini menandakan adanya pendapatan yang masuk ke kas namun belum terinput secara resmi ke dalam sistem penjualan.`;
+  }
+
+  doc.text(assessment, 14, currentY, { maxWidth: pageWidth - 28 });
+  currentY += 15;
+
+  // --- Anomalies Section ---
+  if (anomalies && anomalies.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(185, 28, 28);
+    doc.text("CATATAN ANOMALI & PERINGATAN SISTEM:", 14, currentY);
+    currentY += 5;
+    doc.setTextColor(0);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['TEMUAN', 'DESKRIPSI', 'LEVEL']],
+      body: anomalies.map(a => [a.title, a.desc, a.type === 'danger' ? 'KRITIKAL' : 'PERINGATAN']),
+      theme: 'striped',
+      headStyles: { fillColor: [153, 27, 27], textColor: 255 },
+      styles: { fontSize: 8 },
+      margin: { left: 14, right: 14 }
+    });
+    currentY = doc.lastAutoTable.finalY + 15;
+  } else {
+    currentY += 5;
+  }
+
+  if (currentY + 50 > doc.internal.pageSize.height) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  // --- Closing ---
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(T.closing_body, 14, currentY, { maxWidth: pageWidth - 28 });
+
+  currentY += 25;
+  doc.text(T.issuer_label, 14, currentY);
+  currentY += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text(T.issuer_name, 14, currentY);
+
+  currentY += 25;
+  doc.setDrawColor(200);
+  doc.line(14, currentY, 80, currentY);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.text(T.signature_note, 14, currentY + 4);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(T.signer_title, 14, currentY - 2);
+
+  doc.save(`${filename}.pdf`);
+};

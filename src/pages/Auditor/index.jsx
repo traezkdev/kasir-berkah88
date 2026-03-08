@@ -14,6 +14,7 @@ import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import LoadingScreen from '../../components/ui/LoadingScreen';
 import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 import MobileBottomNav from '../../components/ui/MobileBottomNav';
+import { exportToExcel, exportAuditorToPdf, prepareAuditDataForExport } from '../../utils/exportUtils';
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -250,6 +251,40 @@ export default function AuditorPage() {
         fetchData();
     }, []);
 
+    const handleExportExcel = () => {
+        if (!data) return;
+        const sections = prepareAuditDataForExport(data);
+        const filename = `Audit_Laporan_${startDate || 'Awal'}_sd_${endDate || 'Hari_Ini'}`;
+        exportToExcel(sections, filename);
+        toast.success("Laporan Excel sedang diunduh");
+    };
+
+    const handleExportPdf = async () => {
+        if (!data) return;
+        const filename = `Audit_Laporan_${startDate || 'Awal'}_sd_${endDate || 'Hari_Ini'}`;
+        const dateRange = { startDate, endDate };
+
+        // Ambil template dari settings
+        let template = {};
+        try {
+            const res = await authFetch(`${apiUrl}/api/all-settings`);
+            const settingsData = await res.json();
+            if (res.ok && settingsData.data) {
+                Object.keys(settingsData.data).forEach(key => {
+                    if (key.startsWith('audit_pdf_')) {
+                        const templateKey = key.replace('audit_pdf_', '');
+                        template[templateKey] = settingsData.data[key];
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Gagal memuat template PDF, menggunakan default.', e);
+        }
+
+        exportAuditorToPdf(data, filename, dateRange, template);
+        toast.success("Laporan PDF sedang diunduh");
+    };
+
     const formatNumber = (num) => {
         return new Intl.NumberFormat('id-ID').format(num);
     };
@@ -317,7 +352,7 @@ export default function AuditorPage() {
                 </header>
 
                 {/* Audit Status Bar - Premium Redesign */}
-                <div className={`mb-10 lg:!mt-0 -mt-24 relative z-20 rounded-[2.5rem] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-white dark:border-slate-800`}>
+                <div className={`mb-10 lg:!mt-0 -mt-24 relative z-20 rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-white dark:border-slate-800`}>
                     <div className="flex flex-col md:flex-row items-stretch">
                         {/* Status Accent Side */}
                         <div className={`w-2 shrink-0 ${Math.abs(data.metrics.cashDifference) <= 100 ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
@@ -371,7 +406,7 @@ export default function AuditorPage() {
                 </div>
                 {/* Filters & Configuration section */}
                 <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
                         <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">Mulai Tanggal</label>
                         <input
                             type="date"
@@ -380,7 +415,7 @@ export default function AuditorPage() {
                             className="w-full h-10 px-4 rounded-xl bg-gray-50 dark:bg-slate-800 border-none text-sm font-bold text-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all outline-none"
                         />
                     </div>
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
                         <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">Sampai Tanggal</label>
                         <input
                             type="date"
@@ -393,7 +428,7 @@ export default function AuditorPage() {
                         <Button
                             onClick={() => fetchData()}
                             variant="primary"
-                            className="flex-1 h-14 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
                             <Icon name="Search" size={16} />
                             Filter Audit
@@ -405,13 +440,52 @@ export default function AuditorPage() {
                                 onClick={handleSaveAsDefault}
                                 disabled={isSavingDefault || !startDate}
                                 variant="ghost"
-                                className="flex-1 h-14 rounded-[1.5rem] bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 text-purple-600 font-black text-[10px] uppercase tracking-widest border border-purple-100 dark:border-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                className="flex-1 h-14 rounded-2xl bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 text-purple-600 font-black text-[10px] uppercase tracking-widest border border-purple-100 dark:border-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
                                 <Icon name={isSavingDefault ? "Loader2" : "Save"} size={16} severity={isSavingDefault ? "animate-spin" : ""} />
                                 {isSavingDefault ? "Menyimpan..." : "Set Sebagai Default"}
                             </Button>
                         </div>
                     ) : null}
+                </div>
+
+                {/* Export Buttons Section - Cool UI */}
+                <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div
+                        onClick={handleExportPdf}
+                        className="group relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 to-red-600 p-px transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                        <div className="relative flex items-center gap-5 bg-white dark:bg-slate-900 px-8 py-6 rounded-[1.45rem] transition-colors group-hover:bg-transparent">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500 text-white transition-transform group-hover:scale-110 group-hover:rotate-3">
+                                <Icon name="FileText" size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider group-hover:text-white transition-colors">Export Laporan PDF</h4>
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-white/80 transition-colors">Dokumen resmi & Arsip Digital</p>
+                            </div>
+                            <div className="h-8 w-8 rounded-full border border-gray-100 dark:border-slate-800 flex items-center justify-center group-hover:border-white/30 group-hover:text-white transition-all">
+                                <Icon name="Download" size={14} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        onClick={handleExportExcel}
+                        className="group relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-px transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                        <div className="relative flex items-center gap-5 bg-white dark:bg-slate-900 px-8 py-6 rounded-[1.45rem] transition-colors group-hover:bg-transparent">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white transition-transform group-hover:scale-110 group-hover:-rotate-3">
+                                <Icon name="FileSpreadsheet" size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider group-hover:text-white transition-colors">Export Laporan Excel</h4>
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-white/80 transition-colors">Analisis Data Lanjutan (XLSX)</p>
+                            </div>
+                            <div className="h-8 w-8 rounded-full border border-gray-100 dark:border-slate-800 flex items-center justify-center group-hover:border-white/30 group-hover:text-white transition-all">
+                                <Icon name="Download" size={14} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ===== RINGKASAN KARTU AUDIT ===== */}
@@ -687,7 +761,7 @@ export default function AuditorPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {data.anomalies.length > 0 ? (
                             data.anomalies.map((anom, idx) => (
-                                <div key={idx} className={`p-6 rounded-[2rem] border-2 shadow-sm flex items-start gap-4 ${anom.type === 'danger' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'
+                                <div key={idx} className={`p-6 rounded-2xl border-2 shadow-sm flex items-start gap-4 ${anom.type === 'danger' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'
                                     }`}>
                                     <div className={`mt-1 ${anom.type === 'danger' ? 'text-rose-500' : 'text-amber-500'}`}>
                                         <Icon name={anom.type === 'danger' ? 'AlertTriangle' : 'Info'} size={24} />
@@ -699,7 +773,7 @@ export default function AuditorPage() {
                                 </div>
                             ))
                         ) : (
-                            <div className="col-span-full py-12 bg-white rounded-[2.5rem] border-2 border-dashed border-emerald-100 flex flex-col items-center justify-center text-center">
+                            <div className="col-span-full py-12 bg-white rounded-3xl border-2 border-dashed border-emerald-100 flex flex-col items-center justify-center text-center">
                                 <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4">
                                     <Icon name="SearchCheck" size={32} />
                                 </div>
@@ -711,7 +785,7 @@ export default function AuditorPage() {
                 </section>
 
                 {/* Panduan Investigasi Selisih */}
-                <section className={`mb-12 p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${Math.abs(data.metrics.cashDifference) > 100
+                <section className={`mb-12 p-8 rounded-3xl border-2 transition-all duration-500 ${Math.abs(data.metrics.cashDifference) > 100
                     ? 'bg-indigo-50 border-indigo-100 shadow-xl shadow-indigo-900/5'
                     : 'bg-gray-50 border-gray-100 opacity-60'
                     }`}>
@@ -766,19 +840,19 @@ export default function AuditorPage() {
 
                 {/* Detailed Metrics Reference */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Owner</p>
                         <p className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.ownerBalance)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Lapak</p>
                         <p className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.lapakBalance)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Stok</p>
                         <p className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.stockValue)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Laba Bersih</p>
                         <p className="text-lg font-black text-emerald-500">+{formatCurrency(data.metrics.netProfit)}</p>
                     </div>
