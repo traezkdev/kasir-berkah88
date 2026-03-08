@@ -8556,8 +8556,32 @@ app.post("/api/settings/close-book", authenticateToken, authorizeRoles('admin', 
             );
         }
 
-        // Update last_closing_date in settings
+        if (ownerAccount.length > 0) {
+            // Reset balance Uang Transfer (Owner) ke 0 saat tutup buku
+            await connection.query("UPDATE accounts SET balance = 0 WHERE id = ?", [ownerAccount[0].id]);
+
+            // Catat transaksi reset agar history balance tetap sinkron
+            await connection.query(
+                "INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, closing_session_id) VALUES (?, ?, ?, ?, ?, NULL)",
+                [ownerAccount[0].id, 'withdrawal', parseFloat(ownerAccount[0].balance), 'Reset Saldo Owner Pasca Tutup Buku', req.user.userId]
+            );
+        }
+
+        // 6. Update initial_capital & initial_capital_date in settings
+        //    sehingga laporan audit periode berikutnya menggunakan modal awal yang benar
+        const newCapitalStr = String(parseFloat(initialCapitalNextDay || 0));
         const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).replace(' ', 'T');
+
+        await connection.query(
+            "INSERT INTO settings (`key`, `value`) VALUES ('initial_capital', ?) ON DUPLICATE KEY UPDATE `value` = ?",
+            [newCapitalStr, newCapitalStr]
+        );
+        await connection.query(
+            "INSERT INTO settings (`key`, `value`) VALUES ('initial_capital_date', ?) ON DUPLICATE KEY UPDATE `value` = ?",
+            [nowStr, nowStr]
+        );
+
+        // Update last_closing_date in settings
         await connection.query("INSERT INTO settings (`key`, `value`) VALUES ('last_closing_date', ?) ON DUPLICATE KEY UPDATE `value` = ?", [nowStr, nowStr]);
 
         await connection.commit();
