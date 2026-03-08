@@ -26,7 +26,7 @@ export default function AuditorPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
     const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [isSavingDefault, setIsSavingDefault] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
@@ -43,9 +43,12 @@ export default function AuditorPage() {
     }, []);
 
     const fetchData = async (currentStart, currentEnd) => {
+        // Today's date as default fallback for end
+        const today = new Date().toISOString().split('T')[0];
+
         // Safeguard against objects (like React events) being passed as arguments
         const start = typeof currentStart === 'string' ? currentStart : startDate;
-        const end = typeof currentEnd === 'string' ? currentEnd : endDate;
+        const end = typeof currentEnd === 'string' ? currentEnd : (endDate || today);
 
         setLoading(true);
         try {
@@ -88,13 +91,19 @@ export default function AuditorPage() {
                 precisionRes.json()
             ]);
 
-            // Auto-initialize startDate from settings on first load
+            // Auto-initialize dates from settings on first load
             if (!isInitialized) {
                 setIsInitialized(true);
-                const defaultStartDate = settings.data?.audit_start_date;
+
+                // Priority 1: Specifically saved audit start date
+                // Priority 2: Master initial capital date
+                const auditStart = settings.data?.audit_start_date;
+                const capitalStart = settings.data?.initial_capital_date ? settings.data.initial_capital_date.split(' ')[0] : null;
+                const defaultStartDate = auditStart || capitalStart;
+
                 if (defaultStartDate && !startDate && !currentStart) {
                     setStartDate(defaultStartDate);
-                    // Re-fetch immediately with the default date
+                    // Re-fetch immediately with the default dates (start from settings, end is today)
                     return fetchData(defaultStartDate, end);
                 }
             }
