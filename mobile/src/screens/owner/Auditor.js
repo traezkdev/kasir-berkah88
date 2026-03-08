@@ -415,16 +415,80 @@ const AuditorScreen = ({ navigation }) => {
     };
 
     // UI Components
-    const StatCard = ({ title, value, icon: Icon, color, desc }) => (
+    const StatCard = ({ title, value, icon: Icon, color, desc, longDesc, note, formula, growth }) => (
         <View style={[styles.statCard]}>
             <View style={styles.statCardHeader}>
-                <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}>
+                <View style={[styles.statIconBox, { backgroundColor: color + '15', flexShrink: 0 }]}>
                     <Icon size={18} color={color} />
                 </View>
-                <Text style={styles.statLabel}>{title}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.statLabel, { flexShrink: 1 }]} numberOfLines={1}>{title}</Text>
+                        {growth && (
+                            <View style={[styles.growthBadge, { backgroundColor: growth.value >= 0 ? '#D1FAE5' : '#FEE2E2', flexShrink: 0 }]}>
+                                <Text style={[styles.growthText, { color: growth.value >= 0 ? '#059669' : '#B91C1C' }]}>
+                                    {growth.value >= 0 ? '▲' : '▼'} {Math.abs(growth.percent)}%
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
             </View>
-            <Text style={[styles.statValue, { color: color }]}>{formatCurrency(value)}</Text>
-            {desc && <Text style={styles.statDesc}>{desc}</Text>}
+            <Text
+                style={[styles.statValue, { color: color }]}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+            >{formatCurrency(value)}</Text>
+            {desc && <Text style={styles.statDesc} numberOfLines={1}>{desc}</Text>}
+
+            {longDesc && (
+                <Text style={styles.statLongDesc}>{longDesc}</Text>
+            )}
+
+            {growth && (
+                <View style={[styles.growthAnalysis, { borderTopColor: color + '20' }]}>
+                    <Text style={styles.growthTitle}>ANALISIS PERTUMBUHAN</Text>
+                    <View style={styles.growthRow}>
+                        <Text style={[styles.growthStatus, { flexShrink: 1 }]} numberOfLines={1}>
+                            {growth.value >= 0 ? '💰 Mengembang' : '📉 Menyusut'}
+                        </Text>
+                        <Text
+                            style={[styles.growthValue, { color: growth.value >= 0 ? '#059669' : '#B91C1C', flexShrink: 0 }]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {growth.value >= 0 ? '+' : ''}{formatCurrency(growth.value)}
+                        </Text>
+                    </View>
+                    <Text style={styles.growthNote} numberOfLines={2}>
+                        {growth.value >= 0
+                            ? 'Total kas saat ini lebih besar dari modal awal sistem.'
+                            : 'Total kas saat ini lebih kecil dari modal awal sistem.'}
+                    </Text>
+                </View>
+            )}
+
+            {formula && (
+                <View style={[styles.formulaBox, { borderTopColor: color + '20' }]}>
+                    <Text style={styles.formulaTitle}>CARA HITUNG</Text>
+                    <View style={styles.formulaRow}>
+                        <Text style={styles.formulaPart}>{formatCurrency(formula.a)}</Text>
+                        <Text style={styles.formulaOperator}>{formula.op}</Text>
+                        <Text style={styles.formulaPart}>{formatCurrency(formula.b)}</Text>
+                        <Text style={styles.formulaOperator}>=</Text>
+                        <Text style={[styles.formulaResult, { color: color }]}>{formatCurrency(value)}</Text>
+                    </View>
+                </View>
+            )}
+
+            {note && (
+                <View style={[styles.noteBox, { borderTopColor: color + '20' }]}>
+                    <Text style={styles.noteTitle}>CATATAN</Text>
+                    <Text style={styles.noteText}>{note}</Text>
+                </View>
+            )}
         </View>
     );
 
@@ -531,50 +595,135 @@ const AuditorScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Stats Grid */}
-                <Text style={styles.sectionTitle}>RINGKASAN DATA</Text>
+                <Text style={styles.sectionTitle}>RINGKASAN DATA KEUANGAN</Text>
+                <Text style={styles.sectionSubtitle}>Data berdasarkan rentang tanggal yang dipilih. Semua angka mengacu pada catatan sistem.</Text>
+
                 <View style={styles.statsGrid}>
-                    <StatCard title="Modal Awal" value={metrics.masterInitialCapital} icon={PiggyBank} color="#8B5CF6" desc="Modal awal sistem" />
-                    <StatCard title="Pendapatan" value={metrics.totalRevenue} icon={TrendingUp} color="#10B981" desc="Total penjualan bersih" />
-                    <StatCard title="Pengeluaran" value={metrics.totalExpenses} icon={TrendingDown} color="#EF4444" desc="Total biaya & belanja" />
-                    <StatCard title="Laba Bersih" value={metrics.netProfit} icon={DollarSign} color="#3B82F6" desc="Hasil operasional" />
-                    <StatCard title="Nilai Stok" value={metrics.stockValue} icon={Package} color="#F59E0B" desc="Aset dlm bentuk barang" />
-                    <StatCard title="Kas Aktual" value={metrics.physicalCash} icon={Wallet} color="#06B6D4" desc="Uang nyata (Bank+Laci)" />
+                    <StatCard
+                        title="Modal Awal"
+                        value={metrics.masterInitialCapital}
+                        icon={PiggyBank}
+                        color="#8B5CF6"
+                        desc="Modal awal utama"
+                        longDesc="Modal awal utama yang terdaftar di pengaturan sistem."
+                        growth={{
+                            value: metrics.physicalCash - metrics.masterInitialCapital,
+                            percent: metrics.masterInitialCapital > 0
+                                ? ((metrics.physicalCash - metrics.masterInitialCapital) / metrics.masterInitialCapital * 100).toFixed(1)
+                                : 0
+                        }}
+                    />
+                    <StatCard
+                        title="Total Pendapatan"
+                        value={metrics.totalRevenue}
+                        icon={TrendingUp}
+                        color="#10B981"
+                        desc="Pemasukan kotor"
+                        longDesc="Total uang masuk dari semua penjualan periode ini sebelum dikurangi pengeluaran."
+                        note="Transaksi dengan metode pembayaran 'Makan Karyawan' tidak dihitung karena bukan pemasukan tunai."
+                    />
+                    <StatCard
+                        title="Total Pengeluaran"
+                        value={metrics.totalExpenses}
+                        icon={TrendingDown}
+                        color="#EF4444"
+                        desc="Biaya & Belanja"
+                        longDesc="Total uang keluar untuk belanja bahan, operasional, dan pengeluaran lainnya."
+                        note="Pastikan semua bon belanja sudah dicatat. Pengeluaran tidak tercatat menyebabkan selisih audit."
+                    />
+                    <StatCard
+                        title="Laba Bersih"
+                        value={metrics.netProfit}
+                        icon={DollarSign}
+                        color={metrics.netProfit >= 0 ? "#10B981" : "#EF4444"}
+                        desc={metrics.netProfit >= 0 ? "Keuntungan" : "Kerugian"}
+                        longDesc={metrics.netProfit >= 0
+                            ? "Bisnis menghasilkan keuntungan. Uang yang dihasilkan melebihi biaya yang dikeluarkan."
+                            : "Bisnis mengalami kerugian. Biaya yang dikeluarkan melebihi pendapatan yang masuk."
+                        }
+                        formula={{
+                            a: metrics.totalRevenue,
+                            op: '−',
+                            b: metrics.totalExpenses
+                        }}
+                    />
+                    <StatCard
+                        title="Nilai Stok"
+                        value={metrics.stockValue}
+                        icon={Package}
+                        color="#F59E0B"
+                        desc="Aset Barang"
+                        longDesc="Modal bisnis yang saat ini tersimpan dalam bentuk bahan baku dan stok menu siap jual."
+                        note="Jika semua stok terjual/dipakai, nilainya akan berubah menjadi kas. Stok terlalu besar bisa berarti over-buying."
+                    />
+                    <StatCard
+                        title="Kas Aktual"
+                        value={metrics.physicalCash}
+                        icon={Wallet}
+                        color="#06B6D4"
+                        desc="Uang Nyata"
+                        longDesc="Total uang yang benar-benar ada secara fisik saat ini (Gabungan Bank + Tunai Lapak)."
+                        note={`Bank: ${formatCurrency(metrics.ownerBalance)}\nLapak: ${formatCurrency(metrics.lapakBalance)}`}
+                    />
                 </View>
 
                 {/* Calculation Flow */}
-                <Text style={styles.sectionTitle}>ALUR KALKULASI</Text>
+                <Text style={styles.sectionTitle}>ALUR KALKULASI (STEP-BY-STEP)</Text>
                 <View style={styles.flowCard}>
-                    <View style={styles.flowItem}>
-                        <View style={styles.flowDot} />
-                        <Text style={styles.flowLabel}>Saldo Awal Baseline</Text>
-                        <Text style={styles.flowValue}>{formatCurrency(metrics.periodOpeningBalance)}</Text>
+                    <View style={styles.flowColumns}>
+                        <View style={styles.flowColumn}>
+                            <Text style={styles.flowColumnTitle}>💡 Kas Seharusnya</Text>
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelSmall}>Baseline</Text>
+                                <Text style={styles.flowValueSmall}>{formatCurrency(metrics.periodOpeningBalance)}</Text>
+                            </View>
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelSmall}>+ Pemasukan</Text>
+                                <Text style={[styles.flowValueSmall, { color: '#10B981' }]}>+{formatCurrency(metrics.totalRevenue)}</Text>
+                            </View>
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelSmall}>- Pengeluaran</Text>
+                                <Text style={[styles.flowValueSmall, { color: '#EF4444' }]}>-{formatCurrency(metrics.totalExpenses)}</Text>
+                            </View>
+                            <View style={styles.flowDividerSmall} />
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelBoldSmall}>Estimasi</Text>
+                                <Text style={styles.flowValueBoldSmall}>{formatCurrency(metrics.expectedCash)}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.flowColumn}>
+                            <Text style={styles.flowColumnTitle}>💵 Kas Nyata</Text>
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelSmall}>Saldo Bank</Text>
+                                <Text style={styles.flowValueSmall}>{formatCurrency(metrics.ownerBalance)}</Text>
+                            </View>
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelSmall}>+ Tunai Lapak</Text>
+                                <Text style={styles.flowValueSmall}>+{formatCurrency(metrics.lapakBalance)}</Text>
+                            </View>
+                            <View style={{ height: 35 }} />
+                            <View style={styles.flowDividerSmall} />
+                            <View style={styles.flowItemCompact}>
+                                <Text style={styles.flowLabelBoldSmall}>Fisik</Text>
+                                <Text style={styles.flowValueBoldSmall}>{formatCurrency(metrics.physicalCash)}</Text>
+                            </View>
+                        </View>
                     </View>
-                    <View style={styles.flowItem}>
-                        <View style={[styles.flowDot, { backgroundColor: '#10B981' }]} />
-                        <Text style={styles.flowLabel}>+ Total Pendapatan</Text>
-                        <Text style={[styles.flowValue, { color: '#10B981' }]}>+{formatCurrency(metrics.totalRevenue)}</Text>
-                    </View>
-                    <View style={styles.flowItem}>
-                        <View style={[styles.flowDot, { backgroundColor: '#EF4444' }]} />
-                        <Text style={styles.flowLabel}>- Total Pengeluaran</Text>
-                        <Text style={[styles.flowValue, { color: '#EF4444' }]}>-{formatCurrency(metrics.totalExpenses)}</Text>
-                    </View>
-                    <View style={styles.flowDivider} />
-                    <View style={styles.flowItem}>
-                        <View style={[styles.flowDot, { backgroundColor: '#3B82F6' }]} />
-                        <Text style={styles.flowLabelBold}>Seharusnya Ada</Text>
-                        <Text style={styles.flowValueBold}>{formatCurrency(metrics.expectedCash)}</Text>
-                    </View>
-                    <View style={styles.flowItem}>
-                        <View style={[styles.flowDot, { backgroundColor: '#06B6D4' }]} />
-                        <Text style={styles.flowLabelBold}>Kas Aktual (Fisik)</Text>
-                        <Text style={styles.flowValueBold}>{formatCurrency(metrics.physicalCash)}</Text>
-                    </View>
-                    <View style={[styles.flowResult, { backgroundColor: isAccurate ? '#10B98120' : '#EF444420' }]}>
-                        <Text style={[styles.resultLabel, { color: isAccurate ? '#059669' : '#B91C1C' }]}>KESIMPULAN AUDIT</Text>
-                        <Text style={[styles.resultValue, { color: isAccurate ? '#059669' : '#B91C1C' }]}>
-                            {isAccurate ? '✓ Sesuai' : `⚠ Selisih ${formatCurrency(metrics.cashDifference)}`}
+
+                    <View style={[styles.flowResult, { backgroundColor: isAccurate ? '#10B98120' : metrics.cashDifference < 0 ? '#EF444420' : '#F59E0B20' }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Info size={16} color={isAccurate ? '#059669' : metrics.cashDifference < 0 ? '#B91C1C' : '#D97706'} />
+                            <Text style={[styles.resultLabel, { color: isAccurate ? '#059669' : metrics.cashDifference < 0 ? '#B91C1C' : '#D97706' }]}>KESIMPULAN AUDIT</Text>
+                        </View>
+                        <Text style={[styles.resultValue, { color: isAccurate ? '#059669' : metrics.cashDifference < 0 ? '#B91C1C' : '#D97706' }]}>
+                            {isAccurate ? '✓ Sesuai (Akurat)' : `${metrics.cashDifference < 0 ? '⚠ Uang Kurang' : '↑ Uang Lebih'} ${formatCurrency(Math.abs(metrics.cashDifference))}`}
+                        </Text>
+                        <Text style={styles.resultExplanation}>
+                            Formula: Kas Nyata ({formatCurrency(metrics.physicalCash)}) − Estimasi ({formatCurrency(metrics.expectedCash)}) = {formatCurrency(metrics.cashDifference)}.
+                            {metrics.cashDifference < 0 && ' Peringatan: Selisih ini mengacu pada uang yang hilang dari catatan.'}
+                            {metrics.cashDifference > 0 && ' Ada kemungkinan pemasukan yang belum dicatat.'}
+                            {isAccurate && ' Semua catatan sudah sinkron dengan uang fisik.'}
                         </Text>
                     </View>
                 </View>
@@ -641,6 +790,182 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
+    },
+    sectionSubtitle: {
+        fontSize: 11,
+        color: '#64748B',
+        marginTop: -10,
+        marginBottom: 20,
+        fontWeight: '500',
+    },
+    statLongDesc: {
+        fontSize: 10,
+        color: '#64748B',
+        marginTop: 6,
+        lineHeight: 14,
+        fontWeight: '500',
+    },
+    growthBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    growthText: {
+        fontSize: 9,
+        fontWeight: '800',
+    },
+    growthAnalysis: {
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    growthTitle: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#94A3B8',
+        letterSpacing: 0.5,
+        marginBottom: 4,
+    },
+    growthRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 4,
+        minWidth: 0,
+    },
+    growthStatus: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#475569',
+    },
+    growthValue: {
+        fontSize: 11,
+        fontWeight: '800',
+    },
+    growthNote: {
+        fontSize: 9,
+        color: '#94A3B8',
+        marginTop: 2,
+        fontWeight: '500',
+    },
+    formulaBox: {
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    formulaTitle: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#94A3B8',
+        letterSpacing: 0.5,
+        marginBottom: 6,
+    },
+    formulaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 4,
+    },
+    formulaPart: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#475569',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+        borderRadius: 4,
+    },
+    formulaOperator: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+    },
+    formulaResult: {
+        fontSize: 10,
+        fontWeight: '800',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+        borderRadius: 4,
+    },
+    noteBox: {
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    noteTitle: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#94A3B8',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    noteText: {
+        fontSize: 9,
+        color: '#64748B',
+        fontStyle: 'italic',
+        lineHeight: 12,
+        fontWeight: '500',
+    },
+    flowColumns: {
+        flexDirection: 'row',
+        gap: 15,
+        marginBottom: 15,
+    },
+    flowColumn: {
+        flex: 1,
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        borderRadius: 16,
+    },
+    flowColumnTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#475569',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    flowItemCompact: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    flowLabelSmall: {
+        fontSize: 10,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    flowValueSmall: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#475569',
+    },
+    flowDividerSmall: {
+        height: 1,
+        backgroundColor: '#E2E8F0',
+        marginVertical: 6,
+    },
+    flowLabelBoldSmall: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#1E293B',
+    },
+    flowValueBoldSmall: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#349BE5',
+    },
+    resultExplanation: {
+        fontSize: 10,
+        color: '#475569',
+        marginTop: 8,
+        lineHeight: 14,
+        fontWeight: '500',
     },
     loadingContainer: {
         flex: 1,
@@ -850,12 +1175,14 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 16,
         elevation: 2,
+        overflow: 'hidden',
     },
     statCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
         marginBottom: 10,
+        minWidth: 0,
     },
     statIconBox: {
         width: 32,
