@@ -54,7 +54,7 @@ export default function AuditorPage() {
             if (end) params.append('endDate', end);
             const queryString = params.toString() ? `?${params.toString()}` : '';
 
-            const [allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes] = await Promise.all([
+            const [allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes, precisionRes] = await Promise.all([
                 authFetch(`${apiUrl}/api/transactions/all${queryString}`),
                 authFetch(`${apiUrl}/api/menu-items/all`),
                 authFetch(`${apiUrl}/api/expenses/all${queryString}`),
@@ -62,7 +62,8 @@ export default function AuditorPage() {
                 authFetch(`${apiUrl}/api/accounts/owner_deposit`),
                 authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
                 authFetch(`${apiUrl}/api/raw-materials`),
-                authFetch(`${apiUrl}/api/units`)
+                authFetch(`${apiUrl}/api/units`),
+                authFetch(`${apiUrl}/api/audit/calculate-accuracy${queryString}`)
             ]);
 
             const [
@@ -73,7 +74,8 @@ export default function AuditorPage() {
                 ownerAccount,
                 lapakAccount,
                 rawMaterials,
-                units
+                units,
+                precisionData
             ] = await Promise.all([
                 allTransRes.json(),
                 menuRes.json(),
@@ -82,7 +84,8 @@ export default function AuditorPage() {
                 ownerAccountRes.json(),
                 lapakAccountRes.json(),
                 rawMaterialsRes.json(),
-                unitsRes.json()
+                unitsRes.json(),
+                precisionRes.json()
             ]);
 
             // Auto-initialize startDate from settings on first load
@@ -104,7 +107,8 @@ export default function AuditorPage() {
                 ownerBalance: ownerAccount.data?.account?.balance || 0,
                 lapakBalance: lapakAccount.data?.account?.balance || 0,
                 rawMaterials: rawMaterials.data || [],
-                units: units.data || []
+                units: units.data || [],
+                precision: precisionData.data || {}
             });
         } catch (error) {
             console.error("Audit fetch error:", error);
@@ -139,20 +143,22 @@ export default function AuditorPage() {
     };
 
     const processAuditData = (raw) => {
-        const initialCapital = parseFloat(raw.settings.initial_capital) || 0;
+        // High Precision Metrics from Backend
+        const precision = raw.precision || {};
+        const initialCapital = precision.openingBalance || parseFloat(raw.settings.initial_capital) || 0;
 
         // Revenue logic (exclude employee meals and non-monetary)
-        const totalRevenue = raw.transactions
+        const totalRevenue = precision.periodRevenue !== undefined ? precision.periodRevenue : raw.transactions
             .filter(t => t.payment_method !== 'employee_meal')
             .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
 
-        const totalExpenses = raw.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+        const totalExpenses = precision.periodExpenses !== undefined ? precision.periodExpenses : raw.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
         // Expected Cash Formula
-        const expectedCash = initialCapital + totalRevenue - totalExpenses;
+        const expectedCash = precision.expectedClosingBalance || (initialCapital + totalRevenue - totalExpenses);
 
-        // Physical Cash (Bank + Cash)
-        const physicalCash = parseFloat(raw.ownerBalance) + parseFloat(raw.lapakBalance);
+        // Physical Cash (Bank + Cash as of the END of period)
+        const physicalCash = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (parseFloat(raw.ownerBalance) + parseFloat(raw.lapakBalance));
 
         const cashDifference = physicalCash - expectedCash;
 
@@ -430,7 +436,12 @@ export default function AuditorPage() {
                                 </div>
                                 <div>
                                     <p className="text-2xl font-mono font-black text-purple-500 tracking-tight">{formatCurrency(data.metrics.initialCapital)}</p>
-                                    <p className="text-xs text-text-secondary mt-1 leading-relaxed">Uang yang pertama kali disetor untuk memulai bisnis ini. Nilai ini menjadi <strong>patokan awal</strong> dalam semua kalkulasi audit.</p>
+                                    <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                                        {startDate
+                                            ? <span>Saldo akhir sebelum <strong>{new Date(startDate).toLocaleDateString('id-ID')}</strong>. Nilai ini menjadi baseline audit periode ini.</span>
+                                            : <span>Uang pertama kali disetor untuk memulai bisnis. Nilai ini menjadi <strong>patokan awal</strong> audit.</span>
+                                        }
+                                    </p>
                                 </div>
                                 <div className="pt-3 border-t border-purple-500/20">
                                     <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1">Status Pertumbuhan Kas</p>
@@ -542,7 +553,12 @@ export default function AuditorPage() {
                         </div>
                         <div>
                             <p className="text-2xl font-mono font-black text-teal-500 tracking-tight">{formatCurrency(data.metrics.physicalCash)}</p>
-                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">Total uang yang <strong>benar-benar ada secara fisik</strong> saat ini, yaitu gabungan dari uang di tangan Owner dan uang di kas lapak.</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                                {endDate && new Date(endDate).toDateString() !== new Date().toDateString()
+                                    ? `Estimasi total uang yang ada di tangan pada tanggal ${new Date(endDate).toLocaleDateString('id-ID')} berdasarkan histori saldo.`
+                                    : "Total uang yang benar-benar ada secara fisik saat ini (Gabungan Owner + Lapak)."
+                                }
+                            </p>
                         </div>
                         <div className="pt-3 border-t border-teal-500/20 space-y-2">
                             <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Rincian Sumber Kas</p>
@@ -601,7 +617,7 @@ export default function AuditorPage() {
                                 <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary mb-3">💡 Kas yang Seharusnya Ada</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-text-secondary">Modal Awal (setoran)</span>
+                                        <span className="text-xs text-text-secondary">{startDate ? 'Saldo Awal Periode' : 'Modal Awal (setoran)'}</span>
                                         <span className="text-xs font-black font-mono text-purple-500">{formatCurrency(data.metrics.initialCapital)}</span>
                                     </div>
                                     <div className="flex items-center justify-between">

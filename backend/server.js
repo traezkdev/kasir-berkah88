@@ -8211,7 +8211,111 @@ app.use((err, req, res, next) => {
     });
 });
 
-// --- Tutup Buku (Closing Session) Endpoints ---
+// Get accurate audit calculation for a specific period
+app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // 1. Get Initial Capital Baseline
+        const [capitalSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'initial_capital'");
+        const [capitalDateSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'initial_capital_date'");
+
+        const initialCapital = parseFloat(capitalSetting[0]?.value || 0);
+        const initialCapitalDate = capitalDateSetting[0]?.value || '1970-01-01 00:00:00';
+
+        // 2. Calculate Opening Balance (Balance right before startDate)
+        let openingBalance = initialCapital;
+        if (startDate) {
+            // Revenue BEFORE startDate
+            const [revBefore] = await db.query(
+                "SELECT SUM(total) as total FROM transactions WHERE timestamp >= ? AND timestamp < ? AND isEmployeeMeal = 0 AND deleted_at IS NULL",
+                [initialCapitalDate, startDate]
+            );
+            // Expenses BEFORE startDate
+            const [expBefore] = await db.query(
+                "SELECT SUM(amount) as total FROM expenses WHERE date >= ? AND date < ?",
+                [initialCapitalDate, startDate]
+            );
+            // Manual Account adjustments BEFORE startDate (that aren't archived/closing related)
+            // Note: In this system, account_transactions are archived during closing.
+            // But we need the total flow.
+            const [accBefore] = await db.query(
+                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total FROM account_transactions WHERE created_at >= ? AND created_at < ?",
+                [initialCapitalDate, startDate]
+            );
+
+            // Wait, if we use transactions and expenses table directly, we might double count if they also exist in account_transactions.
+            // Based on my analysis, sales DO NOT go to account_transactions automatically.
+            // So: OpeningBalance = Capital + AllSales(before) - AllExpenses(before) + ManualAdjustments(before)
+            openingBalance = initialCapital + parseFloat(revBefore[0].total || 0) - parseFloat(expBefore[0].total || 0) + parseFloat(accBefore[0].total || 0);
+        }
+
+        // 3. Current Account Balances (Physical/Bank)
+        const [accounts] = await db.query("SELECT id, name, balance FROM accounts");
+        const physicalCashNow = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+        const lapakBalance = accounts.find(a => a.name === 'lapak_deposit')?.balance || 0;
+        const ownerBalance = accounts.find(a => a.name === 'owner_deposit')?.balance || 0;
+
+        // 4. Calculate actual cash as of endDate (if endDate is in the past)
+        let physicalCashAtEnd = physicalCashNow;
+        if (endDate) {
+            const endDateTime = `${endDate} 23:59:59`;
+            // If endDateTime is before now, we need to backtrack
+            const now = new Date();
+            const end = new Date(endDateTime);
+            if (end < now) {
+                // Find all changes after endDateTime to revert them
+                const [revAfter] = await db.query(
+                    "SELECT SUM(total) as total FROM transactions WHERE timestamp > ? AND isEmployeeMeal = 0 AND deleted_at IS NULL",
+                    [endDateTime]
+                );
+                const [expAfter] = await db.query(
+                    "SELECT SUM(amount) as total FROM expenses WHERE date > ?",
+                    [endDateTime]
+                );
+                const [accAfter] = await db.query(
+                    "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total FROM account_transactions WHERE created_at > ?",
+                    [endDateTime]
+                );
+
+                // Revert: BalanceAtEnd = CurrentBalance - InflowAfter + OutgoAfter
+                physicalCashAtEnd = physicalCashNow - (parseFloat(revAfter[0].total || 0) + parseFloat(accAfter[0].total || 0)) + parseFloat(expAfter[0].total || 0);
+            }
+        }
+
+        // 5. Period performance
+        const periodStart = startDate ? startDate : initialCapitalDate;
+        const periodEnd = endDate ? `${endDate} 23:59:59` : new Date().toISOString().replace('T', ' ').split('.')[0];
+
+        const [periodRev] = await db.query(
+            "SELECT SUM(total) as total FROM transactions WHERE timestamp >= ? AND timestamp <= ? AND isEmployeeMeal = 0 AND deleted_at IS NULL",
+            [periodStart, periodEnd]
+        );
+        const [periodExp] = await db.query(
+            "SELECT SUM(amount) as total FROM expenses WHERE date >= ? AND date <= ?",
+            [periodStart, periodEnd]
+        );
+
+        res.json({
+            message: "success",
+            data: {
+                openingBalance,
+                periodRevenue: parseFloat(periodRev[0].total || 0),
+                periodExpenses: parseFloat(periodExp[0].total || 0),
+                expectedClosingBalance: openingBalance + parseFloat(periodRev[0].total || 0) - parseFloat(periodExp[0].total || 0),
+                physicalCashAtEnd,
+                currentLapakBalance: lapakBalance,
+                currentOwnerBalance: ownerBalance,
+                auditStartDate: periodStart,
+                auditEndDate: periodEnd
+            }
+        });
+
+    } catch (err) {
+        console.error("Audit precision calculation error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Process Tutup Buku
 app.post("/api/settings/close-book", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
