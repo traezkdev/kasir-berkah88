@@ -20,9 +20,9 @@ const AddMenuItemModal = ({
 
             {/* Modal Container */}
             <div
-                className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
-                   lg:mx-auto lg:h-[90vh]
-                   fixed lg:relative inset-0 h-full lg:h-auto
+                className="relative w-full lg:max-w-5xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
+                   lg:mx-auto lg:h-[90vh] flex flex-col
+                   fixed lg:relative inset-0 h-full
                    rounded-none lg:rounded-2xl animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -45,8 +45,8 @@ const AddMenuItemModal = ({
                     </button>
                 </div>
 
-                {/* Scrollable Content */}
-                <div className="overflow-y-auto h-full pb-32">
+                {/* Scrollable Content Area */}
+                <div className="overflow-y-auto flex-1 custom-scrollbar">
                     <div className="p-6">
                         <AddMenuItemForm
                             onAddItem={async (data) => {

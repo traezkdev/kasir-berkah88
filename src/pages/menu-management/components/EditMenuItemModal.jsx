@@ -79,9 +79,9 @@ const EditMenuItemModal = ({
 
       {/* Modal Container */}
       <div
-        className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
-                   lg:mx-auto lg:h-[90vh] lg:rounded-2xl
-                   fixed lg:relative top-0 lg:top-auto bottom-0 left-0 right-0 h-screen lg:h-auto
+        className="relative w-full lg:max-w-5xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
+                   lg:mx-auto lg:h-[90vh] lg:rounded-2xl flex flex-col
+                   fixed lg:relative top-0 lg:top-auto bottom-0 left-0 right-0 h-screen
                    rounded-none animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
@@ -104,8 +104,8 @@ const EditMenuItemModal = ({
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="overflow-y-auto h-full pb-32">
+        {/* Scrollable Content Area */}
+        <div className="overflow-y-auto flex-1 custom-scrollbar">
           <div className="p-6">
             <AddMenuItemForm
               initialData={formData}
