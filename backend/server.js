@@ -8415,10 +8415,12 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                 `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
                  FROM account_transactions 
                  WHERE created_at >= ? AND created_at < ? 
-                 AND description NOT LIKE 'Penjualan TRZ%' 
-                 AND description NOT LIKE 'Pengeluaran:%' 
-                 AND description NOT LIKE 'Pembatalan Transaksi TRZ%'
-                 AND description NOT LIKE 'Penjualan V2 #%'
+                 AND LOWER(description) NOT LIKE 'penjualan%' 
+                 AND LOWER(description) NOT LIKE 'pengeluaran:%' 
+                 AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
+                 AND LOWER(description) NOT LIKE 'modal awal%'
+                 AND LOWER(description) NOT LIKE 'reset saldo%'
+                 AND LOWER(description) NOT LIKE 'saldo awal%'
                  AND closing_session_id IS NULL`,
                 [initialCapitalDate, periodStartRaw]
             );
@@ -8486,7 +8488,23 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
             [pStart, pEnd]
         );
 
-        const expectedClosingBalance = openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0);
+        // Period Manual Adjustments (excluding automated syncs)
+        const [accPeriod] = await db.query(
+            `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
+             FROM account_transactions 
+             WHERE created_at >= ? AND created_at <= ? 
+             AND LOWER(description) NOT LIKE 'penjualan%' 
+             AND LOWER(description) NOT LIKE 'pengeluaran:%' 
+             AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
+             AND LOWER(description) NOT LIKE 'modal awal%'
+             AND LOWER(description) NOT LIKE 'reset saldo%'
+             AND LOWER(description) NOT LIKE 'saldo awal%'
+             AND closing_session_id IS NULL`,
+            [pStart, pEnd]
+        );
+        const periodAdjustment = parseFloat(accPeriod[0].total || 0);
+
+        const expectedClosingBalance = openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0) + periodAdjustment;
         const gap = physicalCashAtEnd - expectedClosingBalance;
         const accuracy = expectedClosingBalance === 0
             ? (physicalCashAtEnd === 0 ? 100 : 0)
