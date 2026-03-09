@@ -138,126 +138,134 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Input
-              label="Nama Menu"
-              type="text"
-              name="name"
-              placeholder="Contoh: Nasi Gudeg"
-              value={formData?.name ?? ''}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <Select
-              label="Kategori"
-              name="category"
-              value={formData?.category ?? ''}
-              onChange={(value) => handleChange({ target: { name: 'category', value } })}
-              required
-              options={categories.map(cat => ({ value: cat.name.toLowerCase(), label: cat.name }))}
-            />
-          </div>
-
-          <div>
-            <Input
-              label="Stok"
-              type="number"
-              name="stock"
-              placeholder="0"
-              value={formData?.stock ?? ''}
-              onChange={handleChange}
-              min="0"
-              required
-            />
-          </div>
-
-          <div>
-            <Input
-              label="Harga (Rp)"
-              type="number"
-              name="price"
-              placeholder="0"
-              value={formData?.price ?? ''}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <Input
-              label="Diskon (%)"
-              type="number"
-              name="discount"
-              placeholder="0"
-              value={formData?.discount ?? ''}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              step="1"
-            />
-          </div>
-
-          <div className="flex items-center group cursor-pointer lg:col-span-2 py-2">
-            <div className="relative flex items-center">
-              <input
-                type="checkbox"
-                id="is_featured"
-                name="is_featured"
-                checked={!!formData?.is_featured}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
+          {/* Sisi Kiri: Informasi Dasar */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
+            <div className="md:col-span-2 lg:col-span-1">
+              <Input
+                label="Nama Menu"
+                type="text"
+                name="name"
+                placeholder="Contoh: Nasi Gudeg"
+                value={formData?.name ?? ''}
                 onChange={handleChange}
-                className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded-lg focus:ring-blue-500/20 transition-all cursor-pointer"
+                required
               />
             </div>
-            <label htmlFor="is_featured" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-              Jadikan Menu Unggulan
-            </label>
-          </div>
 
-          <div className="flex items-center group cursor-pointer lg:col-span-2 py-2">
-            <div className="relative flex items-center">
-              <input
-                type="checkbox"
-                id="is_hidden"
-                name="is_hidden"
-                checked={!!formData?.is_hidden}
-                onChange={handleChange}
-                className="w-5 h-5 text-rose-600 bg-gray-100 border-gray-300 rounded-lg focus:ring-rose-500/20 transition-all cursor-pointer"
+            <div>
+              <Select
+                label="Kategori"
+                name="category"
+                value={formData?.category ?? ''}
+                onChange={(value) => handleChange({ target: { name: 'category', value } })}
+                required
+                options={categories.map(cat => ({ value: cat.name.toLowerCase(), label: cat.name }))}
               />
             </div>
-            <label htmlFor="is_hidden" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-              Sembunyikan dari Menu Pelanggan
-            </label>
+
+            <div>
+              <Input
+                label="Stok"
+                type="number"
+                name="stock"
+                placeholder="0"
+                value={formData?.stock ?? ''}
+                onChange={handleChange}
+                min="0"
+                required
+              />
+            </div>
+
+            <div>
+              <Input
+                label="Harga (Rp)"
+                type="number"
+                name="price"
+                placeholder="0"
+                value={formData?.price ?? ''}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div>
+              <Input
+                label="Diskon (%)"
+                type="number"
+                name="discount"
+                placeholder="0"
+                value={formData?.discount ?? ''}
+                onChange={handleChange}
+                min="0"
+                max="100"
+                step="1"
+              />
+            </div>
           </div>
 
-          <div className="md:col-span-2">
-            <label htmlFor="image" className="block text-sm font-medium text-foreground">Gambar Produk</label>
-            <Input
-              type="file"
-              name="image"
-              id="image"
-              onChange={handleChange}
-              className="mt-1"
-              accept="image/*"
-            />
-            {isEditing && formData.image_url && (
-              <p className="text-sm text-muted-foreground mt-1">Gambar saat ini: <a href={formData.image_url ? `${import.meta.env.VITE_API_URL}${formData.image_url}` : '#'} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lihat Gambar</a></p>
-            )}
-          </div>
+          {/* Sisi Kanan: Media & Status */}
+          <div className="space-y-4">
+            <div className="md:col-span-2">
+              <label htmlFor="image" className="block text-sm font-medium text-foreground">Gambar Produk</label>
+              <Input
+                type="file"
+                name="image"
+                id="image"
+                onChange={handleChange}
+                className="mt-1"
+                accept="image/*"
+              />
+              {isEditing && formData.image_url && (
+                <p className="text-sm text-muted-foreground mt-1">Gambar saat ini: <a href={formData.image_url ? `${import.meta.env.VITE_API_URL}${formData.image_url}` : '#'} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lihat Gambar</a></p>
+              )}
+            </div>
 
-          <div className="md:col-span-2">
-            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">Deskripsi Menu (Opsional)</label>
-            <textarea
-              id="description"
-              name="description"
-              placeholder="Jelaskan detail menu ini..."
-              value={formData?.description ?? ''}
-              onChange={handleChange}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            />
+            <div className="md:col-span-2">
+              <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">Deskripsi Menu (Opsional)</label>
+              <textarea
+                id="description"
+                name="description"
+                placeholder="Jelaskan detail menu ini..."
+                value={formData?.description ?? ''}
+                onChange={handleChange}
+                className="flex min-h-[100px] lg:min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center group cursor-pointer py-1">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_featured"
+                    name="is_featured"
+                    checked={!!formData?.is_featured}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded-lg focus:ring-blue-500/20 transition-all cursor-pointer"
+                  />
+                </div>
+                <label htmlFor="is_featured" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  Jadikan Menu Unggulan
+                </label>
+              </div>
+
+              <div className="flex items-center group cursor-pointer py-1">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_hidden"
+                    name="is_hidden"
+                    checked={!!formData?.is_hidden}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-rose-600 bg-gray-100 border-gray-300 rounded-lg focus:ring-rose-500/20 transition-all cursor-pointer"
+                  />
+                </div>
+                <label htmlFor="is_hidden" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  Sembunyikan dari Menu Pelanggan
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
