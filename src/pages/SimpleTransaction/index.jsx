@@ -304,11 +304,9 @@ export default function SimpleTransaction() { // Renamed component
 
   const parseNumber = (str) => {
     if (!str) return 0;
-    // Remove all non-digit characters except for a comma (for decimal)
-    // Then replace comma with a dot for parseFloat
-    const cleanedStr = str.toString().replace(/[^,\d]/g, '').replace(/,/g, '.');
-    const parsed = parseFloat(cleanedStr);
-    return isNaN(parsed) ? 0 : parsed;
+    // Remove all non-digit characters for clean integer parsing (Standard for Rupiah)
+    const cleaned = str.toString().replace(/[^\d]/g, '');
+    return parseInt(cleaned, 10) || 0;
   };
 
   const handleCashPaidChange = (e) => {

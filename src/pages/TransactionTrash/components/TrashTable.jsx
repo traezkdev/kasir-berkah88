@@ -20,7 +20,7 @@ const TrashTable = ({ transactions, onRestore, onPermanentDelete, isMobile, onVi
           transactions.map((transaction) => (
             <div
               key={transaction.id}
-              className="bg-background-card p-4 rounded-lg shadow border border-border-default cursor-pointer hover:bg-background-hover transition-colors"
+              className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-border-default cursor-pointer hover:bg-background-hover transition-colors"
               onClick={() => onViewDetails(transaction)}
             >
               <div className="flex justify-between items-start mb-2">
@@ -63,7 +63,7 @@ const TrashTable = ({ transactions, onRestore, onPermanentDelete, isMobile, onVi
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-text-secondary bg-background-card rounded-lg border border-border-default">
+          <div className="text-center py-8 text-text-secondary bg-white dark:bg-slate-900 rounded-lg border border-border-default">
             <p>Tidak ada transaksi di tong sampah.</p>
           </div>
         )}
@@ -72,9 +72,9 @@ const TrashTable = ({ transactions, onRestore, onPermanentDelete, isMobile, onVi
   }
 
   return (
-    <div className="overflow-x-auto bg-background-card border-border-default rounded-lg shadow">
+    <div className="overflow-x-auto bg-white dark:bg-slate-900 border border-border-default rounded-lg">
       <table className="min-w-full divide-y divide-border-default">
-        <thead className="bg-background-default">
+        <thead className="bg-white dark:bg-slate-900">
           <tr>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
               ID Transaksi
@@ -93,7 +93,7 @@ const TrashTable = ({ transactions, onRestore, onPermanentDelete, isMobile, onVi
             </th>
           </tr>
         </thead>
-        <tbody className="bg-background-card divide-y divide-border-default">
+        <tbody className="bg-white dark:bg-slate-900 divide-y divide-border-default">
           {transactions.length > 0 ? (
             transactions.map((transaction) => (
               <tr key={transaction.id} className="hover:bg-background-hover">
