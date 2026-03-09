@@ -363,145 +363,177 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
             {/* Top Row: 4 Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {/* Card 1: Income */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-blue-100/50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                <Icon name="DollarSign" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-xl font-bold tracking-tight text-text-primary">
-                                    {incomeMetric.value || 'Rp 0'}
-                                </div>
-                                <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Pendapatan</h3>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsTargetModalOpen(true)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
-                            title="Atur Target"
-                        >
-                            <Icon name="Settings" size={16} className="text-text-secondary" />
-                        </button>
+                <div className="bg-white dark:bg-slate-800 text-card-foreground rounded-2xl border border-gray-100/50 dark:border-slate-700 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                    {/* Decorative blurred circle */}
+                    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none bg-blue-400"></div>
+                    {/* Ghost icon */}
+                    <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white">
+                        <Icon name="DollarSign" size={100} aria-hidden="true" />
                     </div>
-                    <div>
-                        <div className="flex justify-between items-center text-xs mb-1">
-                            <span className="text-text-secondary">Target Harian</span>
-                            <span className="font-bold text-blue-600">{revenueProgress.toFixed(0)}%</span>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform">
+                                    <Icon name="DollarSign" size={22} />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                        {incomeMetric.value || 'Rp 0'}
+                                    </div>
+                                    <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Pendapatan</h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsTargetModalOpen(true)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                                title="Atur Target"
+                            >
+                                <Icon name="Settings" size={16} className="text-text-secondary" />
+                            </button>
                         </div>
-                        <div className="h-1.5 w-full bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${revenueProgress}%` }}></div>
-                        </div>
-                        <div className="mt-1 text-xs text-text-secondary">
-                            Target: {formatCurrency(targets.dailyRevenue)}
+                        <div>
+                            <div className="flex justify-between items-center text-xs mb-1">
+                                <span className="text-text-secondary">Target Harian</span>
+                                <span className="font-bold text-blue-600">{revenueProgress.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${revenueProgress}%` }}></div>
+                            </div>
+                            <div className="mt-1 text-xs text-text-secondary">
+                                Target: {formatCurrency(targets.dailyRevenue)}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Card 2: Transactions (Success) */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-emerald-100/50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                <Icon name="CheckCircle" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-xl font-bold tracking-tight text-text-primary">
-                                    {transactionMetric.value || '0'}
-                                </div>
-                                <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Transaksi Sukses</h3>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsTargetModalOpen(true)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
-                            title="Atur Target"
-                        >
-                            <Icon name="Settings" size={16} className="text-text-secondary" />
-                        </button>
+                <div className="bg-white dark:bg-slate-800 text-card-foreground rounded-2xl border border-gray-100/50 dark:border-slate-700 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                    {/* Decorative blurred circle */}
+                    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none bg-emerald-400"></div>
+                    {/* Ghost icon */}
+                    <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white">
+                        <Icon name="CheckCircle" size={100} aria-hidden="true" />
                     </div>
-                    <div>
-                        <div className="flex justify-between items-center text-xs mb-1">
-                            <span className="text-text-secondary">Target</span>
-                            <span className="font-bold text-emerald-600">{transactionProgress.toFixed(0)}%</span>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform">
+                                    <Icon name="CheckCircle" size={22} />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                        {transactionMetric.value || '0'}
+                                    </div>
+                                    <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Transaksi Sukses</h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsTargetModalOpen(true)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                                title="Atur Target"
+                            >
+                                <Icon name="Settings" size={16} className="text-text-secondary" />
+                            </button>
                         </div>
-                        <div className="h-1.5 w-full bg-emerald-100 dark:bg-emerald-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${transactionProgress}%` }}></div>
-                        </div>
-                        <div className="mt-1 text-xs text-text-secondary">
-                            Target: {targets.dailyTransactions} transaksi
+                        <div>
+                            <div className="flex justify-between items-center text-xs mb-1">
+                                <span className="text-text-secondary">Target</span>
+                                <span className="font-bold text-emerald-600">{transactionProgress.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-emerald-100 dark:bg-emerald-900/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${transactionProgress}%` }}></div>
+                            </div>
+                            <div className="mt-1 text-xs text-text-secondary">
+                                Target: {targets.dailyTransactions} transaksi
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Card 3: Expenses (Warning) */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-orange-100/50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
-                                <Icon name="TrendingDown" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-xl font-bold tracking-tight text-text-primary">
-                                    {expenseMetric.value || 'Rp 0'}
-                                </div>
-                                <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Pengeluaran</h3>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsTargetModalOpen(true)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
-                            title="Atur Target"
-                        >
-                            <Icon name="Settings" size={16} className="text-text-secondary" />
-                        </button>
+                <div className="bg-white dark:bg-slate-800 text-card-foreground rounded-2xl border border-gray-100/50 dark:border-slate-700 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                    {/* Decorative blurred circle */}
+                    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none bg-orange-400"></div>
+                    {/* Ghost icon */}
+                    <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white">
+                        <Icon name="TrendingDown" size={100} aria-hidden="true" />
                     </div>
-                    <div>
-                        <div className="flex justify-between items-center text-xs mb-1">
-                            <span className="text-text-secondary">Limit</span>
-                            <span className="font-bold text-orange-600">{expenseProgress.toFixed(0)}%</span>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30 flex items-center justify-center text-orange-600 dark:text-orange-400 shadow-inner group-hover:scale-110 transition-transform">
+                                    <Icon name="TrendingDown" size={22} />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                        {expenseMetric.value || 'Rp 0'}
+                                    </div>
+                                    <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Pengeluaran</h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsTargetModalOpen(true)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                                title="Atur Target"
+                            >
+                                <Icon name="Settings" size={16} className="text-text-secondary" />
+                            </button>
                         </div>
-                        <div className="h-1.5 w-full bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${expenseProgress}%` }}></div>
-                        </div>
-                        <div className="mt-1 text-xs text-text-secondary">
-                            Limit: {formatCurrency(targets.dailyExpenses)}
+                        <div>
+                            <div className="flex justify-between items-center text-xs mb-1">
+                                <span className="text-text-secondary">Limit</span>
+                                <span className="font-bold text-orange-600">{expenseProgress.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${expenseProgress}%` }}></div>
+                            </div>
+                            <div className="mt-1 text-xs text-text-secondary">
+                                Limit: {formatCurrency(targets.dailyExpenses)}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Card 4: Net Profit (Danger/Red in user template, but let's use Purple/Primary for profit) */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-purple-100/50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                <Icon name="Wallet" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-xl font-bold tracking-tight text-text-primary">
-                                    {profitMetric.value || 'Rp 0'}
-                                </div>
-                                <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Laba Bersih</h3>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsTargetModalOpen(true)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
-                            title="Atur Target"
-                        >
-                            <Icon name="Settings" size={16} className="text-text-secondary" />
-                        </button>
+                {/* Card 4: Net Profit (Purple for profit) */}
+                <div className="bg-white dark:bg-slate-800 text-card-foreground rounded-2xl border border-gray-100/50 dark:border-slate-700 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                    {/* Decorative blurred circle */}
+                    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none bg-purple-400"></div>
+                    {/* Ghost icon */}
+                    <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white">
+                        <Icon name="Wallet" size={100} aria-hidden="true" />
                     </div>
-                    <div>
-                        <div className="flex justify-between items-center text-xs mb-1">
-                            <span className="text-text-secondary">Margin</span>
-                            <span className="font-bold text-purple-600">{profitProgress.toFixed(0)}%</span>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner group-hover:scale-110 transition-transform">
+                                    <Icon name="Wallet" size={22} />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                        {profitMetric.value || 'Rp 0'}
+                                    </div>
+                                    <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Laba Bersih</h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsTargetModalOpen(true)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                                title="Atur Target"
+                            >
+                                <Icon name="Settings" size={16} className="text-text-secondary" />
+                            </button>
                         </div>
-                        <div className="h-1.5 w-full bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${profitProgress}%` }}></div>
-                        </div>
-                        <div className="mt-1 text-xs text-text-secondary">
-                            Target Margin: {targets.profitMargin}%
+                        <div>
+                            <div className="flex justify-between items-center text-xs mb-1">
+                                <span className="text-text-secondary">Margin</span>
+                                <span className="font-bold text-purple-600">{profitProgress.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${profitProgress}%` }}></div>
+                            </div>
+                            <div className="mt-1 text-xs text-text-secondary">
+                                Target Margin: {targets.profitMargin}%
+                            </div>
                         </div>
                     </div>
                 </div>
