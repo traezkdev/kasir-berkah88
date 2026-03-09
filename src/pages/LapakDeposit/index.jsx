@@ -299,8 +299,8 @@ const LapakDeposit = ({ headerTitle }) => {
         }
     ];
 
-    const pageTitle = mode === 'lapak' ? 'Uang Lapak' : 'Uang Owner';
-    const pageSubtitle = mode === 'lapak' ? 'Deposit & Pengeluaran Lapak' : 'Kas & Pengeluaran Owner';
+    const pageTitle = mode === 'lapak' ? 'Uang Tunai' : 'Uang Transfer';
+    const pageSubtitle = mode === 'lapak' ? 'Deposit & Pengeluaran Tunai' : 'Kas & Pengeluaran Transfer';
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : 'bg-transparent'}`}>
@@ -324,7 +324,7 @@ const LapakDeposit = ({ headerTitle }) => {
                     <AdminMobileHeader
                         title={pageTitle}
                         subtitle={pageSubtitle}
-                        badgeText={mode === 'lapak' ? "Lapak Deposit" : "Owner Cash"}
+                        badgeText={mode === 'lapak' ? "Uang Tunai" : "Uang Transfer"}
                         stickyTitle={headerTitle || pageTitle}
                         actions={mobileActions}
                         decorativeIcon={mode === 'lapak' ? "Wallet" : "User"}
@@ -340,7 +340,7 @@ const LapakDeposit = ({ headerTitle }) => {
                                 <h1 className="text-2xl lg:text-4xl font-black text-gray-800 dark:text-white uppercase tracking-tighter">{pageTitle}</h1>
                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
                                     <span className={`w-8 h-[2px] ${mode === 'lapak' ? 'bg-blue-600' : 'bg-purple-600'} rounded-full`}></span>
-                                    {mode === 'lapak' ? 'Kelola dana operasional lapak' : 'Kelola keuangan pribadi owner'}
+                                    {mode === 'lapak' ? 'Kelola dana tunai bisnis' : 'Kelola dana transfer bisnis'}
                                 </p>
                             </div>
                         </div>
@@ -355,7 +355,7 @@ const LapakDeposit = ({ headerTitle }) => {
                                     }`}
                             >
                                 <Icon name="Store" size={14} strokeWidth={3} />
-                                <span>Uang Lapak</span>
+                                <span>Uang Tunai</span>
                             </button>
                             <button
                                 onClick={() => setMode('owner')}
@@ -365,7 +365,7 @@ const LapakDeposit = ({ headerTitle }) => {
                                     }`}
                             >
                                 <Icon name="User" size={14} strokeWidth={3} />
-                                <span>Uang Owner</span>
+                                <span>Uang Transfer</span>
                             </button>
                         </div>
                     </div>
@@ -373,11 +373,11 @@ const LapakDeposit = ({ headerTitle }) => {
                     <div className="!-mt-20 lg:!mt-0 relative z-30">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                             <MetricsCard
-                                title={mode === 'lapak' ? "Saldo Lapak" : "Saldo Owner"}
+                                title={mode === 'lapak' ? "Uang Tunai" : "Uang Transfer"}
                                 value={formatCurrency(lapakAccount?.account?.balance || 0)}
                                 icon={mode === 'lapak' ? "Wallet" : "User"}
                                 color="white"
-                                description={mode === 'lapak' ? "Total dana tersedia untuk operasional lapak" : "Total dana kas yang dipegang owner"}
+                                description={mode === 'lapak' ? "Total dana tersedia dalam bentuk tunai" : "Total dana tersedia dalam bentuk transfer"}
                             />
                         </div>
 
@@ -485,7 +485,7 @@ const LapakDeposit = ({ headerTitle }) => {
                         <div className="flex items-center justify-between mb-6 px-1">
                             <div>
                                 <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight text-stroke-1">Riwayat Transaksi</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Catatan dana {mode === 'lapak' ? 'lapak' : 'owner'}</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Catatan dana {mode === 'lapak' ? 'tunai' : 'transfer'}</p>
                             </div>
                         </div>
 
@@ -511,7 +511,7 @@ const LapakDeposit = ({ headerTitle }) => {
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <h4 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-tight truncate">
-                                                                {transaction.type === 'deposit' ? (mode === 'lapak' ? 'Uang Masuk / Deposit' : 'Pemasukan Kas Owner') : (mode === 'lapak' ? 'Pengeluaran Lapak' : 'Pengeluaran Pribadi Owner')}
+                                                                {transaction.type === 'deposit' ? (mode === 'lapak' ? 'Uang Tunai Masuk' : 'Uang Transfer Masuk') : (mode === 'lapak' ? 'Pengeluaran Tunai' : 'Pengeluaran Transfer')}
                                                             </h4>
                                                             <div className={`mt-2 px-3 py-2 rounded-xl border flex items-center gap-2.5 ${transaction.type === 'deposit' ? 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20' : 'bg-rose-50/50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20'}`}>
                                                                 <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${transaction.type === 'deposit' ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
@@ -599,7 +599,7 @@ const LapakDeposit = ({ headerTitle }) => {
                                     </div>
                                     <h3 className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tight">Belum Ada Transaksi</h3>
                                     <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2 text-center max-w-[280px]">
-                                        Silakan tambah {mode === 'lapak' ? 'deposit' : 'kas'} atau catat pengeluaran untuk melihat riwayat.
+                                        Silakan tambah {mode === 'lapak' ? 'uang tunai' : 'uang transfer'} atau catat pengeluaran untuk melihat riwayat.
                                     </p>
                                 </div>
                             )}
@@ -613,14 +613,14 @@ const LapakDeposit = ({ headerTitle }) => {
                 onClose={() => setIsDepositModalOpen(false)}
                 onSave={handleSaveDeposit}
                 accountType={mode === 'lapak' ? 'lapak' : 'owner'}
-                title={mode === 'lapak' ? 'Tambah Deposit Lapak' : 'Tambah Simpanan Owner'}
+                title={mode === 'lapak' ? 'Tambah Uang Tunai' : 'Tambah Uang Transfer'}
             />
             <ExpenseModal
                 isOpen={isExpenseModalOpen}
                 onClose={() => setIsExpenseModalOpen(false)}
                 onSave={handleSaveExpense}
                 accountType={mode === 'lapak' ? 'lapak' : 'owner'}
-                title={mode === 'lapak' ? 'Catat Pengeluaran Lapak' : 'Catat Pengeluaran Owner'}
+                title={mode === 'lapak' ? 'Catat Pengeluaran Tunai' : 'Catat Pengeluaran Transfer'}
             />
             <EditTransactionDescriptionModal
                 isOpen={isEditModalOpen}

@@ -32,7 +32,10 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
     };
 
     const parseNumber = (str) => {
-        return parseFloat(str.replace(/[^0-9.-]+/g, ""));
+        if (!str) return 0;
+        // Remove all non-digit characters for clean integer parsing (Standard for Rupiah)
+        const cleaned = str.toString().replace(/[^\d]/g, '');
+        return parseInt(cleaned, 10) || 0;
     };
 
     const handleSave = () => {
@@ -85,11 +88,13 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
                             setError('');
                         }}
                         onFocus={(e) => {
-                            e.target.value = parseNumber(e.target.value).toString();
+                            const val = parseNumber(e.target.value);
+                            e.target.value = val === 0 ? '' : val.toString();
                         }}
                         onBlur={(e) => {
-                            const value = parseNumber(e.target.value);
-                            e.target.value = `Rp${formatNumber(isNaN(value) ? 0 : value)}`;
+                            const val = parseNumber(e.target.value);
+                            setAmount(val);
+                            e.target.value = `Rp${formatNumber(val)}`;
                         }}
                         className="w-full pl-12 pr-4 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:ring-4 focus:ring-[#118eea]/10 focus:bg-white dark:focus:bg-slate-800 transition-all font-black text-lg tracking-tight text-[#118eea] outline-none"
                         required

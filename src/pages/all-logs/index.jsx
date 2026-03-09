@@ -280,15 +280,15 @@ const AllLogs = () => {
 
                 {/* Filters Panel - Modernized */}
                 <div className={`-mt-36 lg:mt-0 p-6 rounded-2xl border overflow-hidden relative transition-all duration-300 ${theme === 'admin'
-                    ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl'
-                    : 'bg-card border-border shadow-2xl'
+                    ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                    : 'bg-card border-border'
                     }`}>
                     {/* Decorative Background for filter */}
                     <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
 
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${theme === 'admin' ? 'bg-indigo-600 text-white' : 'bg-primary text-primary-foreground'
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${theme === 'admin' ? 'bg-indigo-600 text-white' : 'bg-primary text-primary-foreground'
                                 }`}>
                                 <Icon name="Filter" size={24} strokeWidth={2.5} />
                             </div>
@@ -389,11 +389,11 @@ const AllLogs = () => {
 
                 {/* Logs Table Container */}
                 <div className={`mt-8 rounded-2xl overflow-hidden border transition-all duration-500 ${theme === 'admin'
-                    ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-2xl'
-                    : 'bg-card border-border shadow-2xl'
+                    ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'
+                    : 'bg-card border-border'
                     }`}>
                     {/* PC Table Header */}
-                    <div className="hidden md:grid md:grid-cols-[1.2fr,1.2fr,1fr,0.8fr,2fr] bg-slate-100/50 dark:bg-slate-800/50 px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+                    <div className="hidden md:grid md:grid-cols-[1.2fr,1.2fr,1fr,0.8fr,2fr] bg-white dark:bg-slate-900 px-6 py-5 border-b border-slate-200 dark:border-slate-800">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Timestamp</span>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Operator</span>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aksi</span>

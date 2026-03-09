@@ -459,9 +459,9 @@ export default function AuditorPage() {
                 <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div
                         onClick={handleExportPdf}
-                        className="group relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 to-red-600 p-px transition-all hover:scale-[1.02] active:scale-95"
+                        className="group relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 to-red-600 p-[2px] transition-all hover:scale-[1.02] active:scale-95"
                     >
-                        <div className="relative flex items-center gap-5 bg-white dark:bg-slate-900 px-8 py-6 rounded-[1.45rem] transition-colors group-hover:bg-transparent">
+                        <div className="relative flex items-center gap-5 bg-white dark:bg-slate-900 px-8 py-6 rounded-[1.35rem] transition-colors group-hover:bg-transparent">
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500 text-white transition-transform group-hover:scale-110 group-hover:rotate-3">
                                 <Icon name="FileText" size={24} />
                             </div>
@@ -477,9 +477,9 @@ export default function AuditorPage() {
 
                     <div
                         onClick={handleExportExcel}
-                        className="group relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-px transition-all hover:scale-[1.02] active:scale-95"
+                        className="group relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-[2px] transition-all hover:scale-[1.02] active:scale-95"
                     >
-                        <div className="relative flex items-center gap-5 bg-white dark:bg-slate-900 px-8 py-6 rounded-[1.45rem] transition-colors group-hover:bg-transparent">
+                        <div className="relative flex items-center gap-5 bg-white dark:bg-slate-900 px-8 py-6 rounded-[1.35rem] transition-colors group-hover:bg-transparent">
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white transition-transform group-hover:scale-110 group-hover:-rotate-3">
                                 <Icon name="FileSpreadsheet" size={24} />
                             </div>
@@ -859,19 +859,19 @@ export default function AuditorPage() {
 
                 {/* Detailed Metrics Reference */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Owner</p>
-                        <p className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.ownerBalance)}</p>
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border-2 border-teal-500/60 border-t-teal-500">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Uang Transfer</p>
+                        <p className="text-lg font-black text-gray-900 dark:text-white">{formatCurrency(data.metrics.ownerBalance)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Lapak</p>
-                        <p className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.lapakBalance)}</p>
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border-2 border-emerald-500/60 border-t-emerald-500">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Uang Tunai</p>
+                        <p className="text-lg font-black text-gray-900 dark:text-white">{formatCurrency(data.metrics.lapakBalance)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border-2 border-blue-500/60 border-t-blue-500">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Stok</p>
-                        <p className="text-lg font-black text-gray-900">{formatCurrency(data.metrics.stockValue)}</p>
+                        <p className="text-lg font-black text-gray-900 dark:text-white">{formatCurrency(data.metrics.stockValue)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50">
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border-2 border-indigo-500/60 border-t-indigo-500">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Laba Bersih</p>
                         <p className="text-lg font-black text-emerald-500">+{formatCurrency(data.metrics.netProfit)}</p>
                     </div>
