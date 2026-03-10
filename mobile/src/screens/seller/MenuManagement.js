@@ -325,7 +325,8 @@ const MenuManagement = ({ navigation }) => {
     }, []);
 
     const filteredItems = menuItems.filter(item => {
-        const matchesCategory = activeCategory === 'Semua' || item.category === activeCategory;
+        const matchesCategory = activeCategory === 'Semua' ||
+            (item.category && item.category.trim().toLowerCase() === activeCategory.trim().toLowerCase());
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesCategory && matchesSearch;
     });
