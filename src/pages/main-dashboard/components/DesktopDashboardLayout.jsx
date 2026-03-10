@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import Icon from '../../../components/AppIcon';
+import ProfitLossIndicator from './ProfitLossIndicator';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, eachWeekOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -539,6 +540,7 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                 </div>
             </div>
 
+
             {/* Middle Section: Chart and Stats */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* Main Graph */}
@@ -915,6 +917,14 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                     </div>
                 </div>
             )}
+            {/* Profit/Loss Indicator - Bottom (Desktop) */}
+            <div className="mt-8 pb-10">
+                <ProfitLossIndicator
+                    revenue={dashboardData.metrics?.totalRevenue || 0}
+                    expenses={dashboardData.metrics?.totalExpenses || 0}
+                    periodLabel={dashboardData.settings?.last_closing_date ? 'Periode Ini' : 'Bulan Ini'}
+                />
+            </div>
         </div>
     );
 };

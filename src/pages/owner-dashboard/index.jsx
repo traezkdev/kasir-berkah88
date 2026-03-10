@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
 import QuickActionCard from '../main-dashboard/components/QuickActionCard';
+import ProfitLossIndicator from '../main-dashboard/components/ProfitLossIndicator';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
 import Icon from '../../components/AppIcon';
@@ -527,6 +528,7 @@ const OwnerDashboard = ({ headerTitle }) => {
                     <StockAlertBanner />
                 </section>
 
+
                 <section className="mt-10 px-5">
                     <div className="flex items-center justify-between mb-5 px-1">
                         <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase">Layanan Owner</h3>
@@ -649,6 +651,15 @@ const OwnerDashboard = ({ headerTitle }) => {
                         </div>
                     </div>
                 </section>
+
+                {/* Profit/Loss Indicator - Bottom (Mobile) */}
+                <section className="px-5 mt-4 mb-10">
+                    <ProfitLossIndicator
+                        revenue={dashboardData.monthlyRevenue || 0}
+                        expenses={dashboardData.monthlyExpenses || 0}
+                        periodLabel="Bulan Ini"
+                    />
+                </section>
             </div>
 
             {/* --- DESKTOP UI (hidden lg:block) --- */}
@@ -681,6 +692,15 @@ const OwnerDashboard = ({ headerTitle }) => {
                                 color={metric.color}
                             />
                         ))}
+                    </div>
+
+                    {/* Desktop Profit/Loss Section */}
+                    <div className="mb-8">
+                        <ProfitLossIndicator
+                            revenue={dashboardData.monthlyRevenue || 0}
+                            expenses={dashboardData.monthlyExpenses || 0}
+                            periodLabel="Bulan Ini"
+                        />
                     </div>
 
                     <div className="mb-8">
@@ -765,6 +785,15 @@ const OwnerDashboard = ({ headerTitle }) => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Profit/Loss Indicator - Bottom (Desktop) */}
+                    <div className="mt-12 mb-10">
+                        <ProfitLossIndicator
+                            revenue={dashboardData.monthlyRevenue || 0}
+                            expenses={dashboardData.monthlyExpenses || 0}
+                            periodLabel="Bulan Ini"
+                        />
                     </div>
                 </div>
             </main>

@@ -8,6 +8,7 @@ import MetricsCard from './components/MetricsCard';
 import QuickActionCard from './components/QuickActionCard';
 import RecentTransactionsList from './components/RecentTransactionsList';
 import BusinessSummaryCard from './components/BusinessSummaryCard';
+import ProfitLossIndicator from './components/ProfitLossIndicator';
 import DesktopDashboardLayout from './components/DesktopDashboardLayout';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -1056,6 +1057,7 @@ const MainDashboard = ({ headerTitle }) => {
           <StockAlertBanner />
         </section>
 
+
         {/* Services Grid (Dana Look) */}
         <section className="mt-10 px-5 optimize-scroll">
           <div className="flex items-center justify-between mb-5 px-1">
@@ -1231,6 +1233,24 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Profit/Loss Indicator - Bottom Placement */}
+        <section className="px-5 mt-6 mb-10 optimize-scroll">
+          <ProfitLossIndicator
+            revenue={dashboardData.metrics?.totalRevenue || 0}
+            expenses={dashboardData.metrics?.totalExpenses || 0}
+            periodLabel={periodLabel}
+          />
+        </section>
+
+        {/* Profit/Loss Indicator - Bottom Placement */}
+        <section className="px-5 mt-6 mb-10 optimize-scroll">
+          <ProfitLossIndicator
+            revenue={dashboardData.metrics?.totalRevenue || 0}
+            expenses={dashboardData.metrics?.totalExpenses || 0}
+            periodLabel={periodLabel}
+          />
         </section>
 
         {/* Footer Credit Mobile */}
