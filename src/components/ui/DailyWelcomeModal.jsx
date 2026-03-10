@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const MOTIVATIONAL_QUOTES = [
     "Bismillah, mari jemput rezeki dengan penuh kejujuran hari ini.",
@@ -41,6 +42,7 @@ const QURAN_VERSES = [
 ];
 
 const DailyWelcomeModal = () => {
+    const { dailyWelcomeEnabled } = useAppSettings();
     const [isOpen, setIsOpen] = useState(false);
     const [content, setContent] = useState({ quote: '', verse: null });
     const location = useLocation();
@@ -62,10 +64,8 @@ const DailyWelcomeModal = () => {
             const lastShownDate = localStorage.getItem('last_welcome_popup_date');
             const token = localStorage.getItem('token');
 
-            const isEnabled = localStorage.getItem('daily_welcome_enabled') !== 'false';
-
             // Syarat: Fitur Aktif DAN Jam >= 7 pagi DAN belum pernah muncul hari ini DAN sudah login (punya token)
-            if (isEnabled && currentHour >= 7 && lastShownDate !== todayDate && token) {
+            if (dailyWelcomeEnabled && currentHour >= 7 && lastShownDate !== todayDate && token) {
                 // Pilih konten secara acak berdasarkan hari
                 const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
 

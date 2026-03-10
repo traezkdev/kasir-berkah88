@@ -6120,6 +6120,7 @@ app.put("/api/settings/:key", authenticateToken, authorizeRoles('admin'), async 
     if (key === 'dashboard_running_text') dbKey = 'dashboard_running_text';
     if (key === 'dashboard_running_text_enabled') dbKey = 'dashboard_running_text_enabled';
     if (key === 'dashboard_watermark_enabled') dbKey = 'dashboard_watermark_enabled';
+    if (key === 'daily_welcome_enabled') dbKey = 'daily_welcome_enabled';
 
     try {
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';

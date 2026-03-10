@@ -249,7 +249,7 @@ const CustomerMenu = ({ navigation, route }) => {
         try {
             let url = '/api/menu-items?limit=100';
             if (selectedCategory !== 'all') {
-                const cat = categories.find(c => c.id === selectedCategory);
+                const cat = categories.find(c => c.id == selectedCategory);
                 if (cat) {
                     url += `&category=${encodeURIComponent(cat.name)}`;
                 }
@@ -369,18 +369,18 @@ const CustomerMenu = ({ navigation, route }) => {
                     contentContainerStyle={styles.categoryTabsContent}
                 >
                     <TouchableOpacity
-                        style={[styles.tab, selectedCategory === 'all' && styles.activeTab]}
+                        style={[styles.tab, selectedCategory == 'all' && styles.activeTab]}
                         onPress={() => setSelectedCategory('all')}
                     >
-                        <LayoutGrid size={14} color={selectedCategory === 'all' ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
-                        <Text style={[styles.tabText, selectedCategory === 'all' && styles.activeTabText]}>Semua Berkah</Text>
+                        <LayoutGrid size={14} color={selectedCategory == 'all' ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
+                        <Text style={[styles.tabText, selectedCategory == 'all' && styles.activeTabText]}>Semua Berkah</Text>
                     </TouchableOpacity>
                     {categories.map(cat => {
                         const IconComponent = getCategoryIcon(cat.name);
                         return (
                             <TouchableOpacity
                                 key={cat.id}
-                                style={[styles.tab, selectedCategory === cat.id && styles.activeTab]}
+                                style={[styles.tab, selectedCategory == cat.id && styles.activeTab]}
                                 onPress={() => setSelectedCategory(cat.id)}
                             >
                                 {cat.icon ? (
@@ -390,9 +390,9 @@ const CustomerMenu = ({ navigation, route }) => {
                                         resizeMode="contain"
                                     />
                                 ) : (
-                                    <IconComponent size={14} color={selectedCategory === cat.id ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
+                                    <IconComponent size={14} color={selectedCategory == cat.id ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
                                 )}
-                                <Text style={[styles.tabText, selectedCategory === cat.id && styles.activeTabText]}>{cat.name}</Text>
+                                <Text style={[styles.tabText, selectedCategory == cat.id && styles.activeTabText]}>{cat.name}</Text>
                             </TouchableOpacity>
                         );
                     })}

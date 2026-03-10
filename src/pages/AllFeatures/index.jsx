@@ -168,6 +168,14 @@ const AllFeatures = () => {
             color: 'info',
             category: 'Keuangan'
         },
+        {
+            title: 'Arsip Sesi',
+            description: 'Lihat kembali data sesi kasir yang sudah ditutup',
+            icon: 'Archive',
+            route: '/admin/archive',
+            color: 'secondary',
+            category: 'Keuangan'
+        },
 
         // Manajemen & Utilitas
         {
@@ -219,6 +227,14 @@ const AllFeatures = () => {
             category: 'Smart'
         },
         {
+            title: 'Chat Pelanggan',
+            description: 'Komunikasi langsung dengan pelanggan lewat sistem chat',
+            icon: 'MessageCircle',
+            route: '/admin/chat',
+            color: 'primary',
+            category: 'Smart'
+        },
+        {
             title: 'Poin & Loyalitas',
             description: 'Kelola sistem reward dan poin belanja pelanggan',
             icon: 'Gift',
@@ -226,7 +242,65 @@ const AllFeatures = () => {
             color: 'warning',
             category: 'Admin'
         },
+        // Marketing & Konten
+        {
+            title: 'Kelola Promo',
+            description: 'Atur diskon dan penawaran khusus untuk pelanggan',
+            icon: 'Ticket',
+            route: '/promos',
+            color: 'teal',
+            category: 'Marketing'
+        },
+        {
+            title: 'Pop-up Banner',
+            description: 'Kelola pengumuman pop-up yang muncul di aplikasi',
+            icon: 'MonitorPlay',
+            route: '/popups',
+            color: 'teal',
+            category: 'Marketing'
+        },
+        {
+            title: 'Pusat Informasi',
+            description: 'Update berita dan informasi terbaru untuk pengguna',
+            icon: 'Info',
+            route: '/information',
+            color: 'teal',
+            category: 'Marketing'
+        },
 
+        // Toko Online & Seller
+        {
+            title: 'Dashboard Penjual',
+            description: 'Ringkasan penjualan dan performa toko online anda',
+            icon: 'Store',
+            route: '/seller/dashboard',
+            color: 'primary',
+            category: 'Toko Online'
+        },
+        {
+            title: 'Manajemen Banner',
+            description: 'Atur banner promosi yang tampil di beranda pelanggan',
+            icon: 'Image',
+            route: '/seller/banners',
+            color: 'primary',
+            category: 'Toko Online'
+        },
+        {
+            title: 'Katalog Produk',
+            description: 'Kelola produk yang tampil khusus di aplikasi pelanggan',
+            icon: 'ShoppingBag',
+            route: '/seller/menu-management',
+            color: 'primary',
+            category: 'Toko Online'
+        },
+        {
+            title: 'Kelola Pesanan',
+            description: 'Proses pesanan masuk dari pelanggan online secara real-time',
+            icon: 'Clock',
+            route: '/seller/orders',
+            color: 'primary',
+            category: 'Toko Online'
+        },
 
         // Pengaturan
         {

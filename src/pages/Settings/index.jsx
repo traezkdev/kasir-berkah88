@@ -53,11 +53,11 @@ const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
 
 const Settings = () => {
   const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
-  const { appMode, toggleAppMode, toggleSidebar } = useAppSettings();
+  const { appMode, toggleAppMode, toggleSidebar, dailyWelcomeEnabled, updateDailyWelcome } = useAppSettings();
   const { showToast } = useToast();
 
   // Reusable Card Component (Updated for Ultra Premium - Scaled Down)
-  const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
+  const SettingsCard = ({ icon, title, description, onClick, disabled = false, badge = null }) => (
     <div
       onClick={!disabled ? onClick : undefined}
       className={`
@@ -90,6 +90,11 @@ const Settings = () => {
           `}>
             <AppIcon name={icon} size={20} />
           </div>
+          {badge && (
+            <div className="absolute top-4 right-4 animate-in fade-in zoom-in duration-500">
+              {badge}
+            </div>
+          )}
 
           <div className="mt-3 space-y-1">
             <h3 className="text-sm font-black text-text-primary tracking-tight uppercase group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -163,7 +168,6 @@ const Settings = () => {
   const [newReceiptVersion, setNewReceiptVersion] = useState('1');
   const [authUiVersion, setAuthUiVersion] = useState('1');
   const [newAuthUiVersion, setNewAuthUiVersion] = useState('1');
-  const [dailyWelcomeEnabled, setDailyWelcomeEnabled] = useState(true);
   const [newDailyWelcomeEnabled, setNewDailyWelcomeEnabled] = useState(true);
   const [dashboardRunningText, setDashboardRunningText] = useState('');
   const [newDashboardRunningText, setNewDashboardRunningText] = useState('');
@@ -197,8 +201,6 @@ const Settings = () => {
         }
       } catch (e) { console.error("Error decoding token:", e); setUserRole(''); }
     }
-    setDailyWelcomeEnabled(localStorage.getItem('daily_welcome_enabled') !== 'false');
-    setNewDailyWelcomeEnabled(localStorage.getItem('daily_welcome_enabled') !== 'false');
   }, []);
 
   // Update document title when websiteTitle changes
@@ -761,10 +763,20 @@ const Settings = () => {
             <SettingsCard icon="Image" title="Logo & Branding" description="Ganti logo, judul aplikasi, dan SEO" onClick={() => setActiveModal('brandingSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
             <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
-            <SettingsCard icon="Sunrise" title="Motivasi Harian" description="Aktifkan pesan penyemangat pagi" onClick={() => {
-              setNewDailyWelcomeEnabled(dailyWelcomeEnabled);
-              setActiveModal('dailyWelcome');
-            }} />
+            <SettingsCard
+              icon="Sunrise"
+              title="Motivasi Harian"
+              description={dailyWelcomeEnabled ? "Pesan penyemangat akan muncul setiap pagi" : "Pesan penyemangat telah dimatikan"}
+              badge={
+                <div className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter ${dailyWelcomeEnabled ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                  {dailyWelcomeEnabled ? 'Aktif' : 'Nonaktif'}
+                </div>
+              }
+              onClick={() => {
+                setNewDailyWelcomeEnabled(dailyWelcomeEnabled);
+                setActiveModal('dailyWelcome');
+              }}
+            />
 
             {/* General Settings */}
             <SettingsCard icon="FileText" title="PPN & Struk" description="Atur rate PPN dan versi struk" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
@@ -1152,12 +1164,38 @@ const Settings = () => {
               {!newDailyWelcomeEnabled && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
             </div>
           </div>
-          <Button onClick={() => {
-            localStorage.setItem('daily_welcome_enabled', newDailyWelcomeEnabled);
-            setDailyWelcomeEnabled(newDailyWelcomeEnabled);
-            showToast('Pengaturan berhasil disimpan!', 'success');
-            setTimeout(() => handleModalClose(), 1000);
-          }} className="w-full mt-4" disabled={isLoading}>Simpan Pengaturan</Button>
+          <div className="pt-4 border-t border-border flex flex-col gap-3">
+            <Button
+              onClick={async () => {
+                setIsLoading(true);
+                const success = await updateDailyWelcome(newDailyWelcomeEnabled);
+                setIsLoading(false);
+                if (success) {
+                  showToast('Pengaturan berhasil disimpan!', 'success');
+                  setTimeout(() => handleModalClose(), 1000);
+                } else {
+                  showToast('Gagal menyimpan pengaturan', 'error');
+                }
+              }}
+              className="w-full h-12 rounded-xl font-bold uppercase tracking-wider shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Temporary logic to trigger the modal for preview
+                setActiveModal(null);
+                localStorage.removeItem('last_welcome_popup_date');
+                window.location.reload(); // Refresh to trigger the App-level DailyWelcomeModal
+              }}
+              className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border-2"
+            >
+              Uji Pratinjau Pop-up (Muat Ulang)
+            </Button>
+          </div>
         </div>
       </SettingsModal>
 

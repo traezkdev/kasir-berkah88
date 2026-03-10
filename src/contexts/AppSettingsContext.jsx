@@ -10,6 +10,7 @@ export const AppSettingsProvider = ({ children }) => {
   const [logoUrl, setLogoUrl] = useState('');
   const [appMode, setAppMode] = useState('full'); // Default: full mode
   const [authUiVersion, setAuthUiVersion] = useState('1'); // Default: UI 1
+  const [dailyWelcomeEnabled, setDailyWelcomeEnabled] = useState(true);
   const [isLoadingMode, setIsLoadingMode] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -22,15 +23,22 @@ export const AppSettingsProvider = ({ children }) => {
         return; // Skip fetch if no token
       }
 
-      // Fetch Header Title
+      // Fetch All Settings
       try {
         const response = await authFetch(`${apiUrl}/api/all-settings`);
         const data = await response.json();
-        if (response.ok && data.data && data.data.header_title) {
-          setHeaderTitle(data.data.header_title);
+        if (response.ok && data.data) {
+          if (data.data.header_title) setHeaderTitle(data.data.header_title);
+          if (data.data.daily_welcome_enabled !== undefined) {
+            setDailyWelcomeEnabled(data.data.daily_welcome_enabled !== '0' && data.data.daily_welcome_enabled !== 'false');
+          } else {
+            // Fallback to localStorage if not in DB yet
+            const local = localStorage.getItem('daily_welcome_enabled');
+            if (local !== null) setDailyWelcomeEnabled(local !== 'false');
+          }
         }
       } catch (error) {
-        console.error('Error fetching header title:', error);
+        console.error('Error fetching settings:', error);
       }
 
       // Fetch Logo
@@ -122,13 +130,32 @@ export const AppSettingsProvider = ({ children }) => {
   const value = {
     headerTitle,
     logoUrl,
+    isOpen,
+    setIsOpen,
+    dailyWelcomeEnabled,
     appMode,
     authUiVersion,
     isLoadingMode,
     toggleAppMode,
     setAuthUiVersion,
-    isOpen,
-    setIsOpen,
+    updateDailyWelcome: async (enabled) => {
+      try {
+        const response = await authFetch(`${apiUrl}/api/settings/daily_welcome_enabled`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: enabled ? '1' : '0' }),
+        });
+        if (response.ok) {
+          setDailyWelcomeEnabled(enabled);
+          localStorage.setItem('daily_welcome_enabled', enabled);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Error updating daily welcome setting:', error);
+        return false;
+      }
+    },
     updateShopStatus: async (newStatus) => {
       try {
         const response = await authFetch(`${apiUrl}/api/restaurant-settings/status`, {

@@ -71,6 +71,7 @@ const MenuManagement = ({ navigation }) => {
         discount: 0,
         is_featured: false,
         is_hidden: false,
+        options: [],
         description: ''
     });
     const [imageUri, setImageUri] = useState(null);
@@ -123,6 +124,7 @@ const MenuManagement = ({ navigation }) => {
                 discount: (item.discount || '0').toString(),
                 is_featured: item.is_featured === 1 || item.is_featured === true,
                 is_hidden: item.is_hidden === 1 || item.is_hidden === true,
+                options: item.options || [],
                 description: item.description || ''
             });
             setImageUri(item.image_url ? `${API_URL}${item.image_url}` : null);
@@ -137,6 +139,7 @@ const MenuManagement = ({ navigation }) => {
                 discount: 0,
                 is_featured: false,
                 is_hidden: false,
+                options: [],
                 description: ''
             });
             setImageUri(null);
@@ -175,6 +178,24 @@ const MenuManagement = ({ navigation }) => {
         }
     };
 
+    const handleOptionChange = (index, name, value) => {
+        const newOptions = [...formData.options];
+        newOptions[index][name] = value;
+        setFormData(prev => ({ ...prev, options: newOptions }));
+    };
+
+    const addOption = () => {
+        setFormData(prev => ({
+            ...prev,
+            options: [...prev.options, { name: '', price_adjustment: '' }],
+        }));
+    };
+
+    const removeOption = (index) => {
+        const newOptions = formData.options.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, options: newOptions }));
+    };
+
     const handleSubmit = async () => {
         // Validasi input
         if (!formData.name || !formData.price || formData.stock === '') {
@@ -196,18 +217,6 @@ const MenuManagement = ({ navigation }) => {
 
         try {
             const formDataToSend = new FormData();
-
-            // Append form fields
-            formDataToSend.append('name', formData.name);
-            formDataToSend.append('price', priceNum);
-            formDataToSend.append('stock', stockNum);
-            formDataToSend.append('category', formData.category);
-            formDataToSend.append('hpp', hppNum);
-            formDataToSend.append('discount', discNum);
-            formDataToSend.append('is_featured', formData.is_featured ? 1 : 0);
-            formDataToSend.append('is_hidden', formData.is_hidden ? 1 : 0);
-            formDataToSend.append('description', formData.description || '');
-
             // Append image if selected and it's a new image (not from server)
             if (imageUri && !imageUri.startsWith('http')) {
                 if (Platform.OS === 'web') {
@@ -230,6 +239,22 @@ const MenuManagement = ({ navigation }) => {
                     });
                 }
             }
+
+            // Prepare data object compatible with backend
+            const dataToSubmit = {
+                id: editingItem ? editingItem.id : `M-${Date.now()}`,
+                name: formData.name,
+                price: priceNum,
+                stock: stockNum,
+                category: formData.category,
+                hpp: hppNum,
+                discount: discNum,
+                is_featured: formData.is_featured ? 1 : 0,
+                is_hidden: formData.is_hidden ? 1 : 0,
+                options: formData.options,
+                description: formData.description || ''
+            };
+            formDataToSend.append('data', JSON.stringify(dataToSubmit));
 
             const url = editingItem
                 ? `/api/menu-items/${editingItem.id}`
@@ -300,7 +325,8 @@ const MenuManagement = ({ navigation }) => {
     }, []);
 
     const filteredItems = menuItems.filter(item => {
-        const matchesCategory = activeCategory === 'Semua' || item.category === activeCategory;
+        const matchesCategory = activeCategory === 'Semua' ||
+            (item.category && item.category.trim().toLowerCase() === activeCategory.trim().toLowerCase());
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesCategory && matchesSearch;
     });
@@ -560,6 +586,98 @@ const MenuManagement = ({ navigation }) => {
                             onChangeText={(val) => setFormData({ ...formData, discount: val })}
                         />
                     </View>
+                </View>
+
+                {/* Options Section */}
+                <View style={[styles.formGroup, { borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 20 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                        <View>
+                            <Text style={styles.label}>OPSI / TOPPING MENU</Text>
+                            <Text style={{ fontSize: 10, color: '#94A3B8', fontWeight: 'bold' }}>Tambahkan variasi atau topping</Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={addOption}
+                            style={{
+                                backgroundColor: '#EFF6FF',
+                                paddingHorizontal: 12,
+                                paddingVertical: 8,
+                                borderRadius: 10,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6
+                            }}
+                        >
+                            <Plus size={14} color="#2563EB" />
+                            <Text style={{ fontSize: 10, fontWeight: '900', color: '#2563EB' }}>TAMBAH OPSI</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {formData.options.length > 0 ? (
+                        <View style={{ gap: 10 }}>
+                            {formData.options.map((option, index) => (
+                                <View key={index} style={{
+                                    backgroundColor: '#F8FAFC',
+                                    padding: 12,
+                                    borderRadius: 16,
+                                    borderWidth: 1,
+                                    borderColor: '#E2E8F0',
+                                    position: 'relative'
+                                }}>
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        <View style={{ flex: 2 }}>
+                                            <Text style={[styles.label, { marginBottom: 4, letterSpacing: 0.5 }]}>NAMA OPSI</Text>
+                                            <TextInput
+                                                style={[styles.input, { paddingVertical: 8, fontSize: 12 }]}
+                                                placeholder="Contoh: Dada, Paha..."
+                                                value={option.name}
+                                                onChangeText={(val) => handleOptionChange(index, 'name', val)}
+                                            />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.label, { marginBottom: 4, letterSpacing: 0.5 }]}> HARGA (+)</Text>
+                                            <TextInput
+                                                style={[styles.input, { paddingVertical: 8, fontSize: 12 }]}
+                                                placeholder="0"
+                                                keyboardType="numeric"
+                                                value={option.price_adjustment?.toString()}
+                                                onChangeText={(val) => handleOptionChange(index, 'price_adjustment', val)}
+                                            />
+                                        </View>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => removeOption(index)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: -8,
+                                            right: -8,
+                                            backgroundColor: '#FFF1F2',
+                                            width: 24,
+                                            height: 24,
+                                            borderRadius: 12,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderWidth: 1,
+                                            borderColor: '#FFE4E6'
+                                        }}
+                                    >
+                                        <X size={14} color="#E11D48" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+                    ) : (
+                        <View style={{
+                            padding: 24,
+                            borderWidth: 1,
+                            borderColor: '#F1F5F9',
+                            borderStyle: 'dashed',
+                            borderRadius: 16,
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#CBD5E1' }}>BELUM ADA OPSI</Text>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.featuredToggle}>
