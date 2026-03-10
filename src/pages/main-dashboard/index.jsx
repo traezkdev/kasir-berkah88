@@ -1244,15 +1244,6 @@ const MainDashboard = ({ headerTitle }) => {
           />
         </section>
 
-        {/* Profit/Loss Indicator - Bottom Placement */}
-        <section className="px-5 mt-6 mb-10 optimize-scroll">
-          <ProfitLossIndicator
-            revenue={dashboardData.metrics?.totalRevenue || 0}
-            expenses={dashboardData.metrics?.totalExpenses || 0}
-            periodLabel={periodLabel}
-          />
-        </section>
-
         {/* Footer Credit Mobile */}
         <div className="text-center opacity-30 px-5 mb-10">
           <p className="text-[9px] font-black uppercase tracking-[0.4em]">Website App ini di buat oleh M Alfin Firdaus</p>
