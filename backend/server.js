@@ -3568,10 +3568,23 @@ app.get("/api/customer/points", authenticateToken, async (req, res) => {
 
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
+    let connection;
     try {
         const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items, customer_name, customer_phone, customer_address } = req.body;
         const { id } = req.params;
 
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Get OLD transaction data to calculate balance difference
+        const [oldTransRows] = await connection.query("SELECT total, payment_method, isEmployeeMeal FROM transactions WHERE id = ?", [id]);
+        if (oldTransRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ "error": "Transaction not found" });
+        }
+        const oldTrans = oldTransRows[0];
+
+        // 2. Perform the update
         const sql = `UPDATE transactions SET 
            \`total\` = COALESCE(?, \`total\`), 
            \`ppn\` = COALESCE(?, \`ppn\`), 
@@ -3607,13 +3620,63 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
             id
         ];
 
-        const [result] = await db.query(sql, params);
+        const [result] = await connection.query(sql, params);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ "error": "Transaction not found" });
+        // 3. SYNC BALANCE IF TOTAL OR PAYMENT METHOD CHANGED
+        // We only sync if it's NOT an employee meal
+        if (!oldTrans.isEmployeeMeal && (isEmployeeMeal === undefined || !isEmployeeMeal)) {
+            const newTotal = total !== undefined ? parseFloat(total) : parseFloat(oldTrans.total);
+            const oldTotal = parseFloat(oldTrans.total);
+            const newPaymentMethod = payment_method || oldTrans.payment_method;
+            const oldPaymentMethod = oldTrans.payment_method;
+
+            const isOldTunai = (oldPaymentMethod.toLowerCase() === 'tunai' || oldPaymentMethod.toLowerCase() === 'cash');
+            const isNewTunai = (newPaymentMethod.toLowerCase() === 'tunai' || newPaymentMethod.toLowerCase() === 'cash');
+
+            const oldAccountName = isOldTunai ? 'lapak_deposit' : 'owner_deposit';
+            const newAccountName = isNewTunai ? 'lapak_deposit' : 'owner_deposit';
+
+            if (oldAccountName === newAccountName) {
+                // Same account, just update the difference
+                const diff = newTotal - oldTotal;
+                if (diff !== 0) {
+                    const [accRows] = await connection.query("SELECT id FROM accounts WHERE name = ?", [newAccountName]);
+                    if (accRows.length > 0) {
+                        const accountId = accRows[0].id;
+                        await connection.query("UPDATE accounts SET balance = balance + ? WHERE id = ?", [diff, accountId]);
+                        await connection.query(
+                            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
+                            [accountId, diff > 0 ? 'deposit' : 'expense', Math.abs(diff), `Penyesuaian Transaksi ${id}`, req.user.userId]
+                        );
+                    }
+                }
+            } else {
+                // Account changed (e.g. from Tunai to Transfer)
+                // 1. Remove from old account
+                const [oldAccRows] = await connection.query("SELECT id FROM accounts WHERE name = ?", [oldAccountName]);
+                if (oldAccRows.length > 0) {
+                    const oldAccountId = oldAccRows[0].id;
+                    await connection.query("UPDATE accounts SET balance = balance - ? WHERE id = ?", [oldTotal, oldAccountId]);
+                    await connection.query(
+                        'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
+                        [oldAccountId, 'expense', oldTotal, `Koreksi Metode Pembayaran ${id} (Pindah)`, req.user.userId]
+                    );
+                }
+                // 2. Add to new account
+                const [newAccRows] = await connection.query("SELECT id FROM accounts WHERE name = ?", [newAccountName]);
+                if (newAccRows.length > 0) {
+                    const newAccountId = newAccRows[0].id;
+                    await connection.query("UPDATE accounts SET balance = balance + ? WHERE id = ?", [newTotal, newAccountId]);
+                    await connection.query(
+                        'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
+                        [newAccountId, 'deposit', newTotal, `Koreksi Metode Pembayaran ${id} (Masuk)`, req.user.userId]
+                    );
+                }
+            }
         }
 
-        await logActivity(req.user.userId, 'Sunting Transaksi', 'transaction', id, `Transaksi ${id} diperbarui. Total: Rp ${parseFloat(total).toLocaleString('id-ID')}`);
+        await connection.commit();
+        await logActivity(req.user.userId, 'Sunting Transaksi', 'transaction', id, `Transaksi ${id} diperbarui. Total: Rp ${parseFloat(total || oldTrans.total).toLocaleString('id-ID')}`);
 
         // Emit Socket Update
         const io = req.app.get('io');
@@ -3627,7 +3690,10 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 
         res.json({ message: "success", data: req.body, changes: result.affectedRows });
     } catch (err) {
+        if (connection) await connection.rollback();
         res.status(400).json({ "error": err.message, "stack": err.stack });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
@@ -5569,6 +5635,39 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
             ];
 
             await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan, customer_id, points_used, promo_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
+
+            // --- NEW: Sync Transaction to Account Balance for Orders ---
+            try {
+                // Determine which account to update
+                const accountName = (transactionData.payment_method.toLowerCase() === 'tunai' || transactionData.payment_method.toLowerCase() === 'cash')
+                    ? 'lapak_deposit'
+                    : 'owner_deposit';
+
+                const [accRows] = await connection.query("SELECT id, balance FROM accounts WHERE name = ?", [accountName]);
+
+                if (accRows.length > 0) {
+                    const accountId = accRows[0].id;
+                    const amountToSync = parseFloat(transactionData.total);
+
+                    // 1. Update Account Balance
+                    await connection.query(
+                        "UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        [amountToSync, accountId]
+                    );
+
+                    // 2. Record in account_transactions
+                    await connection.query(
+                        'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                        [accountId, 'deposit', amountToSync, `Penjualan ${newTransactionId} (Order #${id})`, req.user.userId, transactionData.timestamp]
+                    );
+
+                    console.log(`[SYNC-ORDER] Order #${id} synced to ${accountName} (+${amountToSync})`);
+                }
+            } catch (syncError) {
+                console.error(`[SYNC-ORDER] Failed to sync order to account:`, syncError);
+                // We don't rollback here because the transaction itself is more important
+            }
+            // --- End Sync ---
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
@@ -8415,10 +8514,12 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                 `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
                  FROM account_transactions 
                  WHERE created_at >= ? AND created_at < ? 
-                 AND description NOT LIKE 'Penjualan TRZ%' 
-                 AND description NOT LIKE 'Pengeluaran:%' 
-                 AND description NOT LIKE 'Pembatalan Transaksi TRZ%'
-                 AND description NOT LIKE 'Penjualan V2 #%'
+                 AND LOWER(description) NOT LIKE 'penjualan%' 
+                 AND LOWER(description) NOT LIKE 'pengeluaran:%' 
+                 AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
+                 AND LOWER(description) NOT LIKE 'modal awal%'
+                 AND LOWER(description) NOT LIKE 'reset saldo%'
+                 AND LOWER(description) NOT LIKE 'saldo awal%'
                  AND closing_session_id IS NULL`,
                 [initialCapitalDate, periodStartRaw]
             );
@@ -8486,7 +8587,23 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
             [pStart, pEnd]
         );
 
-        const expectedClosingBalance = openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0);
+        // Period Manual Adjustments (excluding automated syncs)
+        const [accPeriod] = await db.query(
+            `SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total 
+             FROM account_transactions 
+             WHERE created_at >= ? AND created_at <= ? 
+             AND LOWER(description) NOT LIKE 'penjualan%' 
+             AND LOWER(description) NOT LIKE 'pengeluaran:%' 
+             AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
+             AND LOWER(description) NOT LIKE 'modal awal%'
+             AND LOWER(description) NOT LIKE 'reset saldo%'
+             AND LOWER(description) NOT LIKE 'saldo awal%'
+             AND closing_session_id IS NULL`,
+            [pStart, pEnd]
+        );
+        const periodAdjustment = parseFloat(accPeriod[0].total || 0);
+
+        const expectedClosingBalance = openingBalance + totalPeriodRev - parseFloat(periodExp[0].total || 0) + periodAdjustment;
         const gap = physicalCashAtEnd - expectedClosingBalance;
         const accuracy = expectedClosingBalance === 0
             ? (physicalCashAtEnd === 0 ? 100 : 0)
