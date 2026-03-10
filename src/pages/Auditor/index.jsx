@@ -216,7 +216,8 @@ export default function AuditorPage() {
             anomalies.push({
                 title: "Stok Menu Negatif",
                 desc: `${negativeStockItems.length} menu memiliki stok di bawah nol.`,
-                type: "warning"
+                type: "warning",
+                items: negativeStockItems.map(i => ({ name: i.name, stock: i.stock }))
             });
         }
 
@@ -788,6 +789,22 @@ export default function AuditorPage() {
                                     <div>
                                         <h4 className="font-black text-gray-900 leading-tight mb-1">{anom.title}</h4>
                                         <p className="text-xs text-gray-600 font-medium">{anom.desc}</p>
+
+                                        {/* Detail Items jika ada (untuk stok negatif) */}
+                                        {anom.items && anom.items.length > 0 && (
+                                            <div className="mt-3 flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                                                {anom.items.map((item, itemIdx) => (
+                                                    <div key={itemIdx} className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-white/60 dark:bg-slate-900/40 border border-amber-200/50 dark:border-amber-800/10">
+                                                        <span className="text-[10px] font-black uppercase tracking-tight text-gray-700 dark:text-gray-300 truncate pr-2">
+                                                            {item.name}
+                                                        </span>
+                                                        <span className="text-[10px] font-black text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded-md shrink-0">
+                                                            {item.stock}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))
