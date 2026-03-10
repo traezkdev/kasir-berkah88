@@ -45,6 +45,7 @@ import {
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
 import ModernLoader from '../../components/ModernLoader';
+import OptionSelectionModal from '../../components/OptionSelectionModal';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
@@ -125,6 +126,15 @@ const qtyBadgeTextStyles = {
     fontWeight: 'bold',
 };
 
+// Helper function to create a unique ID for a cart item based on its options
+const getCartItemId = (item, options) => {
+    if (!options || options.length === 0) {
+        return item.id;
+    }
+    const optionIds = options.map(o => o.id).sort().join('-');
+    return `${item.id}-${optionIds}`;
+};
+
 const SalesPOS = () => {
     const { width: windowWidth } = useWindowDimensions();
     const insets = useSafeAreaInsets();
@@ -185,6 +195,10 @@ const SalesPOS = () => {
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
     const [isCartReady, setIsCartReady] = useState(false);
     const [isCustomerSearchReady, setIsCustomerSearchReady] = useState(false);
+
+    // State for Options Modal
+    const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+    const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
 
     const { confirm } = useConfirm();
     const { ignoreStock, toggleIgnoreStock } = useAppSettings();
@@ -269,37 +283,71 @@ const SalesPOS = () => {
         });
     }, [menuItems, activeCategory, searchTerm]);
 
-    const addToCart = useCallback((item) => {
+    const addItemToCart = useCallback((item, selectedOptions = []) => {
         setCart(prevCart => {
-            const existing = prevCart.find(i => i.id === item.id);
-            if (existing) {
-                if (!ignoreStock && existing.quantity >= item.stock && item.stock !== null) {
-                    Alert.alert('Stok Habis', 'Jumlah melebihi stok yang tersedia. Aktifkan "Abaikan Stok" jika ingin tetap menjual.');
-                    return prevCart;
-                }
-                return prevCart.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-            }
-            if (!ignoreStock && item.stock <= 0 && item.stock !== null) {
-                Alert.alert('Stok Habis', 'Produk ini sedang kosong. Aktifkan "Abaikan Stok" jika ingin tetap menjual.');
+            const cartItemId = getCartItemId(item, selectedOptions);
+            const existing = prevCart.find(i => i.cartItemId === cartItemId);
+
+            const totalQtyInCart = prevCart
+                .filter(cartItem => cartItem.id === item.id)
+                .reduce((sum, cartItem) => sum + cartItem.quantity, 0);
+
+            if (!ignoreStock && totalQtyInCart + 1 > item.stock && item.stock !== null) {
+                Alert.alert('Stok Habis', 'Stok tidak mencukupi untuk jumlah ini.');
                 return prevCart;
             }
-            return [...prevCart, { ...item, quantity: 1 }];
+
+            const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (parseFloat(opt.price_adjustment) || 0), 0);
+            const itemPrice = parseFloat(item.price) || 0;
+            const itemDiscount = parseFloat(item.discount || 0);
+            const priceAfterDiscount = itemDiscount > 0
+                ? Math.round(itemPrice * (1 - (itemDiscount / 100)))
+                : itemPrice;
+
+            const finalPricePerUnit = priceAfterDiscount + optionPriceAdjustment;
+
+            if (existing) {
+                return prevCart.map(i => i.cartItemId === cartItemId ? { ...i, quantity: i.quantity + 1 } : i);
+            }
+
+            return [...prevCart, {
+                ...item,
+                cartItemId,
+                quantity: 1,
+                selectedOptions,
+                basePrice: itemPrice,
+                finalPrice: finalPricePerUnit
+            }];
         });
     }, [ignoreStock]);
 
-    const removeFromCart = useCallback((id) => {
-        setCart(prevCart => prevCart.filter(item => item.id !== id));
+    const addToCart = useCallback((item) => {
+        if (item.options && item.options.length > 0) {
+            setSelectedItemForOptions(item);
+            setIsOptionsModalOpen(true);
+        } else {
+            addItemToCart(item, []);
+        }
+    }, [addItemToCart]);
+
+    const removeFromCart = useCallback((cartItemId) => {
+        setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId));
     }, []);
 
-    const updateQuantity = useCallback((id, delta) => {
+    const updateQuantity = useCallback((cartItemId, delta) => {
         setCart(prevCart => {
             return prevCart.map(item => {
-                if (item.id === id) {
+                if (item.cartItemId === cartItemId) {
                     const newQty = item.quantity + delta;
                     if (newQty <= 0) return null;
-                    // Check stock
-                    const originalItem = menuItems.find(m => m.id === id);
-                    if (!ignoreStock && delta > 0 && originalItem && originalItem.stock !== null && newQty > originalItem.stock) {
+
+                    // Check total stock for this item type
+                    const totalQtyInCart = prevCart
+                        .filter(cartItem => cartItem.id === item.id)
+                        .reduce((sum, cartItem) => sum + cartItem.quantity, 0);
+
+                    const originalItem = menuItems.find(m => m.id === item.id);
+                    if (!ignoreStock && delta > 0 && originalItem && originalItem.stock !== null && totalQtyInCart + 1 > originalItem.stock) {
                         return item;
                     }
                     return { ...item, quantity: newQty };
@@ -311,24 +359,7 @@ const SalesPOS = () => {
 
     const subtotal = useMemo(() => {
         return cart.reduce((acc, curr) => {
-            const itemPrice = parseFloat(curr.price || 0);
-            const basePrice = curr.basePrice ? parseFloat(curr.basePrice) : null;
-            const itemDiscount = parseFloat(curr.discount || 0);
-            const quantity = curr.quantity || 0;
-
-            let priceAfterDiscount;
-            if (basePrice !== null) {
-                // If basePrice exists, it's the original price.
-                priceAfterDiscount = itemDiscount > 0
-                    ? Math.round(basePrice * (1 - (itemDiscount / 100)))
-                    : basePrice;
-            } else {
-                // Fresh item from menu, apply discount to current price
-                priceAfterDiscount = itemDiscount > 0
-                    ? Math.round(itemPrice * (1 - (itemDiscount / 100)))
-                    : itemPrice;
-            }
-            return acc + (priceAfterDiscount * quantity);
+            return acc + (parseFloat(curr.finalPrice || 0) * curr.quantity);
         }, 0);
     }, [cart]);
 
@@ -380,19 +411,17 @@ const SalesPOS = () => {
         try {
             const transactionData = {
                 items: cart.map(item => {
-                    const itemPrice = parseFloat(item.price) || 0;
-                    const itemDiscount = parseFloat(item.discount) || 0;
-                    const priceAfterDiscount = itemDiscount > 0
-                        ? Math.round(itemPrice * (1 - (itemDiscount / 100)))
-                        : itemPrice;
-
                     return {
                         id: item.id,
                         name: item.name,
-                        price: priceAfterDiscount, // Send final price to be consistent with web
-                        basePrice: itemPrice,      // Include basePrice for receipt
+                        price: item.finalPrice, // Send final price per item (including options)
+                        basePrice: item.basePrice, // Include basePrice for receipt
                         quantity: item.quantity,
-                        discount: itemDiscount
+                        discount: item.discount,
+                        options: (item.selectedOptions || []).map(opt => ({
+                            name: opt.name,
+                            price_adjustment: opt.price_adjustment
+                        }))
                     };
                 }),
                 subtotal: subtotal,
@@ -517,8 +546,8 @@ const SalesPOS = () => {
     const quickCashOptions = [5000, 10000, 20000, 50000, 100000];
 
     const renderMenuItem = useCallback(({ item }) => {
-        const itemInCart = cart.find(i => i.id === item.id);
-        const qty = itemInCart ? itemInCart.quantity : 0;
+        const itemsInCartWithThisId = cart.filter(i => i.id === item.id);
+        const qty = itemsInCartWithThisId.reduce((sum, i) => sum + i.quantity, 0);
         const isOutOfStock = item.stock <= 0 && item.stock !== null;
 
         return (
@@ -753,30 +782,33 @@ const SalesPOS = () => {
                                 >
                                     <View style={styles.cartList}>
                                         {cart.map(item => (
-                                            <View key={item.id} style={styles.cartItem}>
+                                            <View key={item.cartItemId} style={styles.cartItem}>
                                                 <View style={styles.cartItemLeft}>
                                                     <Text style={styles.cartItemName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
-                                                    <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
+                                                    {item.selectedOptions && item.selectedOptions.length > 0 && (
+                                                        <Text style={styles.cartItemOption}>({item.selectedOptions.map(o => o.name).join(', ')})</Text>
+                                                    )}
+                                                    <Text style={styles.cartItemPrice}>{formatCurrency(item.finalPrice)}</Text>
                                                 </View>
                                                 <View style={styles.cartItemRight}>
                                                     <View style={styles.qtyControl}>
                                                         <TouchableOpacity
                                                             style={styles.qtyBtn}
-                                                            onPress={() => updateQuantity(item.id, -1)}
+                                                            onPress={() => updateQuantity(item.cartItemId, -1)}
                                                         >
                                                             <Minus size={16} color="#64748B" />
                                                         </TouchableOpacity>
                                                         <Text style={styles.qtyText}>{item.quantity}</Text>
                                                         <TouchableOpacity
                                                             style={styles.qtyBtn}
-                                                            onPress={() => updateQuantity(item.id, 1)}
+                                                            onPress={() => updateQuantity(item.cartItemId, 1)}
                                                         >
                                                             <Plus size={16} color="#64748B" />
                                                         </TouchableOpacity>
                                                     </View>
                                                     <TouchableOpacity
                                                         style={styles.trashBtn}
-                                                        onPress={() => removeFromCart(item.id)}
+                                                        onPress={() => removeFromCart(item.cartItemId)}
                                                     >
                                                         <Trash2 size={18} color="#EF4444" />
                                                     </TouchableOpacity>
@@ -1031,6 +1063,14 @@ const SalesPOS = () => {
                     transaction={lastTransaction}
                 />
             )}
+
+            {/* Options Selection Modal */}
+            <OptionSelectionModal
+                visible={isOptionsModalOpen}
+                onClose={() => setIsOptionsModalOpen(false)}
+                item={selectedItemForOptions}
+                onAddToCartWithOptions={addItemToCart}
+            />
 
             {/* Customer Search Modal */}
             <Modal
@@ -1610,6 +1650,12 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: 'bold',
         color: '#1E293B',
+    },
+    cartItemOption: {
+        fontSize: 10,
+        color: '#2563EB',
+        fontWeight: '900',
+        marginBottom: 2,
     },
     cartItemPrice: {
         fontSize: 13,
