@@ -3258,11 +3258,18 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
 
         // PPN is calculated after manual discount
         const calculatedPpn = subtotalAfterManualDiscount * ppnRate;
-        const calculatedTotal = subtotalAfterManualDiscount + calculatedPpn;
+        // Calculate Point & Promo Discounts
+        const finalPointsUsed = parseFloat(pointsUsed || 0);
+        const promoDiscountVal = parseFloat(req.body.promo_discount || 0);
 
+        // Adjust calculatedTotal to include all discounts
+        const calculatedTotal = (subtotalAfterManualDiscount + calculatedPpn) - finalPointsUsed - promoDiscountVal;
+
+        // Determine finalTotal: Trust frontendTotal if provided (e.g. from Website/SimpleTransaction), 
+        // otherwise use our carefully calculatedTotal (e.g. from App/standard flow)
         const finalTotal = (frontendTotal !== undefined && frontendTotal !== null && !isNaN(parseFloat(frontendTotal)))
             ? parseFloat(frontendTotal)
-            : calculatedTotal;
+            : Math.max(0, calculatedTotal);
 
         const finalPpnAmount = isNaN(calculatedPpn) ? 0 : calculatedPpn;
 
@@ -3274,7 +3281,6 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         const finalUserId = req.user ? req.user.userId : null;
 
         // --- Points Logic ---
-        let finalPointsUsed = 0;
         let finalPointsEarned = 0;
         let finalCustomerId = null;
 
@@ -3289,9 +3295,9 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             finalCustomerId = userRows[0].id;
             const currentPoints = parseFloat(userRows[0].points || 0);
 
-            // Deduct points if used
-            if (pointsUsed && pointsUsed > 0) {
-                finalPointsUsed = parseFloat(pointsUsed);
+            // Points deduction already handled in total calculation above,
+            // now we just update the user's balance.
+            if (finalPointsUsed > 0) {
                 if (currentPoints < finalPointsUsed) {
                     await connection.rollback();
                     return res.status(400).json({ error: "Insufficient points balance." });
@@ -3311,7 +3317,6 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             await connection.query("UPDATE users SET points = ? WHERE id = ?", [newBalance, finalCustomerId]);
         }
 
-        const promoDiscountVal = parseFloat(req.body.promo_discount || 0);
 
         const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address, customer_id, points_used, points_earned, promo_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
         const params = [
@@ -3625,6 +3630,8 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
         // 3. SYNC BALANCE IF TOTAL OR PAYMENT METHOD CHANGED
         // We only sync if it's NOT an employee meal
         if (!oldTrans.isEmployeeMeal && (isEmployeeMeal === undefined || !isEmployeeMeal)) {
+            // Ensure we calculate the most accurate new total 
+            // If total is provided, trust it. Otherwise, use existing total.
             const newTotal = total !== undefined ? parseFloat(total) : parseFloat(oldTrans.total);
             const oldTotal = parseFloat(oldTrans.total);
             const newPaymentMethod = payment_method || oldTrans.payment_method;
@@ -8517,6 +8524,7 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                  AND LOWER(description) NOT LIKE 'penjualan%' 
                  AND LOWER(description) NOT LIKE 'pengeluaran:%' 
                  AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
+                 AND LOWER(description) NOT LIKE 'penyesuaian transaksi%'
                  AND LOWER(description) NOT LIKE 'modal awal%'
                  AND LOWER(description) NOT LIKE 'reset saldo%'
                  AND LOWER(description) NOT LIKE 'saldo awal%'
@@ -8595,6 +8603,7 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
              AND LOWER(description) NOT LIKE 'penjualan%' 
              AND LOWER(description) NOT LIKE 'pengeluaran:%' 
              AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
+             AND LOWER(description) NOT LIKE 'penyesuaian transaksi%'
              AND LOWER(description) NOT LIKE 'modal awal%'
              AND LOWER(description) NOT LIKE 'reset saldo%'
              AND LOWER(description) NOT LIKE 'saldo awal%'
