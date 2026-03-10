@@ -514,6 +514,7 @@ const setupDatabase = async () => {
       ('dashboard_running_text', 'Selamat datang di POS Berkah 88! Semangat berjualan hari ini!'),
       ('dashboard_running_text_enabled', '1'),
       ('dashboard_watermark_enabled', '1'),
+      ('daily_welcome_enabled', '1'),
       ('audit_start_date', '');
     `;
     await connection.query(insertDefaultSettings);
