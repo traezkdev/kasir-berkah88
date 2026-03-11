@@ -1038,10 +1038,45 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
   }
 
   doc.text(assessment, 14, currentY, { maxWidth: pageWidth - 28 });
+  currentY += 12;
+
+  // --- Closing Block (Moved to Page 1) ---
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+
+  currentY += 10;
+  doc.text(T.issuer_label, 14, currentY);
+  currentY += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text(T.issuer_name, 14, currentY);
+
+  currentY += 15;
+  doc.setDrawColor(200);
+  doc.line(14, currentY, 80, currentY);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.text(T.signature_note, 14, currentY + 4);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(T.signer_title, 14, currentY - 2);
+  
+  // Paksa pindah ke halaman kedua untuk lampiran detail
+  doc.addPage();
+  currentY = 20;
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100);
+  doc.text("LAMPIRAN DETAIL ANALISIS", 14, currentY);
+  doc.setDrawColor(200);
+  doc.line(14, currentY + 2, 85, currentY + 2);
   currentY += 15;
 
   // --- Status Profit/Loss Highlight ---
   const isProfit = metrics.netProfit >= 0;
+  doc.setFontSize(10);
+  doc.setTextColor(0);
   doc.setFont('helvetica', 'bold');
   doc.text("STATUS KINERJA KEUANGAN:", 14, currentY);
   currentY += 5;
@@ -1092,28 +1127,6 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
     doc.addPage();
     currentY = 20;
   }
-
-  // --- Closing ---
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(T.closing_body, 14, currentY, { maxWidth: pageWidth - 28 });
-
-  currentY += 25;
-  doc.text(T.issuer_label, 14, currentY);
-  currentY += 5;
-  doc.setFont('helvetica', 'bold');
-  doc.text(T.issuer_name, 14, currentY);
-
-  currentY += 25;
-  doc.setDrawColor(200);
-  doc.line(14, currentY, 80, currentY);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'italic');
-  doc.text(T.signature_note, 14, currentY + 4);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(T.signer_title, 14, currentY - 2);
 
   doc.save(`${filename}.pdf`);
 };
