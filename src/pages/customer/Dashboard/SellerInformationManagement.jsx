@@ -282,7 +282,6 @@ const SellerInformationManagement = () => {
                 <NavigationHeader headerTitle="Pusat Informasi" />
             )}
 
-            {/* Mobile Header for Seller Path */}
             {theme === 'default' && isSellerPath && (
                 <div className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-[#118eea] text-white px-5 py-4 flex items-center gap-3 shadow-md">
                     <button onClick={() => window.history.back()} className="p-1 hover:bg-white/10 rounded-full">
@@ -295,10 +294,12 @@ const SellerInformationManagement = () => {
             <div className={`space-y-6 ${theme === 'default' ? 'p-5 pt-24 lg:pt-8 pb-32' : 'space-y-6 pb-20'}`}>
                 {/* Header */}
                 {isAdmin ? (
-                    <div className="mb-6 lg:block hidden">
-                        <BreadcrumbNavigation />
+                    <div className="mb-6">
+                        <div className="hidden lg:block">
+                            <BreadcrumbNavigation />
+                        </div>
                         <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
+                            <div className="hidden lg:block">
                                 <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Pusat Informasi</h1>
                                 <p className="text-sm text-gray-500 font-medium mt-1">Kelola berita, pengumuman, dan artikel untuk pelanggan</p>
                             </div>
@@ -570,6 +571,17 @@ const SellerInformationManagement = () => {
                         </div>
                     )}
                 </AnimatePresence>
+
+                {/* Floating Action Button for Mobile */}
+                <motion.button
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleOpenModal()}
+                    className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center z-40 lg:hidden"
+                >
+                    <Plus size={28} />
+                </motion.button>
             </div>
         </div>
     );

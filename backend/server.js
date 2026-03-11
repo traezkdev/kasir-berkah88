@@ -2308,18 +2308,29 @@ app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penju
 app.get("/api/expense-categories", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual', 'guest'), async (req, res) => {
     try {
         // Get categories from fixed table
-        const [categoryRows] = await db.query("SELECT name FROM expense_categories ORDER BY name ASC");
-        let categoriesFromTable = categoryRows.map(r => r.name);
-
-        // Get categories from expenses table
+        const [categoryRows] = await db.query("SELECT id, name FROM expense_categories ORDER BY name ASC");
+        
+        // Get categories from expenses table to find ones not in the official list
         const [expenseRows] = await db.query('SELECT DISTINCT category FROM expenses WHERE category IS NOT NULL AND category != ""');
-        let categoriesFromExpenses = expenseRows.map(r => r.category);
+        const categoriesFromExpenses = expenseRows.map(r => r.category);
 
-        // Merge and unique
-        const allUniqueNames = [...new Set([...categoriesFromTable, ...categoriesFromExpenses])].sort();
+        // Map to keep track of names we've already included
+        const categoriesMap = new Map();
+        
+        // 1. Add official ones first
+        categoryRows.forEach(cat => {
+            categoriesMap.set(cat.name, { id: cat.id, name: cat.name });
+        });
 
-        // Convert back to object format for web compatibility
-        const finalData = allUniqueNames.map(name => ({ name }));
+        // 2. Add unofficial ones found in expenses
+        categoriesFromExpenses.forEach(name => {
+            if (!categoriesMap.has(name)) {
+                // Use a string ID to avoid 'undefined' and distinguish from official ones
+                categoriesMap.set(name, { id: `legacy-${name}`, name });
+            }
+        });
+
+        const finalData = Array.from(categoriesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
         res.json({
             "message": "success",

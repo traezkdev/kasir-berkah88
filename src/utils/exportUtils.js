@@ -1040,6 +1040,32 @@ export const exportAuditorToPdf = (auditData, filename = 'audit_report', dateRan
   doc.text(assessment, 14, currentY, { maxWidth: pageWidth - 28 });
   currentY += 15;
 
+  // --- Status Profit/Loss Highlight ---
+  const isProfit = metrics.netProfit >= 0;
+  doc.setFont('helvetica', 'bold');
+  doc.text("STATUS KINERJA KEUANGAN:", 14, currentY);
+  currentY += 5;
+
+  // Draw background highlight
+  if (isProfit) {
+    doc.setFillColor(232, 252, 241); // Light Green Background
+    doc.setTextColor(21, 128, 61);   // Dark Green Text
+  } else {
+    doc.setFillColor(254, 242, 242); // Light Red Background
+    doc.setTextColor(185, 28, 28);   // Dark Red Text
+  }
+  
+  doc.rect(14, currentY - 4, pageWidth - 28, 9, 'F');
+  doc.setFontSize(11);
+  const statusText = isProfit 
+    ? `MENGUNTUNGKAN (PROFIT): Bisnis menghasilkan laba bersih sebesar ${currencyFormat.format(metrics.netProfit)}`
+    : `MENGALAMI KERUGIAN (LOSS): Bisnis mengalami kerugian sebesar ${currencyFormat.format(metrics.netProfit)}`;
+  doc.text(statusText, 18, currentY + 2.5);
+  
+  doc.setTextColor(0); // Reset to black
+  doc.setFontSize(10);
+  currentY += 15;
+
   // --- Anomalies Section ---
   if (anomalies && anomalies.length > 0) {
     doc.setFont('helvetica', 'bold');
