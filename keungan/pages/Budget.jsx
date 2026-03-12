@@ -230,7 +230,7 @@ const Budget = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                  <div className="pt-2 flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(budget)}
                       className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all"
