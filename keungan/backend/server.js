@@ -33,6 +33,18 @@ const recalculateBudgetUsed = async (userId, category) => {
     }
 };
 
+// Helper: Buat Notifikasi Baru
+const createNotification = async (userId, title, message, type = 'info') => {
+    try {
+        await pool.query(
+            "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+            [userId, title, message, type]
+        );
+    } catch (err) {
+        console.error('Gagal membuat notifikasi:', err.message);
+    }
+};
+
 // --- AUTH ROUTES ---
 
 // Register
@@ -227,10 +239,41 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
             [userId, date, type, category, amount, note]
         );
         const [newRow] = await pool.query("SELECT * FROM transactions WHERE id = ?", [result.insertId]);
+
+        // Notif Transaksi Baru (jika diaktifkan)
+        const [userSet] = await pool.query("SELECT notif_transaksi FROM users WHERE id = ?", [userId]);
+        if (userSet[0]?.notif_transaksi) {
+            const title = type === 'income' ? "Pemasukan Baru 💰" : "Pengeluaran Baru 💸";
+            const amountStr = new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR'}).format(amount);
+            await createNotification(userId, title, `${category}: ${amountStr} ${note ? `(${note})` : ''}`, type === 'income' ? 'success' : 'info');
+        }
         
         // Auto-update budget jika transaksi expense
         if (type === 'expense') {
             await recalculateBudgetUsed(userId, category);
+
+            // CEK BUDGET (Trigger Notifikasi)
+            const [budgetRows] = await pool.query("SELECT * FROM budgets WHERE user_id = ? AND category = ?", [userId, category]);
+            if (budgetRows.length > 0) {
+                const b = budgetRows[0];
+                const percentage = (b.used_amount / b.limit_amount) * 100;
+                
+                const [userSettings] = await pool.query("SELECT notif_budget FROM users WHERE id = ?", [userId]);
+                if (userSettings[0]?.notif_budget) {
+                    if (percentage >= 100) {
+                        await createNotification(userId, "Budget Terlampaui!", `Pengeluaran "${category}" telah melampaui limit budget Anda (100%+).`, 'error');
+                    } else if (percentage >= 80) {
+                        // Cek apakah sudah pernah dinotif 80% hari ini biar gak spam
+                        const [existingNotif] = await pool.query(
+                            "SELECT id FROM notifications WHERE user_id = ? AND title = ? AND message LIKE ? AND DATE(created_at) = CURDATE()",
+                            [userId, "Budget Hampir Menipis", `%${category}%`]
+                        );
+                        if (existingNotif.length === 0) {
+                            await createNotification(userId, "Budget Hampir Menipis", `Pengeluaran "${category}" sudah mencapai ${percentage.toFixed(0)}% dari limit budget.`, 'warning');
+                        }
+                    }
+                }
+            }
         }
         res.status(201).json(newRow[0]);
     } catch (error) {
@@ -786,6 +829,86 @@ app.get('/api/reports', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: "Gagal mengambil data laporan", error: error.message });
+    }
+});
+
+
+// --- NOTIFICATIONS ROUTES ---
+
+// GET All Notifications (with auto-check for bills)
+app.get('/api/notifications', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Auto-check: Tagihan Mendatang (Jatuh tempo <= 3 hari)
+        const [upcomingBills] = await pool.query(`
+            SELECT * FROM bills 
+            WHERE user_id = ? AND status = 'unpaid' 
+            AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+        `, [userId]);
+
+        for (const bill of upcomingBills) {
+            const title = "Tagihan Mendatang";
+            const message = `Tagihan "${bill.name}" senilai ${new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR'}).format(bill.amount)} akan jatuh tempo pada ${new Date(bill.due_date).toLocaleDateString('id-ID')}.`;
+            
+            // Cek apakah notifikasi serupa sudah ada hari ini (biar gak spam)
+            const [existing] = await pool.query(
+                "SELECT id FROM notifications WHERE user_id = ? AND title = ? AND message LIKE ? AND DATE(created_at) = CURDATE()",
+                [userId, title, `%${bill.name}%`]
+            );
+
+            if (existing.length === 0) {
+                await createNotification(userId, title, message, 'bill');
+            }
+        }
+
+        const [rows] = await pool.query(
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
+            [userId]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil notifikasi", error: error.message });
+    }
+});
+
+// Mark All as Read
+app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
+    try {
+        await pool.query("UPDATE notifications SET is_read = TRUE WHERE user_id = ?", [req.user.id]);
+        res.json({ message: "Semua notifikasi ditandai telah dibaca" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal memperbarui notifikasi", error: error.message });
+    }
+});
+
+// Mark single as read
+app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
+    try {
+        await pool.query("UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        res.json({ message: "Notifikasi dibaca" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal memperbarui notifikasi", error: error.message });
+    }
+});
+
+// Delete single
+app.delete('/api/notifications/:id', authMiddleware, async (req, res) => {
+    try {
+        await pool.query("DELETE FROM notifications WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        res.json({ message: "Notifikasi dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menghapus notifikasi", error: error.message });
+    }
+});
+
+// Clear All
+app.delete('/api/notifications/clear', authMiddleware, async (req, res) => {
+    try {
+        await pool.query("DELETE FROM notifications WHERE user_id = ?", [req.user.id]);
+        res.json({ message: "Semua notifikasi dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menghapus semua notifikasi", error: error.message });
     }
 });
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Search, User } from 'lucide-react';
-import { mockUser } from '../mock/data';
+import NotificationPopover from '../components/NotificationPopover';
 
 const Navbar = ({ user }) => {
   return (
@@ -15,10 +15,7 @@ const Navbar = ({ user }) => {
       </div>
 
       <div className="flex items-center gap-6">
-        <button className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
+        <NotificationPopover user={user} />
         
         <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
           <div className="text-right">

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import NotificationPopover from '../../components/NotificationPopover';
+
 const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -53,14 +55,15 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <button className="text-gray-400">
+        <div className="flex items-center gap-2">
+          <button className="text-gray-400 p-2">
             <Search size={20} />
           </button>
+          <NotificationPopover user={user} />
           <img 
             src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=4F46E5&color=fff`} 
             alt="Profile" 
-            className="w-8 h-8 rounded-lg shadow-sm border border-gray-100"
+            className="w-8 h-8 rounded-lg shadow-sm border border-gray-100 ml-1"
           />
         </div>
       </div>
