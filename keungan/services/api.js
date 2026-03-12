@@ -31,4 +31,12 @@ api.interceptors.response.use(
   }
 );
 
+export const savingsAPI = {
+  getAll: () => api.get('/savings'),
+  create: (data) => api.post('/savings', data),
+  update: (id, data) => api.put(`/savings/${id}`, data),
+  addDeposit: (id, amount) => api.patch(`/savings/${id}/add`, { amount }),
+  delete: (id) => api.delete(`/savings/${id}`)
+};
+
 export default api;

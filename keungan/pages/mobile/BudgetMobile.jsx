@@ -200,10 +200,13 @@ const BudgetMobile = () => {
                         <p className="text-[10px] text-gray-400 font-medium">{formatCurrency(used)} / {formatCurrency(limit)}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => openInputModal(budget)} className="p-2 bg-green-50 text-green-600 rounded-xl active:scale-95 transition-all">
-                            <Plus size={16} />
-                        </button>
+                    <div className="flex gap-1">
+                      <button onClick={() => openEditModal(budget)} className="p-2 text-gray-400">
+                        <Edit2 size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(budget.id)} disabled={deletingId === budget.id} className="p-2 text-gray-400">
+                        {deletingId === budget.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      </button>
                     </div>
                   </div>
 
@@ -222,14 +225,10 @@ const BudgetMobile = () => {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-1">
-                    <button onClick={() => openEditModal(budget)} 
-                        className="flex-1 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 active:bg-indigo-50 active:text-indigo-600">
-                      <Edit2 size={12} /> Edit
-                    </button>
-                    <button onClick={() => handleDelete(budget.id)} disabled={deletingId === budget.id}
-                        className="flex-1 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 active:bg-red-50 active:text-red-600">
-                      {deletingId === budget.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Hapus
+                  <div className="pt-1">
+                    <button onClick={() => openInputModal(budget)} 
+                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-indigo-100">
+                      <Plus size={16} /> Input Pengeluaran
                     </button>
                   </div>
                 </div>
@@ -296,8 +295,8 @@ const BudgetMobile = () => {
                   className="w-full px-4 py-4 bg-gray-50 border-none rounded-2xl text-sm text-center font-medium focus:ring-2 focus:ring-indigo-100" />
               </div>
               <button type="submit" disabled={submitting || !inputAmount}
-                className="w-full py-4.5 rounded-[1.5rem] font-bold text-white text-lg bg-green-600 flex items-center justify-center gap-2 shadow-lg shadow-green-100 disabled:opacity-70">
-                {submitting ? <Loader2 className="animate-spin" size={22} /> : <><Coins size={22}/> Catat Belanja</>}
+                className="w-full py-5 rounded-[2rem] font-bold text-white text-lg bg-green-600 flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-95 transition-all disabled:opacity-70">
+                {submitting ? <Loader2 className="animate-spin" size={24} /> : <><Coins size={24}/> Catat Belanja</>}
               </button>
             </form>
           </div>

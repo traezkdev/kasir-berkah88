@@ -260,40 +260,51 @@ const TransaksiMobile = () => {
         ) : (
           <div className="space-y-3">
             {filteredTransactions.map((tx) => (
-              <div key={tx.id} className="bg-white p-4 rounded-[1.5rem] border border-gray-50 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-2xl ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {tx.type === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">{tx.category}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[10px] text-gray-400 font-medium uppercase">{formatDateDisplay(tx.date)}</p>
-                      {tx.note && (
-                        <>
-                          <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
-                          <p className="text-[10px] text-gray-400 font-medium truncate max-w-[100px]">{tx.note}</p>
-                        </>
-                      )}
+              <div key={tx.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 shadow-sm space-y-4 transition-all active:scale-[0.98]">
+                {/* Header: Icon, Category & Amount */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3.5 rounded-[1.2rem] ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                      {tx.type === 'income' ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-gray-800">{tx.category}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{formatDateDisplay(tx.date)}</p>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
                   <div className="text-right">
-                    <p className={`font-black text-sm ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                    <p className={`text-base font-black ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                       {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEditModal(tx)}
-                      className="p-1 text-gray-300 hover:text-indigo-500 transition-colors">
-                      <Edit2 size={13} />
-                    </button>
-                    <button onClick={() => handleDelete(tx.id)} disabled={deletingId === tx.id}
-                      className="p-1 text-gray-300 hover:text-red-500 transition-colors">
-                      {deletingId === tx.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                    </button>
+                </div>
+
+                {/* Body: Note (Styled as a small quote/box) */}
+                {tx.note && (
+                  <div className="px-1">
+                    <div className="bg-gray-50/50 p-3 rounded-2xl border-l-[3px] border-indigo-200">
+                      <p className="text-[11px] text-gray-500 font-medium leading-relaxed italic">
+                        "{tx.note}"
+                      </p>
+                    </div>
                   </div>
+                )}
+
+                {/* Footer: Action Buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button 
+                    onClick={() => openEditModal(tx)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold active:bg-indigo-50 active:text-indigo-600 transition-all"
+                  >
+                    <Edit2 size={12} /> Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(tx.id)} 
+                    disabled={deletingId === tx.id}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold active:bg-red-50 active:text-red-600 transition-all"
+                  >
+                    {deletingId === tx.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Hapus
+                  </button>
                 </div>
               </div>
             ))}
@@ -306,6 +317,16 @@ const TransaksiMobile = () => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Floating Action Button Mobile */}
+      <div className="fixed bottom-24 right-6 z-[100]">
+        <button 
+          onClick={openAddModal}
+          className="bg-indigo-600 text-white w-14 h-14 rounded-full shadow-2xl shadow-indigo-200 flex items-center justify-center active:scale-95 transition-all"
+        >
+          <Plus size={28} />
+        </button>
       </div>
 
       {/* ===== BOTTOM SHEET MODAL ===== */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Filter, Download, 
+import {
+  Plus, Search, Filter, Download,
   ArrowUpRight, ArrowDownRight,
   Edit2, Trash2, X, Loader2, AlertCircle
 } from 'lucide-react';
@@ -82,7 +82,7 @@ const Transaksi = () => {
   // --- FILTER ---
   const filteredTransactions = transactions.filter(tx => {
     const matchesSearch = (tx.note || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (tx.category || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (tx.category || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterType === 'all' || tx.type === filterType;
     return matchesSearch && matchesFilter;
   });
@@ -117,15 +117,15 @@ const Transaksi = () => {
   // --- SUBMIT (CREATE / UPDATE) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validasi Saldo di Frontend
     if (form.type === 'expense') {
       const amountToSpend = Number(form.amount);
       const oldAmount = editingId ? transactions.find(t => t.id === editingId)?.amount || 0 : 0;
       const oldType = editingId ? transactions.find(t => t.id === editingId)?.type : 'expense';
-      
+
       const balanceWithoutThis = totalBalance + (oldType === 'expense' ? Number(oldAmount) : 0);
-      
+
       if (amountToSpend > balanceWithoutThis) {
         alert(`Saldo tidak cukup! Sisa saldo tersedia: ${formatCurrency(balanceWithoutThis)}`);
         return;
@@ -190,25 +190,26 @@ const Transaksi = () => {
       {/* Low Balance Alert */}
       {totalBalance < 50000 && !loading && (
         <div className="bg-orange-50 border border-orange-100 p-6 rounded-[2rem] flex items-center justify-between animate-pulse">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl">
-                    <AlertCircle size={24} />
-                </div>
-                <div>
-                    <h3 className="text-sm font-bold text-orange-800">Saldo kamu hampir habis nih!</h3>
-                    <p className="text-xs text-orange-600 font-medium">Segera tambahkan pemasukan agar catatan keuanganmu tetap lancar.</p>
-                </div>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl">
+              <AlertCircle size={24} />
             </div>
-            <div className="text-right">
-                <p className="text-xs font-bold text-orange-400 uppercase">Sisa Saldo</p>
-                <p className="text-lg font-black text-orange-700">{formatCurrency(totalBalance)}</p>
+            <div>
+              <h3 className="text-sm font-bold text-orange-800">Saldo kamu hampir habis nih!</h3>
+              <p className="text-xs text-orange-600 font-medium">Segera tambahkan pemasukan agar catatan keuanganmu tetap lancar.</p>
             </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-orange-400 uppercase">Sisa Saldo</p>
+            <p className="text-lg font-black text-orange-700">{formatCurrency(totalBalance)}</p>
+          </div>
         </div>
       )}
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+      {/* Info Cards Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Total Saldo Card */}
+        <div className="lg:col-span-1 bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden flex flex-col justify-center">
           <div className="absolute -right-4 -bottom-4 opacity-10">
             <ArrowUpRight size={120} />
           </div>
@@ -219,17 +220,30 @@ const Transaksi = () => {
             </p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between group hover:border-red-100 transition-all">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-red-50 text-red-600 rounded-2xl group-hover:scale-110 transition-transform">
-              <ArrowDownRight size={24} />
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Total Pengeluaran</p>
-              <p className="text-2xl font-black text-gray-800">
-                {formatCurrency(transactions.filter(tx => tx.type === 'expense').reduce((acc, tx) => acc + Number(tx.amount), 0))}
-              </p>
-            </div>
+
+        {/* Income Card */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-5 group hover:border-green-100 transition-all">
+          <div className="p-4 bg-green-50 text-green-600 rounded-2xl group-hover:scale-110 transition-transform">
+            <ArrowUpRight size={24} />
+          </div>
+          <div>
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Total Masuk</p>
+            <p className="text-2xl font-black text-gray-800">
+              {formatCurrency(transactions.filter(tx => tx.type === 'income').reduce((acc, tx) => acc + Number(tx.amount), 0))}
+            </p>
+          </div>
+        </div>
+
+        {/* Expense Card */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-5 group hover:border-red-100 transition-all">
+          <div className="p-4 bg-red-50 text-red-600 rounded-2xl group-hover:scale-110 transition-transform">
+            <ArrowDownRight size={24} />
+          </div>
+          <div>
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Total Pengeluaran</p>
+            <p className="text-2xl font-black text-gray-800">
+              {formatCurrency(transactions.filter(tx => tx.type === 'expense').reduce((acc, tx) => acc + Number(tx.amount), 0))}
+            </p>
           </div>
         </div>
       </div>
@@ -246,18 +260,17 @@ const Transaksi = () => {
           <div className="flex bg-gray-50 p-1 rounded-xl">
             {['all', 'income', 'expense'].map((t) => (
               <button key={t} onClick={() => setFilterType(t)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  filterType === t
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === t
                     ? t === 'income' ? 'bg-white text-green-600 shadow-sm'
                       : t === 'expense' ? 'bg-white text-red-600 shadow-sm'
-                      : 'bg-white text-indigo-600 shadow-sm'
+                        : 'bg-white text-indigo-600 shadow-sm'
                     : 'text-gray-500'}`}>
                 {t === 'all' ? 'Semua' : t === 'income' ? 'Pemasukan' : 'Pengeluaran'}
               </button>
             ))}
           </div>
         </div>
-        <button 
+        <button
           onClick={() => downloadTransaksiPDF(filteredTransactions)}
           title="Download PDF"
           className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors">
@@ -337,7 +350,7 @@ const Transaksi = () => {
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          
+
           {/* Modal Content */}
           <div className="relative bg-white w-full max-w-lg mx-4 rounded-[2rem] shadow-2xl overflow-hidden">
             {/* Modal Header */}
@@ -356,11 +369,11 @@ const Transaksi = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tipe</label>
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setForm({...form, type: 'expense', category: 'Makan'})}
+                  <button type="button" onClick={() => setForm({ ...form, type: 'expense', category: 'Makan' })}
                     className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all ${form.type === 'expense' ? 'bg-red-600 text-white shadow-lg shadow-red-100' : 'bg-gray-50 text-gray-500'}`}>
                     Pengeluaran
                   </button>
-                  <button type="button" onClick={() => setForm({...form, type: 'income', category: 'Gaji'})}
+                  <button type="button" onClick={() => setForm({ ...form, type: 'income', category: 'Gaji' })}
                     className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all ${form.type === 'income' ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-gray-50 text-gray-500'}`}>
                     Pemasukan
                   </button>
@@ -371,12 +384,12 @@ const Transaksi = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tanggal</label>
-                  <input type="date" required value={form.date} onChange={(e) => setForm({...form, date: e.target.value})}
+                  <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
                     className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Kategori</label>
-                  <select required value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}
+                  <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium">
                     {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -386,7 +399,7 @@ const Transaksi = () => {
               {/* Nominal */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nominal (Rp)</label>
-                <input type="number" required min="0" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})}
+                <input type="number" required min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
                   placeholder="Contoh: 500000"
                   className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
               </div>
@@ -394,7 +407,7 @@ const Transaksi = () => {
               {/* Catatan */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Catatan</label>
-                <input type="text" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})}
+                <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })}
                   placeholder="Opsional, misal: Gaji bulan Maret"
                   className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
               </div>

@@ -212,8 +212,16 @@ const Budget = () => {
                     <PieChart size={24} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => openInputModal(budget)} className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100" title="Tambah Pengeluaran">
-                        <Plus size={18} />
+                    <button onClick={() => openEditModal(budget)} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Edit Budget">
+                      <Edit2 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(budget.id)} 
+                      disabled={deletingId === budget.id}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all disabled:opacity-50" 
+                      title="Hapus Budget"
+                    >
+                      {deletingId === budget.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                     </button>
                   </div>
                 </div>
@@ -242,19 +250,12 @@ const Budget = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 flex items-center gap-2">
+                  <div className="pt-2">
                     <button
-                      onClick={() => openEditModal(budget)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                      onClick={() => openInputModal(budget)}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                     >
-                      <Edit2 size={14} /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(budget.id)}
-                      disabled={deletingId === budget.id}
-                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-60"
-                    >
-                      {deletingId === budget.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Hapus
+                      <Plus size={16} /> Input Pengeluaran
                     </button>
                   </div>
                 </div>
@@ -349,10 +350,10 @@ const Budget = () => {
                   className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={closeInputModal} className="flex-1 py-3.5 bg-gray-50 text-gray-600 rounded-2xl font-bold">Batal</button>
+                <button type="button" onClick={closeInputModal} className="flex-1 py-4 bg-gray-50 text-gray-600 rounded-2xl font-bold hover:bg-gray-100 transition-colors">Batal</button>
                 <button type="submit" disabled={submitting || !inputAmount}
-                  className="flex-1 py-3.5 bg-green-600 text-white rounded-2xl font-bold shadow-lg shadow-green-100 flex items-center justify-center gap-2 disabled:opacity-70">
-                  {submitting ? <Loader2 className="animate-spin" size={20} /> : <><Coins size={18}/> Catat</>}
+                  className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-bold shadow-lg shadow-green-100 flex items-center justify-center gap-3 hover:bg-green-700 active:scale-95 transition-all disabled:opacity-70">
+                  {submitting ? <Loader2 className="animate-spin" size={20} /> : <><Coins size={20}/> Catat Belanja</>}
                 </button>
               </div>
             </form>

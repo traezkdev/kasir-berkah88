@@ -354,10 +354,10 @@ const Tagihan = () => {
                   className="w-full px-4 py-4 bg-gray-50 border-none rounded-2xl text-xl font-black text-center focus:ring-2 focus:ring-indigo-100" />
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={closePayModal} className="flex-1 py-3.5 bg-gray-50 text-gray-600 rounded-2xl font-bold">Batal</button>
+                <button type="button" onClick={closePayModal} className="flex-1 py-4.5 bg-gray-50 text-gray-600 rounded-2xl font-bold hover:bg-gray-100 transition-colors">Batal</button>
                 <button type="submit" disabled={submitting || !payAmount}
-                  className="flex-1 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-70">
-                  {submitting ? <Loader2 className="animate-spin" size={20} /> : 'Bayar'}
+                  className="flex-1 py-4.5 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-70">
+                  {submitting ? <Loader2 className="animate-spin" size={20} /> : 'Konfirmasi Bayar'}
                 </button>
               </div>
             </form>

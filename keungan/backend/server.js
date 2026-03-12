@@ -483,6 +483,109 @@ app.delete('/api/budgets/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// --- SAVINGS ROUTES ---
+
+// GET semua tabungan user
+app.get('/api/savings', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            "SELECT * FROM savings WHERE user_id = ? ORDER BY created_at DESC",
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil data tabungan", error: error.message });
+    }
+});
+
+// POST - Tambah target tabungan baru
+app.post('/api/savings', authMiddleware, async (req, res) => {
+    try {
+        const { name, target_amount, current_amount } = req.body;
+        if (!name || !target_amount) return res.status(400).json({ message: "Nama dan target tabungan wajib diisi" });
+        
+        const [result] = await pool.query(
+            "INSERT INTO savings (user_id, name, target_amount, current_amount) VALUES (?, ?, ?, ?)",
+            [req.user.id, name, target_amount, current_amount || 0]
+        );
+        
+        // Jika saldo awal tabungan > 0, catat sebagai pengeluaran di transaksi
+        if (current_amount > 0) {
+            await pool.query(
+                "INSERT INTO transactions (user_id, type, category, amount, note, date) VALUES (?, 'expense', 'Tabungan', ?, ?, CURDATE())",
+                [req.user.id, current_amount, `Setoran Awal Tabungan: ${name}`]
+            );
+        }
+
+        const [newRow] = await pool.query("SELECT * FROM savings WHERE id = ?", [result.insertId]);
+        res.status(201).json(newRow[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menambah tabungan", error: error.message });
+    }
+});
+
+// PUT - Update target tabungan
+app.put('/api/savings/:id', authMiddleware, async (req, res) => {
+    try {
+        const { name, target_amount } = req.body;
+        const [check] = await pool.query("SELECT id FROM savings WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tabungan tidak ditemukan" });
+
+        await pool.query(
+            "UPDATE savings SET name = ?, target_amount = ? WHERE id = ? AND user_id = ?",
+            [name, target_amount, req.params.id, req.user.id]
+        );
+        const [updated] = await pool.query("SELECT * FROM savings WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengupdate tabungan", error: error.message });
+    }
+});
+
+// PATCH - Tambah setoran tabungan
+app.patch('/api/savings/:id/add', authMiddleware, async (req, res) => {
+    try {
+        const { amount } = req.body;
+        if (!amount || amount <= 0) return res.status(400).json({ message: "Jumlah setoran harus lebih dari 0" });
+
+        const [check] = await pool.query("SELECT * FROM savings WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tabungan tidak ditemukan" });
+
+        const saving = check[0];
+        const newCurrentAmount = Number(saving.current_amount) + Number(amount);
+
+        // Update saldo tabungan
+        await pool.query(
+            "UPDATE savings SET current_amount = ? WHERE id = ? AND user_id = ?",
+            [newCurrentAmount, req.params.id, req.user.id]
+        );
+
+        // OTOMATIS: Catat ke Transaksi sebagai Pengeluaran
+        await pool.query(
+            "INSERT INTO transactions (user_id, type, category, amount, note, date) VALUES (?, 'expense', 'Tabungan', ?, ?, CURDATE())",
+            [req.user.id, amount, `Setoran Tabungan: ${saving.name}`]
+        );
+
+        const [updated] = await pool.query("SELECT * FROM savings WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menambah setoran", error: error.message });
+    }
+});
+
+// DELETE - Hapus target tabungan
+app.delete('/api/savings/:id', authMiddleware, async (req, res) => {
+    try {
+        const [check] = await pool.query("SELECT id FROM savings WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tabungan tidak ditemukan" });
+
+        await pool.query("DELETE FROM savings WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        res.json({ message: "Tabungan berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menghapus tabungan", error: error.message });
+    }
+});
+
 // --- DASHBOARD STATS ---
 app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
     try {

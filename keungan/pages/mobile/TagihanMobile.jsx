@@ -331,8 +331,8 @@ const TagihanMobile = () => {
                   className="w-full px-4 py-6 bg-gray-50 border-none rounded-[2rem] text-3xl font-black text-center focus:ring-2 focus:ring-indigo-100" />
               </div>
               <button type="submit" disabled={submitting || !payAmount}
-                className="w-full py-4.5 rounded-[1.5rem] font-bold text-white text-lg bg-indigo-600 flex items-center justify-center gap-2 shadow-lg disabled:opacity-70">
-                {submitting ? <Loader2 className="animate-spin" size={22} /> : 'Konfirmasi Bayar'}
+                className="w-full py-6 rounded-[2rem] font-bold text-white text-lg bg-indigo-600 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 active:scale-95 transition-all disabled:opacity-70">
+                {submitting ? <Loader2 className="animate-spin" size={24} /> : 'Konfirmasi Bayar'}
               </button>
             </form>
           </div>
