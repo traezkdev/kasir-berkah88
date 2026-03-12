@@ -11,7 +11,7 @@ import {
   LogOut 
 } from 'lucide-react';
 
-const Sidebar = ({ activePage, setActivePage }) => {
+const Sidebar = ({ activePage, setActivePage, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transaksi', label: 'Transaksi', icon: Receipt },
@@ -30,7 +30,7 @@ const Sidebar = ({ activePage, setActivePage }) => {
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
             <HandCoins size={24} />
           </div>
-          <span className="text-xl font-bold text-gray-800 tracking-tight">FinBerkah</span>
+          <span className="text-xl font-bold text-gray-800 tracking-tight">trzfinance</span>
         </div>
       </div>
 
@@ -52,7 +52,10 @@ const Sidebar = ({ activePage, setActivePage }) => {
       </nav>
 
       <div className="p-4 border-t border-gray-50">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+        <button 
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+        >
           <LogOut size={20} />
           <span className="font-medium">Logout</span>
         </button>

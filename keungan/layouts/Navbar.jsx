@@ -2,7 +2,7 @@ import React from 'react';
 import { Bell, Search, User } from 'lucide-react';
 import { mockUser } from '../mock/data';
 
-const Navbar = () => {
+const Navbar = ({ user }) => {
   return (
     <div className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 fixed top-0 right-0 left-64 z-40 bg-white/80 backdrop-blur-md">
       <div className="flex items-center gap-4 bg-gray-50 px-4 py-2 rounded-xl w-96">
@@ -22,11 +22,11 @@ const Navbar = () => {
         
         <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
           <div className="text-right">
-            <p className="text-sm font-semibold text-gray-800">{mockUser.name}</p>
-            <p className="text-xs text-gray-500">{mockUser.email}</p>
+            <p className="text-sm font-semibold text-gray-800">{user?.name || 'User'}</p>
+            <p className="text-xs text-gray-500">{user?.email}</p>
           </div>
           <img 
-            src={mockUser.avatar} 
+            src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=4F46E5&color=fff`} 
             alt="Profile" 
             className="w-10 h-10 rounded-xl shadow-sm border border-gray-100"
           />
