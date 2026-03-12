@@ -175,6 +175,67 @@ app.delete('/api/transactions/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// --- DEBTS ROUTES ---
+
+// GET semua utang/piutang user
+app.get('/api/debts', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            "SELECT * FROM debts WHERE user_id = ? ORDER BY created_at DESC",
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil data utang", error: error.message });
+    }
+});
+
+// POST - Tambah utang/piutang baru
+app.post('/api/debts', authMiddleware, async (req, res) => {
+    try {
+        const { name, amount, date, due_date, status, note } = req.body;
+        const [result] = await pool.query(
+            "INSERT INTO debts (user_id, name, amount, date, due_date, status, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [req.user.id, name, amount, date, due_date || null, status, note || null]
+        );
+        const [newRow] = await pool.query("SELECT * FROM debts WHERE id = ?", [result.insertId]);
+        res.status(201).json(newRow[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menambah utang", error: error.message });
+    }
+});
+
+// PUT - Update utang/piutang
+app.put('/api/debts/:id', authMiddleware, async (req, res) => {
+    try {
+        const { name, amount, date, due_date, status, note } = req.body;
+        const [check] = await pool.query("SELECT id FROM debts WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Catatan tidak ditemukan" });
+
+        await pool.query(
+            "UPDATE debts SET name = ?, amount = ?, date = ?, due_date = ?, status = ?, note = ? WHERE id = ? AND user_id = ?",
+            [name, amount, date, due_date || null, status, note || null, req.params.id, req.user.id]
+        );
+        const [updated] = await pool.query("SELECT * FROM debts WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengupdate utang", error: error.message });
+    }
+});
+
+// DELETE - Hapus utang/piutang
+app.delete('/api/debts/:id', authMiddleware, async (req, res) => {
+    try {
+        const [check] = await pool.query("SELECT id FROM debts WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Catatan tidak ditemukan" });
+
+        await pool.query("DELETE FROM debts WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        res.json({ message: "Catatan berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menghapus utang", error: error.message });
+    }
+});
+
 // --- DASHBOARD STATS ---
 app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
     try {
