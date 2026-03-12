@@ -236,6 +236,75 @@ app.delete('/api/debts/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// --- BILLS ROUTES ---
+
+app.get('/api/bills', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT * FROM bills WHERE user_id = ? ORDER BY due_date ASC", [req.user.id]);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil tagihan", error: error.message });
+    }
+});
+
+app.post('/api/bills', authMiddleware, async (req, res) => {
+    try {
+        const { name, amount, due_date, status } = req.body;
+        const [result] = await pool.query(
+            "INSERT INTO bills (user_id, name, amount, due_date, status) VALUES (?, ?, ?, ?, ?)",
+            [req.user.id, name, amount, due_date, status || 'unpaid']
+        );
+        const [newRow] = await pool.query("SELECT * FROM bills WHERE id = ?", [result.insertId]);
+        res.status(201).json(newRow[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menambah tagihan", error: error.message });
+    }
+});
+
+app.put('/api/bills/:id', authMiddleware, async (req, res) => {
+    try {
+        const { name, amount, due_date, status } = req.body;
+        const [check] = await pool.query("SELECT id FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tagihan tidak ditemukan" });
+
+        await pool.query(
+            "UPDATE bills SET name = ?, amount = ?, due_date = ?, status = ? WHERE id = ? AND user_id = ?",
+            [name, amount, due_date, status, req.params.id, req.user.id]
+        );
+        const [updated] = await pool.query("SELECT * FROM bills WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengupdate tagihan", error: error.message });
+    }
+});
+
+// PATCH - Tandai lunas / belum bayar
+app.patch('/api/bills/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const [check] = await pool.query("SELECT id FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tagihan tidak ditemukan" });
+
+        await pool.query("UPDATE bills SET status = ? WHERE id = ? AND user_id = ?", [status, req.params.id, req.user.id]);
+        const [updated] = await pool.query("SELECT * FROM bills WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal update status tagihan", error: error.message });
+    }
+});
+
+app.delete('/api/bills/:id', authMiddleware, async (req, res) => {
+    try {
+        const [check] = await pool.query("SELECT id FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tagihan tidak ditemukan" });
+
+        await pool.query("DELETE FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        res.json({ message: "Tagihan berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menghapus tagihan", error: error.message });
+    }
+});
+
 // --- DASHBOARD STATS ---
 app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
     try {

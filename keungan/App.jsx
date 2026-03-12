@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './layouts/Sidebar';
 import Navbar from './layouts/Navbar';
+import { LayoutPanelLeft, Maximize2 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Transaksi from './pages/Transaksi';
 import Utang from './pages/Utang';
@@ -32,6 +33,9 @@ const App = () => {
   const [activePage, setActivePage] = useState('dashboard');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [isLoading, setIsLoading] = useState(true);
+  const [layoutMode, setLayoutMode] = useState(
+    () => localStorage.getItem('trzLayoutMode') || 'container'
+  );
 
   useEffect(() => {
     // Check for existing session
@@ -57,6 +61,14 @@ const App = () => {
     localStorage.removeItem('trzUser');
     setUser(null);
     setAuthMode('login');
+  };
+
+  const toggleLayout = () => {
+    setLayoutMode(prev => {
+      const next = prev === 'container' ? 'fullwide' : 'container';
+      localStorage.setItem('trzLayoutMode', next);
+      return next;
+    });
   };
 
   const renderPage = () => {
@@ -136,15 +148,27 @@ const App = () => {
       <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} />
       <div className="ml-64">
         <Navbar user={user} />
-        <main className="pt-28 pb-10 px-8">
+        <main className={`pt-28 pb-10 transition-all duration-300 ${
+          layoutMode === 'fullwide' ? 'px-6' : 'px-8 max-w-[1400px]'
+        }`}>
           {renderPage()}
         </main>
       </div>
-      <div className="fixed bottom-6 right-6 z-50">
-        <div className="bg-indigo-600 text-white px-4 py-2 rounded-full shadow-2xl text-[10px] font-bold border-4 border-white uppercase tracking-widest">
-          Desktop Mode
-        </div>
-      </div>
+
+      {/* Layout Mode Toggle Button */}
+      <button
+        onClick={toggleLayout}
+        title={layoutMode === 'container' ? 'Ganti ke Full-Wide' : 'Ganti ke Container'}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-2.5 rounded-full shadow-xl hover:shadow-2xl hover:border-indigo-300 hover:text-indigo-600 transition-all duration-200 group"
+      >
+        {layoutMode === 'container'
+          ? <Maximize2 size={15} className="group-hover:scale-110 transition-transform" />
+          : <LayoutPanelLeft size={15} className="group-hover:scale-110 transition-transform" />
+        }
+        <span className="text-[10px] font-black uppercase tracking-widest">
+          {layoutMode === 'container' ? 'Full Wide' : 'Container'}
+        </span>
+      </button>
     </div>
   );
 };
