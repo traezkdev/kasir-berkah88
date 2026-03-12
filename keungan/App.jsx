@@ -149,7 +149,7 @@ const App = () => {
       <div className="ml-64">
         <Navbar user={user} />
         <main className={`pt-28 pb-10 transition-all duration-300 ${
-          layoutMode === 'fullwide' ? 'px-6' : 'px-8 max-w-[1400px]'
+          layoutMode === 'fullwide' ? 'px-6' : 'px-8 max-w-[1400px] mx-auto'
         }`}>
           {renderPage()}
         </main>

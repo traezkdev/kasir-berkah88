@@ -305,6 +305,68 @@ app.delete('/api/bills/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// --- BUDGETS ROUTES ---
+
+// GET semua budget user
+app.get('/api/budgets', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            "SELECT * FROM budgets WHERE user_id = ? ORDER BY created_at DESC",
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil data budget", error: error.message });
+    }
+});
+
+// POST - Tambah budget baru
+app.post('/api/budgets', authMiddleware, async (req, res) => {
+    try {
+        const { category, limit_amount, used_amount } = req.body;
+        if (!category || !limit_amount) return res.status(400).json({ message: "Kategori dan limit wajib diisi" });
+        const [result] = await pool.query(
+            "INSERT INTO budgets (user_id, category, limit_amount, used_amount) VALUES (?, ?, ?, ?)",
+            [req.user.id, category, limit_amount, used_amount || 0]
+        );
+        const [newRow] = await pool.query("SELECT * FROM budgets WHERE id = ?", [result.insertId]);
+        res.status(201).json(newRow[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menambah budget", error: error.message });
+    }
+});
+
+// PUT - Update budget
+app.put('/api/budgets/:id', authMiddleware, async (req, res) => {
+    try {
+        const { category, limit_amount, used_amount } = req.body;
+        const [check] = await pool.query("SELECT id FROM budgets WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Budget tidak ditemukan" });
+
+        await pool.query(
+            "UPDATE budgets SET category = ?, limit_amount = ?, used_amount = ? WHERE id = ? AND user_id = ?",
+            [category, limit_amount, used_amount, req.params.id, req.user.id]
+        );
+        const [updated] = await pool.query("SELECT * FROM budgets WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengupdate budget", error: error.message });
+    }
+});
+
+// DELETE - Hapus budget
+app.delete('/api/budgets/:id', authMiddleware, async (req, res) => {
+    try {
+        const [check] = await pool.query("SELECT id FROM budgets WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Budget tidak ditemukan" });
+
+        await pool.query("DELETE FROM budgets WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        res.json({ message: "Budget berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal menghapus budget", error: error.message });
+    }
+});
+
 // --- DASHBOARD STATS ---
 app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
     try {
