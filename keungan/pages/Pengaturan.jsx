@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Bell, Shield, Palette, Globe, ChevronRight,
   Camera, LogOut, Smartphone, Lock, Mail, Save,
-  Tags, Plus, Trash2, Loader2, Tag, ArrowUpRight, ArrowDownRight, AlertCircle, X
+  Tags, Plus, Trash2, Loader2, Tag, ArrowUpRight, ArrowDownRight, AlertCircle, X, CheckCircle2
 } from 'lucide-react';
 import api from '../services/api';
 
