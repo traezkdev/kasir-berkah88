@@ -591,19 +591,48 @@ app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         
+        // 1. Basic Stats
         const [income] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income'", [userId]);
-        const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense'", [userId]);
+        const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND category != 'Tabungan'", [userId]);
         const [debt] = await pool.query("SELECT SUM(amount) as total FROM debts WHERE user_id = ? AND status = 'utang'", [userId]);
+        
+        // 2. Monthly Stats
+        const [monthlyIncome] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income' AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())", [userId]);
+        const [monthlyExpense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())", [userId]);
+        
+        // 3. Recent Transactions
+        const [recentTransactions] = await pool.query("SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 5", [userId]);
+        
+        // 4. Budgets
+        const [budgets] = await pool.query("SELECT * FROM budgets WHERE user_id = ?", [userId]);
+        
+        // 5. Savings
+        const [savings] = await pool.query("SELECT * FROM savings WHERE user_id = ?", [userId]);
+
+        // 6. Weekly Cashflow (Last 7 Days)
+        const [cashflow] = await pool.query(`
+            SELECT 
+                DATE_FORMAT(date, '%a') as name,
+                SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
+            FROM transactions 
+            WHERE user_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            GROUP BY date
+            ORDER BY date ASC
+        `, [userId]);
         
         const totalIncome = income[0].total || 0;
         const totalExpense = expense[0].total || 0;
-        const totalBalance = totalIncome - totalExpense;
         
         res.json({
-            totalBalance,
-            monthlyIncome: totalIncome,
-            monthlyExpense: totalExpense,
-            totalDebt: debt[0].total || 0
+            totalBalance: totalIncome - totalExpense,
+            monthlyIncome: monthlyIncome[0].total || 0,
+            monthlyExpense: monthlyExpense[0].total || 0,
+            totalDebt: debt[0].total || 0,
+            recentTransactions,
+            budgets,
+            savings,
+            cashflow
         });
     } catch (error) {
         res.status(500).json({ message: "Gagal mengambil statistik", error: error.message });

@@ -74,7 +74,7 @@ const App = () => {
   const renderPage = () => {
     if (isMobile) {
       switch(activePage) {
-        case 'dashboard': return <DashboardMobile user={user} />;
+        case 'dashboard': return <DashboardMobile user={user} setActivePage={setActivePage} />;
         case 'transaksi': return <TransaksiMobile user={user} />;
         case 'utang': return <UtangMobile user={user} />;
         case 'tagihan': return <TagihanMobile user={user} />;
@@ -82,12 +82,12 @@ const App = () => {
         case 'tabungan': return <TabunganMobile user={user} />;
         case 'laporan': return <LaporanMobile user={user} />;
         case 'pengaturan': return <PengaturanMobile user={user} onLogout={handleLogout} />;
-        default: return <DashboardMobile user={user} />;
+        default: return <DashboardMobile user={user} setActivePage={setActivePage} />;
       }
     }
 
     switch(activePage) {
-      case 'dashboard': return <Dashboard user={user} />;
+      case 'dashboard': return <Dashboard user={user} setActivePage={setActivePage} />;
       case 'transaksi': return <Transaksi user={user} />;
       case 'utang': return <Utang user={user} />;
       case 'tagihan': return <Tagihan user={user} />;
@@ -95,7 +95,7 @@ const App = () => {
       case 'tabungan': return <Tabungan user={user} />;
       case 'laporan': return <Laporan user={user} />;
       case 'pengaturan': return <Pengaturan user={user} onLogout={handleLogout} />;
-      default: return <Dashboard user={user} />;
+      default: return <Dashboard user={user} setActivePage={setActivePage} />;
     }
   };
 

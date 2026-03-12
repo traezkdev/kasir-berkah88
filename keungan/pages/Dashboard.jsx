@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Wallet, 
   ArrowUpRight, 
   ArrowDownRight, 
   Clock, 
-  Target 
+  Target,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
-import { mockStats, mockTransactions, mockBudgets, mockSavings } from '../mock/data';
+import api from '../services/api';
 import { 
   AreaChart, 
   Area, 
@@ -15,46 +17,77 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  Cell 
+  ResponsiveContainer 
 } from 'recharts';
+const Dashboard = ({ setActivePage }) => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-const Dashboard = () => {
-  const chartData = [
-    { name: 'Sen', income: 4000, expense: 2400 },
-    { name: 'Sel', income: 3000, expense: 1398 },
-    { name: 'Rab', income: 2000, expense: 9800 },
-    { name: 'Kam', income: 2780, expense: 3908 },
-    { name: 'Jum', income: 1890, expense: 4800 },
-    { name: 'Sab', income: 2390, expense: 3800 },
-    { name: 'Min', income: 3490, expense: 4300 },
-  ];
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/dashboard/stats');
+      setStats(res.data);
+    } catch (err) {
+      setError('Gagal memuat data dashboard. Pastikan server aktif.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(val);
+    }).format(val || 0);
   };
+
+  if (loading) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center gap-4 text-gray-400">
+        <Loader2 className="animate-spin" size={48} />
+        <p className="font-bold uppercase tracking-widest text-sm">Menyiapkan Dashboard Anda...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center gap-4 text-red-500">
+        <AlertCircle size={48} />
+        <p className="font-bold">{error}</p>
+        <button onClick={fetchDashboardData} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold mt-2">Coba Lagi</button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Ringkasan Keuangan</h1>
-          <p className="text-gray-500">Selamat datang kembali! Berikut kondisi keuanganmu hari ini.</p>
+          <p className="text-gray-500 text-sm">Selamat datang kembali! Berikut kondisi keuanganmu hari ini.</p>
         </div>
-        <div className="flex gap-3">
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors flex items-center gap-2">
+        <div className="flex gap-3 w-full md:w-auto">
+          <button 
+            onClick={() => setActivePage('transaksi')}
+            className="flex-1 md:flex-none bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+          >
             <ArrowUpRight size={18} />
-            <span>Tambah Pemasukan</span>
+            <span>Transaksi</span>
           </button>
-          <button className="bg-white text-gray-700 border border-gray-100 px-4 py-2 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
-            <ArrowDownRight size={18} />
-            <span>Catat Pengeluaran</span>
+          <button 
+            onClick={() => setActivePage('tabungan')}
+            className="flex-1 md:flex-none bg-white text-gray-700 border border-gray-100 px-5 py-3 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+          >
+            <Target size={18} />
+            <span>Tabungan</span>
           </button>
         </div>
       </div>
@@ -62,32 +95,26 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          title="Total Saldo" 
-          value={mockStats.totalBalance} 
+          title="Total Saldo Utama" 
+          value={stats.totalBalance} 
           icon={Wallet} 
           color="indigo" 
-          trend="up" 
-          trendValue={12} 
         />
         <StatCard 
           title="Pemasukan Bulan Ini" 
-          value={mockStats.monthlyIncome} 
+          value={stats.monthlyIncome} 
           icon={ArrowUpRight} 
           color="green" 
-          trend="up" 
-          trendValue={5} 
         />
         <StatCard 
           title="Pengeluaran Bulan Ini" 
-          value={mockStats.monthlyExpense} 
+          value={stats.monthlyExpense} 
           icon={ArrowDownRight} 
           color="red" 
-          trend="down" 
-          trendValue={2} 
         />
         <StatCard 
-          title="Total Utang" 
-          value={mockStats.totalDebt} 
+          title="Total Utang Aktif" 
+          value={stats.totalDebt} 
           icon={Clock} 
           color="orange" 
         />
@@ -95,11 +122,11 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">Arus Kas (7 Hari Terakhir)</h3>
-          <div className="h-80">
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+          <h3 className="text-lg font-bold text-gray-800 mb-6 px-2">Arus Kas (7 Hari Terakhir)</h3>
+          <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart data={stats.cashflow}>
                 <defs>
                   <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/>
@@ -107,9 +134,13 @@ const Dashboard = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dy={10} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 10, fontWeight: 'bold'}} dy={10} />
                 <YAxis hide />
-                <Tooltip cursor={{stroke: '#EEF2FF', strokeWidth: 2}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'}} />
+                <Tooltip 
+                  cursor={{stroke: '#EEF2FF', strokeWidth: 2}} 
+                  contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', padding: '12px'}} 
+                  formatter={(value) => formatCurrency(value)}
+                />
                 <Area type="monotone" dataKey="income" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
                 <Area type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={3} fillOpacity={0} />
               </AreaChart>
@@ -118,96 +149,117 @@ const Dashboard = () => {
         </div>
 
         {/* Categories / Budget Info */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">Budget Terpakai</h3>
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-6 px-2">
+            <h3 className="text-lg font-bold text-gray-800">Budget Terpakai</h3>
+            <button onClick={() => setActivePage('budget')} className="text-xs font-bold text-indigo-600 hover:underline">Detail</button>
+          </div>
           <div className="space-y-6">
-            {mockBudgets.map((budget) => (
-              <div key={budget.id}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">{budget.category}</span>
-                  <span className="text-sm font-bold text-gray-800">
-                    {Math.round((budget.used / budget.limit) * 100)}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      (budget.used / budget.limit) > 0.9 ? 'bg-red-500' : 'bg-indigo-500'
-                    }`}
-                    style={{ width: `${(budget.used / budget.limit) * 100}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between mt-1 text-[10px] text-gray-400">
-                  <span>Terpakai: {formatCurrency(budget.used)}</span>
-                  <span>Limit: {formatCurrency(budget.limit)}</span>
-                </div>
-              </div>
-            ))}
+            {stats.budgets.length === 0 ? (
+               <div className="py-10 text-center text-gray-400 italic text-sm">Belum ada budget yang diatur.</div>
+            ) : (
+              stats.budgets.slice(0, 4).map((budget) => {
+                const percentage = Math.min(Math.round((budget.used_amount / budget.limit_amount) * 100), 100);
+                return (
+                  <div key={budget.id} className="px-2">
+                    <div className="flex justify-between items-center mb-2 text-xs font-bold uppercase tracking-wider">
+                      <span className="text-gray-500">{budget.category}</span>
+                      <span className={percentage > 90 ? 'text-red-600' : 'text-indigo-600'}>
+                        {percentage}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-gray-50 rounded-full overflow-hidden p-0.5">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${
+                          percentage > 90 ? 'bg-red-500 shadow-sm shadow-red-100' : 'bg-indigo-500 shadow-sm shadow-indigo-100'
+                        }`}
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-[10px] font-bold text-gray-400">
+                      <span>{formatCurrency(budget.used_amount)}</span>
+                      <span>{formatCurrency(budget.limit_amount)}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Transactions */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex justify-between items-center mb-6 px-2">
             <h3 className="text-lg font-bold text-gray-800">Transaksi Terakhir</h3>
-            <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700">Lihat Semua</button>
+            <button onClick={() => setActivePage('transaksi')} className="text-xs font-bold text-indigo-600 hover:underline uppercase tracking-widest">Lihat Semua</button>
           </div>
           <div className="space-y-4">
-            {mockTransactions.slice(0, 4).map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors group">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {tx.type === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+            {stats.recentTransactions.length === 0 ? (
+               <div className="py-10 text-center text-gray-400 italic text-sm">Belum ada transaksi terhitung.</div>
+            ) : (
+              stats.recentTransactions.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-all group border border-transparent hover:border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                      {tx.type === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors uppercase text-sm tracking-tight">{tx.category}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{tx.note || '-'} • {new Date(tx.date).toLocaleDateString('id-ID')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-800 group-hover:text-indigo-600 transition-colors">{tx.category}</p>
-                    <p className="text-xs text-gray-400">{tx.note} • {tx.date}</p>
-                  </div>
+                  <p className={`font-black text-sm ${tx.type === 'income' ? 'text-green-600' : 'text-gray-900'}`}>
+                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                  </p>
                 </div>
-                <p className={`font-bold ${tx.type === 'income' ? 'text-green-600' : 'text-gray-800'}`}>
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                </p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         {/* Savings Goals */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-6 px-2">
             <h3 className="text-lg font-bold text-gray-800">Target Tabungan</h3>
-            <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700">Tambah Target</button>
+            <button onClick={() => setActivePage('tabungan')} className="text-xs font-bold text-indigo-600 hover:underline uppercase tracking-widest">Rincian</button>
           </div>
-          <div className="space-y-6">
-            {mockSavings.map((saving) => (
-              <div key={saving.id} className="flex flex-col gap-3 p-4 bg-gray-50 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                      <Target size={20} />
+          <div className="space-y-5">
+            {stats.savings.length === 0 ? (
+               <div className="py-10 text-center text-gray-400 italic text-sm">Belum ada target tabungan.</div>
+            ) : (
+              stats.savings.slice(0, 3).map((saving) => {
+                const percentage = Math.round((saving.current_amount / saving.target_amount) * 100);
+                return (
+                  <div key={saving.id} className="flex flex-col gap-4 p-5 bg-gray-50/50 border border-gray-100/50 rounded-[2rem] hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100">
+                          <Target size={20} />
+                        </div>
+                        <span className="font-black text-gray-800 italic uppercase underline decoration-indigo-200 decoration-4 underline-offset-4">{saving.name}</span>
+                      </div>
+                      <span className="text-[10px] font-black italic bg-white text-indigo-600 px-3 py-1 rounded-full shadow-sm border border-indigo-50">
+                        {percentage}%
+                      </span>
                     </div>
-                    <span className="font-bold text-gray-800">{saving.name}</span>
+                    <div className="space-y-2">
+                      <div className="w-full h-2.5 bg-white rounded-full overflow-hidden p-0.5 border border-gray-100">
+                        <div 
+                          className="h-full bg-indigo-600 rounded-full transition-all duration-1000 shadow-sm shadow-indigo-100"
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-indigo-600">{formatCurrency(saving.current_amount)}</span>
+                        <span className="text-gray-300">Target: {formatCurrency(saving.target_amount)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-xs font-bold bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md">
-                    {Math.round((saving.current / saving.target) * 100)}%
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  <div className="w-full h-2 bg-white rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
-                      style={{ width: `${(saving.current / saving.target) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-indigo-600">{formatCurrency(saving.current)}</span>
-                    <span className="text-gray-400">Target: {formatCurrency(saving.target)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
