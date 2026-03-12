@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, PieChart, AlertTriangle, Edit2, Trash2, X, Loader2, AlertCircle } from 'lucide-react';
+import { 
+  Plus, PieChart, AlertCircle, Search, 
+  Edit2, Trash2, X, Loader2, Coins 
+} from 'lucide-react';
 import api from '../../services/api';
 
 const emptyForm = {
@@ -15,18 +18,18 @@ const BudgetMobile = () => {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Modals state
   const [showModal, setShowModal] = useState(false);
+  const [showInputModal, setShowInputModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedBudget, setSelectedBudget] = useState(null);
+  const [inputAmount, setInputAmount] = useState('');
+  const [inputNote, setInputNote] = useState('');
+
   const [form, setForm] = useState(emptyForm);
 
   const formatCurrency = (val) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
-
-  const getProgressColor = (percent) => {
-    if (percent >= 90) return 'bg-red-500';
-    if (percent >= 70) return 'bg-orange-500';
-    return 'bg-indigo-600';
-  };
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
   const fetchBudgets = async () => {
     setLoading(true);
@@ -58,47 +61,70 @@ const BudgetMobile = () => {
 
   const totalLimit = budgets.reduce((a, b) => a + Number(b.limit_amount), 0);
   const totalUsed = budgets.reduce((a, b) => a + Number(b.used_amount), 0);
-  const totalSisa = totalLimit - totalUsed;
 
-  // Modal handlers
+  // CRUD Handlers
   const openAddModal = () => { setEditingId(null); setForm(emptyForm); setShowModal(true); };
-  const openEditModal = (budget) => {
-    setEditingId(budget.id);
-    setForm({
-      category: budget.category,
-      limit_amount: budget.limit_amount,
-    });
+  const openEditModal = (b) => {
+    setEditingId(b.id);
+    setForm({ category: b.category, limit_amount: b.limit_amount });
     setShowModal(true);
   };
-  const closeModal = () => { setShowModal(false); setEditingId(null); setForm(emptyForm); };
+  const closeModal = () => { setShowModal(false); setForm(emptyForm); setEditingId(null); };
 
-  // Submit
+  // Fast Input Handlers
+  const openInputModal = (b) => {
+    setSelectedBudget(b);
+    setInputAmount('');
+    setInputNote('');
+    setShowInputModal(true);
+  };
+  const closeInputModal = () => {
+    setShowInputModal(false);
+    setSelectedBudget(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = {
-        category: form.category,
-        limit_amount: Number(form.limit_amount),
-      };
       if (editingId) {
-        const res = await api.put(`/budgets/${editingId}`, payload);
+        const res = await api.put(`/budgets/${editingId}`, form);
         setBudgets(prev => prev.map(b => b.id === editingId ? res.data : b));
       } else {
-        const res = await api.post('/budgets', payload);
-        setBudgets(prev => [res.data, ...prev]);
+        const res = await api.post('/budgets', form);
+        setBudgets(prev => [...prev, res.data]);
       }
       closeModal();
     } catch (err) {
-      alert(err.response?.data?.message || 'Terjadi kesalahan.');
+      alert(err.response?.data?.message || 'Gagal menyimpan.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Delete
+  const handeFastExpense = async (e) => {
+    e.preventDefault();
+    if (!inputAmount) return;
+    setSubmitting(true);
+    try {
+      await api.post('/transactions', {
+        type: 'expense',
+        category: selectedBudget.category,
+        amount: Number(inputAmount),
+        note: inputNote || `Belanja ${selectedBudget.category} (Mobile)`,
+        date: new Date().toISOString().split('T')[0]
+      });
+      await fetchBudgets();
+      closeInputModal();
+    } catch (err) {
+      alert('Gagal mencatat pengeluaran.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleDelete = async (id) => {
-    if (!window.confirm('Yakin ingin menghapus budget ini?')) return;
+    if (!window.confirm('Hapus budget ini?')) return;
     setDeletingId(id);
     try {
       await api.delete(`/budgets/${id}`);
@@ -111,163 +137,120 @@ const BudgetMobile = () => {
   };
 
   return (
-    <div className="pb-24 space-y-6 px-6 pt-4">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-800">Budgeting</h1>
-        <button
-          onClick={openAddModal}
-          className="bg-white border border-gray-100 p-2.5 rounded-2xl shadow-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
-        >
-          <Plus size={20} />
-        </button>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="p-3 bg-red-50 text-red-600 text-xs font-medium rounded-2xl flex items-center gap-2">
-          <AlertCircle size={16} /> {error}
+    <>
+      <div className="pb-24 space-y-6 px-6 pt-4">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-800">Anggaran</h1>
+          <button onClick={openAddModal} className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-lg shadow-indigo-100">
+            <Plus size={20} />
+          </button>
         </div>
-      )}
 
-      {/* Hero Card */}
-      {loading ? (
-        <div className="bg-indigo-600 rounded-[2.5rem] p-6 flex items-center justify-center min-h-[130px]">
-          <Loader2 className="animate-spin text-white" size={28} />
-        </div>
-      ) : (
-        <div className="bg-indigo-600 rounded-[2.5rem] p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-xs font-medium text-indigo-100 uppercase tracking-widest mb-1">Total Sisa Budget</p>
-            <p className="text-2xl font-black mb-6">{formatCurrency(totalSisa)}</p>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-white/20 backdrop-blur-md rounded-2xl p-3">
-                <p className="text-[10px] font-bold text-indigo-100 uppercase mb-1">Total Limit</p>
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 text-xs font-medium rounded-2xl flex items-center gap-2">
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
+        {/* Hero Card */}
+        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10"><PieChart size={100} /></div>
+          <div className="space-y-4 relative z-10">
+            <div>
+              <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mb-1">Terpakai Bulan Ini</p>
+              <p className="text-3xl font-black">{formatCurrency(totalUsed)}</p>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-white/20">
+              <div>
+                <p className="text-indigo-100 text-[9px] font-bold uppercase">Total Limit</p>
                 <p className="text-sm font-bold">{formatCurrency(totalLimit)}</p>
               </div>
-              <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-3">
-                <p className="text-[10px] font-bold text-indigo-100 uppercase mb-1">Terpakai</p>
-                <p className="text-sm font-bold">{formatCurrency(totalUsed)}</p>
+              <div className="text-right">
+                <p className="text-indigo-100 text-[9px] font-bold uppercase">Sisa</p>
+                <p className="text-sm font-bold text-green-300">{formatCurrency(totalLimit - totalUsed)}</p>
               </div>
             </div>
           </div>
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
         </div>
-      )}
 
-      {/* List Budget */}
-      <div className="space-y-4">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Kategori Anggaran</p>
-
+        {/* Budget List */}
         {loading ? (
-          <div className="py-10 flex justify-center">
-            <Loader2 className="animate-spin text-indigo-400" size={24} />
-          </div>
-        ) : budgets.length === 0 ? (
-          <div className="py-16 bg-white rounded-[2rem] border border-dashed border-gray-200 text-center">
-            <p className="text-gray-400 font-medium text-sm">Belum ada budget. Tap + untuk mulai.</p>
+          <div className="py-16 flex flex-col items-center gap-3 text-gray-300">
+            <Loader2 className="animate-spin" size={28} />
+            <span className="text-xs font-medium">Memuat data...</span>
           </div>
         ) : (
-          budgets.map((budget) => {
-            const percent = Math.min((Number(budget.used_amount) / Number(budget.limit_amount)) * 100, 100);
-            const isWarning = percent >= 90;
+          <div className="space-y-4">
+            {budgets.map((budget) => {
+              const used = Number(budget.used_amount);
+              const limit = Number(budget.limit_amount);
+              const percent = Math.min((used / limit) * 100, 100);
+              const remaining = limit - used;
 
-            return (
-              <div key={budget.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 shadow-sm space-y-4 active:scale-[0.98] transition-all">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${isWarning ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                      <PieChart size={18} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-extrabold text-gray-800">{budget.category}</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-                        Sisa: {formatCurrency(Number(budget.limit_amount) - Number(budget.used_amount))}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isWarning && (
-                      <div className="p-1.5 bg-red-50 rounded-xl text-red-500">
-                        <AlertTriangle size={14} />
+              return (
+                <div key={budget.id} className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-gray-50 p-5 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3">
+                      <div className={`p-3 rounded-2xl ${percent >= 90 ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <PieChart size={20} />
                       </div>
-                    )}
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-gray-400">Terpakai</p>
-                      <p className={`text-xs font-black ${isWarning ? 'text-red-600' : 'text-gray-800'}`}>{Math.round(percent)}%</p>
+                      <div>
+                        <p className="text-sm font-bold text-gray-800">{budget.category}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">{formatCurrency(used)} / {formatCurrency(limit)}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => openInputModal(budget)} className="p-2 bg-green-50 text-green-600 rounded-xl active:scale-95 transition-all">
+                            <Plus size={16} />
+                        </button>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-700 ${getProgressColor(percent)}`}
-                      style={{ width: `${percent}%` }}
-                    ></div>
+                  <div className="space-y-1.5">
+                    <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-1000 ${percent >= 90 ? 'bg-red-500' : 'bg-indigo-600'}`}
+                        style={{ width: `${percent}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-[9px] font-bold uppercase">
+                      <span className="text-gray-400">Progress {Math.round(percent)}%</span>
+                      <span className={remaining < 0 ? 'text-red-500' : 'text-indigo-600'}>
+                         {remaining < 0 ? `Over ${formatCurrency(Math.abs(remaining))}` : `Sisa ${formatCurrency(remaining)}`}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase italic">
-                    <span>{formatCurrency(budget.used_amount)}</span>
-                    <span>Limit: {formatCurrency(budget.limit_amount)}</span>
-                  </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => openEditModal(budget)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all"
-                  >
-                    <Edit2 size={13} /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(budget.id)}
-                    disabled={deletingId === budget.id}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-100 transition-all disabled:opacity-60"
-                  >
-                    {deletingId === budget.id
-                      ? <Loader2 size={13} className="animate-spin" />
-                      : <Trash2 size={13} />
-                    }
-                    Hapus
-                  </button>
+                  <div className="flex gap-3 pt-1">
+                    <button onClick={() => openEditModal(budget)} 
+                        className="flex-1 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 active:bg-indigo-50 active:text-indigo-600">
+                      <Edit2 size={12} /> Edit
+                    </button>
+                    <button onClick={() => handleDelete(budget.id)} disabled={deletingId === budget.id}
+                        className="flex-1 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 active:bg-red-50 active:text-red-600">
+                      {deletingId === budget.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Hapus
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Tambah Baru */}
-      {!loading && (
-        <button
-          onClick={openAddModal}
-          className="w-full bg-white border-2 border-dashed border-gray-200 py-4 rounded-3xl text-gray-400 text-xs font-bold hover:border-indigo-300 hover:text-indigo-400 transition-all flex items-center justify-center gap-2"
-        >
-          <Plus size={16} />
-          Tambah Kategori Baru
-        </button>
-      )}
-
-      {/* ===== MODAL ===== */}
+      {/* ===== BOTTOM SHEET MODAL BUDGET ===== */}
       {showModal && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center">
+        <div className="fixed inset-0 z-[200] flex items-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-white w-full max-w-lg rounded-t-[2rem] shadow-2xl pb-safe">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-4" />
-            <div className="px-6 pb-2 flex items-center justify-between">
-              <h2 className="text-base font-bold text-gray-800">{editingId ? 'Edit Budget' : 'Buat Budget Baru'}</h2>
-              <button onClick={closeModal} className="p-2 text-gray-400 hover:bg-gray-50 rounded-xl"><X size={18} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="px-6 pb-8 space-y-4">
+          <div className="relative w-full bg-white rounded-t-[2.5rem] shadow-2xl z-10 p-6 pb-12 space-y-4 animate-in slide-in-from-bottom duration-300">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2"></div>
+            <h2 className="text-base font-bold text-gray-800">{editingId ? 'Edit Anggaran' : 'Buat Anggaran'}</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Kategori Pengeluaran</label>
-                <select
-                  required
-                  value={form.category}
-                  onChange={e => setForm({ ...form, category: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
-                >
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Kategori</label>
+                <select required value={form.category} onChange={e => setForm({...form, category: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100">
                   <option value="" disabled>-- Pilih Kategori --</option>
                   {expenseCategories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -275,32 +258,52 @@ const BudgetMobile = () => {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Limit (Rp)</label>
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  value={form.limit_amount}
-                  onChange={e => setForm({ ...form, limit_amount: e.target.value })}
-                  placeholder="0"
-                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
-                />
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Limit Budget (Rp)</label>
+                <input required type="number" value={form.limit_amount} onChange={e => setForm({...form, limit_amount: e.target.value})}
+                  placeholder="0" className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
               </div>
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={closeModal} className="flex-1 py-3.5 bg-gray-50 text-gray-600 rounded-2xl font-bold text-sm">Batal</button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-70 text-sm"
-                >
-                  {submitting ? <Loader2 className="animate-spin" size={18} /> : (editingId ? 'Simpan' : 'Buat')}
-                </button>
-              </div>
+              <button type="submit" disabled={submitting}
+                className="w-full py-4 rounded-2xl font-bold text-white bg-indigo-600 flex items-center justify-center gap-2 shadow-lg disabled:opacity-70">
+                {submitting ? <Loader2 className="animate-spin" size={22} /> : (editingId ? 'Simpan Perubahan' : 'Buat Anggaran')}
+              </button>
             </form>
           </div>
         </div>
       )}
-    </div>
+
+      {/* ===== BOTTOM SHEET MODAL INPUT CEPAT ===== */}
+      {showInputModal && (
+        <div className="fixed inset-0 z-[200] flex items-end">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeInputModal} />
+          <div className="relative w-full bg-white rounded-t-[2.5rem] shadow-2xl z-10 p-6 pb-12 space-y-6 animate-in slide-in-from-bottom duration-300">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2"></div>
+            <div className="text-center">
+              <h2 className="text-lg font-bold text-gray-800">Catat Belanja</h2>
+              <p className="text-xs text-indigo-500 font-medium">Budget: {selectedBudget?.category}</p>
+            </div>
+            
+            <form onSubmit={handeFastExpense} className="space-y-6">
+              <div className="space-y-2 text-center">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Masukkan Nominal</label>
+                <input required type="number" min="1"
+                  value={inputAmount} onChange={e => setInputAmount(e.target.value)}
+                  placeholder="0" autoFocus
+                  className="w-full px-4 py-6 bg-gray-50 border-none rounded-[2rem] text-3xl font-black text-center focus:ring-2 focus:ring-indigo-100" />
+              </div>
+              <div className="space-y-1.5">
+                <input type="text" value={inputNote} onChange={e => setInputNote(e.target.value)}
+                  placeholder="Tambah catatan..."
+                  className="w-full px-4 py-4 bg-gray-50 border-none rounded-2xl text-sm text-center font-medium focus:ring-2 focus:ring-indigo-100" />
+              </div>
+              <button type="submit" disabled={submitting || !inputAmount}
+                className="w-full py-4.5 rounded-[1.5rem] font-bold text-white text-lg bg-green-600 flex items-center justify-center gap-2 shadow-lg shadow-green-100 disabled:opacity-70">
+                {submitting ? <Loader2 className="animate-spin" size={22} /> : <><Coins size={22}/> Catat Belanja</>}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

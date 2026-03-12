@@ -150,14 +150,30 @@ app.get('/api/transactions', authMiddleware, async (req, res) => {
 app.post('/api/transactions', authMiddleware, async (req, res) => {
     try {
         const { date, type, category, amount, note } = req.body;
+        if (!date || !type || !category || !amount) return res.status(400).json({ message: "Semua field wajib diisi" });
+
+        const userId = req.user.id;
+
+        // VALIDASI SALDO: Jika pengeluaran, cek apakah saldo cukup
+        if (type === 'expense') {
+            const [income] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income'", [userId]);
+            const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense'", [userId]);
+            
+            const currentBalance = (income[0].total || 0) - (expense[0].total || 0);
+            if (Number(amount) > currentBalance) {
+                return res.status(400).json({ message: `Saldo Anda tidak cukup! Sisa saldo saat ini: Rp ${currentBalance.toLocaleString('id-ID')}` });
+            }
+        }
+
         const [result] = await pool.query(
             "INSERT INTO transactions (user_id, date, type, category, amount, note) VALUES (?, ?, ?, ?, ?, ?)",
-            [req.user.id, date, type, category, amount, note]
+            [userId, date, type, category, amount, note]
         );
         const [newRow] = await pool.query("SELECT * FROM transactions WHERE id = ?", [result.insertId]);
+        
         // Auto-update budget jika transaksi expense
         if (type === 'expense') {
-            await recalculateBudgetUsed(req.user.id, category);
+            await recalculateBudgetUsed(userId, category);
         }
         res.status(201).json(newRow[0]);
     } catch (error) {
@@ -169,14 +185,29 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
 app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { date, type, category, amount, note } = req.body;
-        const [check] = await pool.query("SELECT * FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        const userId = req.user.id;
+        const [check] = await pool.query("SELECT * FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, userId]);
         if (check.length === 0) return res.status(404).json({ message: "Transaksi tidak ditemukan" });
 
         const oldTransaction = check[0];
 
+        // VALIDASI SALDO: Jika berubah jadi expense atau nominal expense bertambah
+        if (type === 'expense') {
+            const [income] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income'", [userId]);
+            const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense'", [userId]);
+            
+            // Saldo sebelum transaksi ini dihitung
+            const currentTotalExpenseExcludingThis = (expense[0].total || 0) - (oldTransaction.type === 'expense' ? oldTransaction.amount : 0);
+            const currentBalance = (income[0].total || 0) - currentTotalExpenseExcludingThis;
+
+            if (Number(amount) > currentBalance) {
+                return res.status(400).json({ message: `Saldo tidak mencukupi untuk update ini! Sisa saldo tersedia: Rp ${currentBalance.toLocaleString('id-ID')}` });
+            }
+        }
+
         await pool.query(
             "UPDATE transactions SET date = ?, type = ?, category = ?, amount = ?, note = ? WHERE id = ? AND user_id = ?",
-            [date, type, category, amount, note, req.params.id, req.user.id]
+            [date, type, category, amount, note, req.params.id, userId]
         );
         const [updated] = await pool.query("SELECT * FROM transactions WHERE id = ?", [req.params.id]);
 
@@ -185,7 +216,7 @@ app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
         if (oldTransaction.type === 'expense') categoriesToRecalculate.add(oldTransaction.category);
         if (type === 'expense') categoriesToRecalculate.add(category);
         for (const cat of categoriesToRecalculate) {
-            await recalculateBudgetUsed(req.user.id, cat);
+            await recalculateBudgetUsed(userId, cat);
         }
 
         res.json(updated[0]);
@@ -321,14 +352,60 @@ app.put('/api/bills/:id', authMiddleware, async (req, res) => {
 app.patch('/api/bills/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
-        const [check] = await pool.query("SELECT id FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        const [check] = await pool.query("SELECT id, name, amount, paid_amount FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
         if (check.length === 0) return res.status(404).json({ message: "Tagihan tidak ditemukan" });
 
-        await pool.query("UPDATE bills SET status = ? WHERE id = ? AND user_id = ?", [status, req.params.id, req.user.id]);
+        const bill = check[0];
+        // Jika ditandai lunas manual, sisa yang belum dibayar dicatat ke transaksi
+        if (status === 'paid' && bill.status !== 'paid') {
+            const remainingToPay = bill.amount - (bill.paid_amount || 0);
+            if (remainingToPay > 0) {
+                await pool.query(
+                    "INSERT INTO transactions (user_id, type, category, amount, note, date) VALUES (?, 'expense', 'Tagihan', ?, ?, CURDATE())",
+                    [req.user.id, remainingToPay, `Pelunasan Tagihan: ${bill.name}`]
+                );
+            }
+        }
+
+        const paidAmount = status === 'paid' ? bill.amount : 0;
+        await pool.query("UPDATE bills SET status = ?, paid_amount = ? WHERE id = ? AND user_id = ?", [status, paidAmount, req.params.id, req.user.id]);
+        
         const [updated] = await pool.query("SELECT * FROM bills WHERE id = ?", [req.params.id]);
         res.json(updated[0]);
     } catch (error) {
         res.status(500).json({ message: "Gagal update status tagihan", error: error.message });
+    }
+});
+
+// PATCH - Cicil / Bayar sebagian
+app.patch('/api/bills/:id/pay', authMiddleware, async (req, res) => {
+    try {
+        const { amount_to_pay } = req.body;
+        if (!amount_to_pay || amount_to_pay <= 0) return res.status(400).json({ message: "Jumlah bayar harus lebih dari 0" });
+
+        const [check] = await pool.query("SELECT * FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        if (check.length === 0) return res.status(404).json({ message: "Tagihan tidak ditemukan" });
+
+        const bill = check[0];
+        const newPaidAmount = Number(bill.paid_amount || 0) + Number(amount_to_pay);
+        const newStatus = newPaidAmount >= bill.amount ? 'paid' : 'unpaid';
+
+        // Update Tagihan
+        await pool.query(
+            "UPDATE bills SET paid_amount = ?, status = ? WHERE id = ? AND user_id = ?",
+            [newPaidAmount, newStatus, req.params.id, req.user.id]
+        );
+
+        // OTOMATIS: Catat ke Transaksi sebagai Pengeluaran
+        await pool.query(
+            "INSERT INTO transactions (user_id, type, category, amount, note, date) VALUES (?, 'expense', 'Tagihan', ?, ?, CURDATE())",
+            [req.user.id, amount_to_pay, `Pembayaran Tagihan: ${bill.name}`]
+        );
+
+        const [updated] = await pool.query("SELECT * FROM bills WHERE id = ?", [req.params.id]);
+        res.json(updated[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mencatat pembayaran", error: error.message });
     }
 });
 

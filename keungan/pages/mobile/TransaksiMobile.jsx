@@ -109,9 +109,26 @@ const TransaksiMobile = () => {
     setForm(emptyForm);
   };
 
+  const totalBalance = transactions.reduce((acc, tx) => tx.type === 'income' ? acc + Number(tx.amount) : acc - Number(tx.amount), 0);
+
   // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validasi Saldo Mobile
+    if (form.type === 'expense') {
+      const amountToSpend = Number(form.amount);
+      const oldAmount = editingId ? transactions.find(t => t.id === editingId)?.amount || 0 : 0;
+      const oldType = editingId ? transactions.find(t => t.id === editingId)?.type : 'expense';
+      
+      const balanceWithoutThis = totalBalance + (oldType === 'expense' ? Number(oldAmount) : 0);
+      
+      if (amountToSpend > balanceWithoutThis) {
+        alert(`Saldo tidak cukup! Sisa saldo: ${formatCurrency(balanceWithoutThis)}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload = { ...form, amount: Number(form.amount) };
@@ -170,6 +187,47 @@ const TransaksiMobile = () => {
             <AlertCircle size={16} /> {error}
           </div>
         )}
+
+        {/* Info Cards Mobile */}
+        <div className="space-y-4">
+          {totalBalance < 50000 && !loading && (
+            <div className="bg-orange-50 border border-orange-100 p-4 rounded-[1.5rem] flex items-center gap-3 animate-pulse">
+               <div className="p-2 bg-orange-100 text-orange-600 rounded-xl">
+                 <AlertCircle size={20} />
+               </div>
+               <div>
+                  <h3 className="text-[11px] font-bold text-orange-800 leading-tight">Saldo kamu kurang nih!</h3>
+                  <p className="text-[9px] text-orange-600 leading-tight">Ayo tambah pemasukan dulu.</p>
+               </div>
+            </div>
+          )}
+
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-5 rounded-[2rem] text-white shadow-lg shadow-indigo-100 relative overflow-hidden">
+            <div className="absolute -right-4 -bottom-4 opacity-10">
+              <ArrowUpRight size={80} />
+            </div>
+            <div className="relative z-10">
+              <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mb-1">Saldo Bersih</p>
+              <p className="text-2xl font-black">
+                {formatCurrency(totalBalance)}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white p-4 rounded-3xl border border-gray-50 flex flex-col gap-1 shadow-sm">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total Masuk</p>
+              <p className="text-sm font-black text-green-600">
+                {formatCurrency(transactions.filter(tx => tx.type === 'income').reduce((acc, tx) => acc + Number(tx.amount), 0))}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-gray-50 flex flex-col gap-1 shadow-sm">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total Keluar</p>
+              <p className="text-sm font-black text-red-500">
+                {formatCurrency(transactions.filter(tx => tx.type === 'expense').reduce((acc, tx) => acc + Number(tx.amount), 0))}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Search & Filter */}
         <div className="space-y-4">

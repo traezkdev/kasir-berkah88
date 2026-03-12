@@ -112,9 +112,26 @@ const Transaksi = () => {
     setForm(emptyForm);
   };
 
+  const totalBalance = transactions.reduce((acc, tx) => tx.type === 'income' ? acc + Number(tx.amount) : acc - Number(tx.amount), 0);
+
   // --- SUBMIT (CREATE / UPDATE) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validasi Saldo di Frontend
+    if (form.type === 'expense') {
+      const amountToSpend = Number(form.amount);
+      const oldAmount = editingId ? transactions.find(t => t.id === editingId)?.amount || 0 : 0;
+      const oldType = editingId ? transactions.find(t => t.id === editingId)?.type : 'expense';
+      
+      const balanceWithoutThis = totalBalance + (oldType === 'expense' ? Number(oldAmount) : 0);
+      
+      if (amountToSpend > balanceWithoutThis) {
+        alert(`Saldo tidak cukup! Sisa saldo tersedia: ${formatCurrency(balanceWithoutThis)}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload = { ...form, amount: Number(form.amount) };
@@ -169,6 +186,53 @@ const Transaksi = () => {
           {error}
         </div>
       )}
+
+      {/* Low Balance Alert */}
+      {totalBalance < 50000 && !loading && (
+        <div className="bg-orange-50 border border-orange-100 p-6 rounded-[2rem] flex items-center justify-between animate-pulse">
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl">
+                    <AlertCircle size={24} />
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-orange-800">Saldo kamu hampir habis nih!</h3>
+                    <p className="text-xs text-orange-600 font-medium">Segera tambahkan pemasukan agar catatan keuanganmu tetap lancar.</p>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="text-xs font-bold text-orange-400 uppercase">Sisa Saldo</p>
+                <p className="text-lg font-black text-orange-700">{formatCurrency(totalBalance)}</p>
+            </div>
+        </div>
+      )}
+
+      {/* Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+          <div className="absolute -right-4 -bottom-4 opacity-10">
+            <ArrowUpRight size={120} />
+          </div>
+          <div className="relative z-10">
+            <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mb-1">Total Saldo (Neto)</p>
+            <p className="text-3xl font-black">
+              {formatCurrency(totalBalance)}
+            </p>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between group hover:border-red-100 transition-all">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-red-50 text-red-600 rounded-2xl group-hover:scale-110 transition-transform">
+              <ArrowDownRight size={24} />
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Total Pengeluaran</p>
+              <p className="text-2xl font-black text-gray-800">
+                {formatCurrency(transactions.filter(tx => tx.type === 'expense').reduce((acc, tx) => acc + Number(tx.amount), 0))}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-wrap items-center justify-between gap-4">

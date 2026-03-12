@@ -101,6 +101,12 @@ export const initDB = async () => {
             await pool.query(table);
         }
 
+        // Tambah kolom paid_amount ke tabel bills jika belum ada (Cara Kompatibel)
+        const [columns] = await pool.query("SHOW COLUMNS FROM bills LIKE 'paid_amount'");
+        if (columns.length === 0) {
+            await pool.query("ALTER TABLE bills ADD COLUMN paid_amount DECIMAL(15, 2) DEFAULT 0");
+        }
+
         console.log("Semua tabel berhasil disinkronkan.");
     } catch (error) {
         console.error("Gagal inisialisasi database:", error.message);
