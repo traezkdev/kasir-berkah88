@@ -148,191 +148,240 @@ const TagihanMobile = () => {
 
   return (
     <>
-      <div className="pb-24 space-y-6 px-6 pt-4">
+      <div className="pb-32 space-y-8 px-6 pt-4 animate-in fade-in duration-500">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">Tagihan Rutin</h1>
-          <button onClick={openAddModal} className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-lg shadow-indigo-100">
-            <Plus size={20} />
+           <div>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Tagihan Rutin</h1>
+              <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Payment Reminder</p>
+           </div>
+          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all">
+            <Plus size={20} strokeWidth={3} />
           </button>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-50 text-red-600 text-xs font-medium rounded-2xl flex items-center gap-2">
-            <AlertCircle size={16} /> {error}
+          <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-500/20 rounded-2xl flex items-center gap-3">
+            <AlertCircle size={18} strokeWidth={3} /> {error}
           </div>
         )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-4 rounded-3xl border border-gray-50 flex flex-col gap-1">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Sisa Tagihan</p>
+              <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse shadow-sm shadow-rose-500/50"></div>
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sisa Tagihan</p>
             </div>
-            <p className="text-base font-black text-red-600">{formatCurrency(unpaidTotal)}</p>
+            <p className="text-base font-black text-rose-600 dark:text-rose-400 tracking-tight">{formatCurrency(unpaidTotal)}</p>
           </div>
-          <div className="bg-white p-4 rounded-3xl border border-gray-50 flex flex-col gap-1">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle2 size={10} className="text-green-500" />
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Sudah Bayar</p>
+              <CheckCircle2 size={12} className="text-emerald-500" strokeWidth={3} />
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sudah Bayar</p>
             </div>
-            <p className="text-base font-black text-green-600">{formatCurrency(paidTotal)}</p>
+            <p className="text-base font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(paidTotal)}</p>
           </div>
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input type="text" placeholder="Cari tagihan..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-50 rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm shadow-sm"
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-700" size={20} strokeWidth={3} />
+          <input type="text" placeholder="Cari tagihan anda..."
+            className="w-full pl-14 pr-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl focus:ring-4 focus:ring-indigo-500/10 text-xs font-black uppercase tracking-widest placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-700 dark:text-gray-200 shadow-sm"
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
 
         {/* Bill List */}
         {loading ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-gray-300">
-            <Loader2 className="animate-spin" size={28} />
-            <span className="text-xs font-medium">Memuat data...</span>
+          <div className="py-24 flex flex-col items-center gap-4 text-gray-400">
+            <div className="w-10 h-10 border-4 border-indigo-100 dark:border-slate-800 border-t-indigo-600 rounded-full animate-spin" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Sinkronisasi...</span>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {filteredBills.map((bill) => {
               const paid = Number(bill.paid_amount || 0);
               const total = Number(bill.amount);
               const percent = Math.min((paid / total) * 100, 100);
 
               return (
-                <div key={bill.id} className="bg-white rounded-[2rem] shadow-sm overflow-hidden active:scale-[0.98] transition-all border border-gray-50">
-                  <div className={`h-1.5 w-full ${bill.status === 'paid' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                <div key={bill.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm overflow-hidden active:scale-[0.98] transition-all border border-gray-100 dark:border-slate-800 group relative">
+                  <div className={`h-2 w-full transition-colors duration-500 ${bill.status === 'paid' ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
 
-                  <div className="p-5 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2.5 rounded-2xl ${bill.status === 'paid' ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                          <CreditCard size={20} />
+                  <div className="p-7 space-y-6 relative z-10">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <div className={`p-4 rounded-[1.2rem] flex-shrink-0 shadow-sm transform group-active:scale-95 transition-transform ${bill.status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
+                          <CreditCard size={22} strokeWidth={2.5} />
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-800">{bill.name}</p>
-                          <p className="text-[10px] text-gray-400 font-medium">Tempo: {formatDate(bill.due_date)}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight truncate">{bill.name}</p>
+                          <p className="text-[9px] text-gray-400 dark:text-gray-600 font-black uppercase tracking-widest mt-1.5 truncate">🕒 TEMPO: {formatDate(bill.due_date)}</p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${bill.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 animate-pulse'}`}>
-                          {bill.status === 'paid' ? 'Lunas' : percent > 0 ? 'Cicil' : 'Belum'}
+                      <div className="flex flex-col items-end gap-2.5">
+                        <span className={`text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-sm ${bill.status === 'paid' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 animate-pulse'}`}>
+                          {bill.status === 'paid' ? 'LUNAS' : percent > 0 ? 'MEMBAYAR' : 'TERTUNDA'}
                         </span>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => openEditModal(bill)} className="p-1 text-gray-300">
-                                <Edit2 size={13} />
+                        <div className="flex items-center gap-1.5">
+                            <button onClick={() => openEditModal(bill)} className="p-2 text-gray-300 dark:text-gray-700 active:text-indigo-500 transition-colors">
+                                <Edit2 size={15} strokeWidth={3} />
                             </button>
-                            <button onClick={() => handleDelete(bill.id)} disabled={deletingId === bill.id} className="p-1 text-gray-300">
-                                {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                            <button onClick={() => handleDelete(bill.id)} disabled={deletingId === bill.id} className="p-2 text-gray-300 dark:text-gray-700 active:text-rose-500 transition-colors">
+                                {deletingId === bill.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} strokeWidth={3} />}
                             </button>
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-[9px] font-bold text-gray-400 uppercase">
-                          <span>Progress: {Math.round(percent)}%</span>
+                    <div className="space-y-3 px-1">
+                        <div className="flex justify-between text-[8px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">
+                          <span>Progress: <span className="text-indigo-600 dark:text-indigo-400">{Math.round(percent)}%</span></span>
                           <span>{formatCurrency(paid)} / {formatCurrency(total)}</span>
                         </div>
-                        <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
+                        <div className="h-3 w-full bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-gray-100 dark:border-slate-800 shadow-inner">
                           <div 
-                            className={`h-full transition-all duration-700 ${bill.status === 'paid' ? 'bg-green-500' : 'bg-indigo-600'}`}
+                            className={`h-full rounded-full transition-all duration-[1500ms] cubic-bezier(0.34, 1.56, 0.64, 1) shadow-sm ${bill.status === 'paid' ? 'bg-emerald-500' : 'bg-indigo-600'}`}
                             style={{ width: `${percent}%` }}
                           ></div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {bill.status !== 'paid' && (
                         <button
                           onClick={() => openPayModal(bill)}
-                          className="flex-1 px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                          <Coins size={14} /> Cicil
+                          className="flex-1 px-5 py-4 bg-indigo-50 dark:bg-indigo-500/5 text-indigo-600 dark:text-indigo-400 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:bg-indigo-600 active:text-white transition-all">
+                          <Coins size={16} strokeWidth={3} /> CICIL
                         </button>
                       )}
                       <button
                         onClick={() => toggleStatus(bill)}
                         disabled={togglingId === bill.id}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${bill.status === 'unpaid' ? (percent > 0 ? 'w-24 bg-gray-100 text-gray-500' : 'flex-1 bg-indigo-600 text-white shadow-md') : 'w-full bg-gray-100 text-gray-500'}`}>
-                        {togglingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : (bill.status === 'unpaid' ? 'Lunas' : 'Batal')}
+                        className={`px-5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl transition-all ${bill.status === 'unpaid' ? (percent > 0 ? 'w-24 bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-600' : 'flex-1 bg-indigo-600 text-white shadow-indigo-900/20') : 'w-full bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600'}`}>
+                        {togglingId === bill.id ? <Loader2 size={16} className="animate-spin" /> : (bill.status === 'unpaid' ? (percent > 0 ? 'LUNAS' : 'BAYAR LUNAS') : 'BATAL')}
                       </button>
                     </div>
                   </div>
+
+                  {/* Decorative BG */}
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gray-100 dark:bg-slate-800/20 rounded-full blur-3xl -mr-12 -mt-12 transition-colors" />
                 </div>
               );
             })}
+            
+            {filteredBills.length === 0 && !loading && (
+              <div className="py-24 text-center px-10">
+                <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 rotate-6 transform transition-transform hover:rotate-0 shadow-sm border border-gray-50 dark:border-slate-800">
+                  <CreditCard size={32} className="text-gray-200 dark:text-slate-800" strokeWidth={1.5} />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-600 text-center leading-relaxed">BELUM ADA TAGIHAN TERCATAT.<br/>KLIK TOMBOL DI ATAS UNTUK MULAI.</p>
+                <button onClick={openAddModal} className="mt-8 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-widest underline underline-offset-4">BUAT SEKARANG</button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* ===== BOTTOM SHEET MODAL CRUD ===== */}
+      {/* ===== BOTTOM SHEET MODAL (Dark Mode Support) ===== */}
       {showModal && (
-        <div className="fixed inset-0 z-[200] flex items-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative w-full bg-white rounded-t-[2.5rem] shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
-            <div className="pt-4 pb-2 flex justify-center">
-              <div className="w-10 h-1 bg-gray-200 rounded-full"></div>
+        <div className="fixed inset-0 z-[300] flex items-end">
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closeModal} />
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-30 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-500 pb-12">
+            <div className="pt-6 pb-2 flex justify-center sticky top-0 bg-white dark:bg-slate-900 z-10 px-6">
+              <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full"></div>
             </div>
-            <div className="px-6 pb-4 flex items-center justify-between border-b border-gray-50">
-              <h2 className="text-base font-bold text-gray-800">{editingId ? 'Edit Tagihan' : 'Tagihan Baru'}</h2>
-              <button onClick={closeModal} className="p-2 text-gray-400"><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 pb-12">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nama Tagihan</label>
-                <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                  className="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nominal</label>
-                  <input required type="number" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})}
-                    className="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tempo</label>
-                  <input required type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})}
-                    className="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
-                </div>
-              </div>
-              <button type="submit" disabled={submitting}
-                className="w-full py-4 rounded-2xl font-bold text-white bg-indigo-600 flex items-center justify-center gap-2 shadow-lg disabled:opacity-70">
-                {submitting ? <Loader2 className="animate-spin" size={22} /> : (editingId ? 'Simpan' : 'Tambah Tagihan')}
+            <div className="px-10 pb-6 flex items-center justify-between border-b border-gray-50 dark:border-slate-800 sticky top-12 bg-white dark:bg-slate-900 z-10 overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-500/5 rounded-full -mr-16 -mt-16" />
+               <div className="relative">
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">{editingId ? 'Edit Tagihan' : 'Tagihan Baru'}</h2>
+                  <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Atur pengeluaran rutin anda</p>
+               </div>
+              <button onClick={closeModal} className="p-3 text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-all font-black relative z-10">
+                <X size={24} strokeWidth={3} />
               </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-10 space-y-8">
+              <div className="space-y-3 px-1">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nama Keperluan Tagihan</label>
+                <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                  placeholder="Misal: Listrik, Internet, dll."
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:ring-4 focus:ring-indigo-500/10 shadow-inner" />
+              </div>
+              <div className="grid grid-cols-1 gap-8">
+                <div className="space-y-3 px-1">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Total Nominal Tagihan (Rp)</label>
+                  <div className="relative">
+                     <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-700 text-lg">Rp</span>
+                     <input required type="number" min="1" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})}
+                      placeholder="0"
+                      className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.8rem] text-2xl font-black text-emerald-600 dark:text-emerald-400 focus:ring-4 focus:ring-emerald-500/10 shadow-inner" />
+                  </div>
+                </div>
+                <div className="space-y-3 px-1">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Tanggal Jatuh Tempo</label>
+                  <input required type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})}
+                    className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.8rem] text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
+                </div>
+              </div>
+              <div className="flex gap-4 pt-4">
+                 <button type="button" onClick={closeModal} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all">BATAL</button>
+                 <button type="submit" disabled={submitting}
+                   className="flex-2 px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                   {submitting ? <Loader2 className="animate-spin" size={20} /> : (
+                      <>
+                         <span>{editingId ? 'SIMPAN' : 'TAMBAHKAN'}</span>
+                         <Plus size={18} strokeWidth={3} />
+                      </>
+                   )}
+                 </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ===== BOTTOM SHEET MODAL CICIL ===== */}
+      {/* ===== BOTTOM SHEET MODAL CICIL (Dark Mode Support) ===== */}
       {showPayModal && (
-        <div className="fixed inset-0 z-[200] flex items-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closePayModal} />
-          <div className="relative w-full bg-white rounded-t-[2.5rem] shadow-2xl z-10 p-6 pb-12 space-y-6">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2"></div>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-800">Cicil Tagihan</h2>
-              <button onClick={closePayModal} className="p-2 text-gray-400"><X size={20} /></button>
+        <div className="fixed inset-0 z-[300] flex items-end">
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closePayModal} />
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3.5rem] shadow-[0_-20px_100px_rgba(0,0,0,0.5)] z-40 p-10 pb-16 space-y-10 animate-in slide-in-from-bottom duration-500 overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-500/5 rounded-full -mr-16 -mt-16" />
+            <div className="flex items-center justify-between relative z-10">
+               <div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Setoran Tagihan</h2>
+                  <p className="text-[10px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest mt-1">Pembayaran Cicilan</p>
+               </div>
+              <button onClick={closePayModal} className="p-3 text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-all font-black relative z-10">
+                <X size={26} strokeWidth={4} />
+              </button>
             </div>
             
-            <div className="bg-indigo-50 p-5 rounded-3xl">
-              <p className="text-[10px] font-bold text-indigo-400 uppercase mb-1">Tagihan: {selectedBill?.name}</p>
-              <p className="text-xl font-black text-indigo-700">Sisa: {formatCurrency(selectedBill?.amount - (selectedBill?.paid_amount || 0))}</p>
+            <div className="bg-emerald-50 dark:bg-emerald-500/5 p-8 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-500/10 shadow-inner relative z-10">
+              <p className="text-[9px] font-black text-emerald-400 dark:text-emerald-500 uppercase tracking-[0.2em] mb-2 leading-none">Tagihan: {selectedBill?.name}</p>
+              <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 tracking-tighter">Sisa: {formatCurrency(selectedBill?.amount - (selectedBill?.paid_amount || 0))}</p>
             </div>
 
-            <form onSubmit={handlePaySubmit} className="space-y-6">
-              <div className="space-y-2">
-                <input required type="number" min="1" max={selectedBill?.amount - (selectedBill?.paid_amount || 0)}
-                  value={payAmount} onChange={e => setPayAmount(e.target.value)}
-                  placeholder="0" autoFocus
-                  className="w-full px-4 py-6 bg-gray-50 border-none rounded-[2rem] text-3xl font-black text-center focus:ring-2 focus:ring-indigo-100" />
+            <form onSubmit={handlePaySubmit} className="space-y-10 relative z-10">
+              <div className="space-y-4 px-1">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2 text-center block">Masukkan Nominal Bayar (Rp)</label>
+                <div className="relative">
+                   <span className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-700 text-2xl">Rp</span>
+                   <input required type="number" min="1" max={selectedBill?.amount - (selectedBill?.paid_amount || 0)}
+                    value={payAmount} onChange={e => setPayAmount(e.target.value)}
+                    placeholder="0" autoFocus
+                    className="w-full pl-20 pr-8 py-9 bg-gray-50 dark:bg-slate-800 border-none rounded-[2.5rem] text-4xl font-black text-center text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-500/5 focus:ring-indigo-500/10 shadow-inner transition-all placeholder:text-gray-200 dark:placeholder:text-gray-800" />
+                </div>
               </div>
               <button type="submit" disabled={submitting || !payAmount}
-                className="w-full py-6 rounded-[2rem] font-bold text-white text-lg bg-indigo-600 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 active:scale-95 transition-all disabled:opacity-70">
-                {submitting ? <Loader2 className="animate-spin" size={24} /> : 'Konfirmasi Bayar'}
+                className="w-full py-7 rounded-[2.2rem] font-black text-white text-[12px] uppercase tracking-[0.2em] bg-indigo-600 shadow-[0_20px_40px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-[0.97] transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                {submitting ? <Loader2 className="animate-spin" size={24} /> : (
+                   <>
+                      <span>KONFIRMASI BAYAR</span>
+                      <CheckCircle2 size={24} strokeWidth={3} />
+                   </>
+                )}
               </button>
             </form>
           </div>

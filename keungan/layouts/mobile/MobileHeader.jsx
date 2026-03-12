@@ -17,8 +17,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 import NotificationPopover from '../../components/NotificationPopover';
+import ThemeToggle from '../../components/ThemeToggle';
 
-const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
+const MobileHeader = ({ user, activePage, setActivePage, onLogout, onUpdateUser }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const menuGroups = [
@@ -59,31 +60,29 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
 
   return (
     <>
-      <div className="bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-40 border-b border-gray-50 uppercase tracking-widest text-[10px] font-bold">
+      <div className="bg-white dark:bg-slate-900 px-6 py-4 flex items-center justify-between sticky top-0 z-40 border-b border-gray-50 dark:border-slate-800 transition-colors">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsMenuOpen(true)}
-            className="p-2 -ml-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+            className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20">
               <HandCoins size={18} />
             </div>
-            <span className="text-sm font-bold text-gray-800 lowercase tracking-normal text-base capitalize">trzfinance</span>
+            <span className="text-sm font-bold text-gray-800 dark:text-gray-100 lowercase tracking-normal text-base capitalize">trzfinance</span>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <button className="text-gray-400 p-2">
-            <Search size={20} />
-          </button>
+          <ThemeToggle user={user} onUpdateUser={onUpdateUser} />
           <NotificationPopover user={user} />
           <img 
             src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=4F46E5&color=fff`} 
             alt="Profile" 
-            className="w-8 h-8 rounded-lg shadow-sm border border-gray-100 ml-1"
+            className="w-8 h-8 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 ml-1"
           />
         </div>
       </div>
@@ -107,32 +106,32 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-80 bg-white z-[101] shadow-2xl flex flex-col"
+              className="fixed inset-y-0 left-0 w-80 bg-white dark:bg-slate-900 z-[101] shadow-2xl flex flex-col border-r dark:border-slate-800"
             >
-              <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+              <div className="p-6 border-b border-gray-50 dark:border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg">
                     <HandCoins size={22} />
                   </div>
-                  <span className="text-xl font-bold text-gray-800">trzfinance</span>
+                  <span className="text-xl font-bold text-gray-800 dark:text-gray-100">trzfinance</span>
                 </div>
                 <button 
                   onClick={() => setIsMenuOpen(false)}
-                  className="p-2 text-gray-400 hover:bg-gray-50 rounded-xl"
+                  className="p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="p-6 flex items-center gap-4 bg-gray-50 mx-4 mt-6 rounded-[1.5rem] border border-gray-100">
+              <div className="p-6 flex items-center gap-4 bg-gray-50 dark:bg-slate-800/50 mx-4 mt-6 rounded-xl border border-gray-100 dark:border-slate-800">
                 <img 
                    src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=4F46E5&color=fff`} 
                   alt="Profile" 
-                  className="w-12 h-12 rounded-2xl shadow-sm border-2 border-white"
+                  className="w-12 h-12 rounded-lg shadow-sm border-2 border-white dark:border-slate-700"
                 />
                 <div className="overflow-hidden">
-                  <p className="text-sm font-bold text-gray-800 truncate">{user?.name || 'User'}</p>
-                  <p className="text-[10px] text-gray-500 font-medium truncate">{user?.email}</p>
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{user?.name || 'User'}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">{user?.email}</p>
                 </div>
               </div>
 
@@ -145,10 +144,10 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
                         <button
                           key={item.id}
                           onClick={() => handleMenuClick(item.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-200 group ${
+                          className={`w-full flex items-center gap-3 px-4 py-4 rounded-lg transition-all duration-200 group ${
                             activePage === item.id 
-                              ? 'bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-100' 
-                              : 'text-gray-500 hover:bg-gray-50'
+                              ? 'bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20' 
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'
                           }`}
                         >
                           <item.icon size={20} className={activePage === item.id ? 'text-white' : 'text-gray-400'} />
@@ -160,13 +159,13 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
                 ))}
               </nav>
 
-              <div className="p-6 border-t border-gray-50 bg-gray-50/50">
+              <div className="p-6 border-t border-gray-50 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/20">
                 <button 
                   onClick={() => {
                     onLogout();
                     setIsMenuOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-4 text-red-500 bg-red-50/50 hover:bg-red-50 rounded-2xl transition-colors font-bold text-sm"
+                  className="w-full flex items-center gap-3 px-4 py-4 text-red-500 bg-red-50/50 dark:bg-red-500/10 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors font-bold text-sm"
                 >
                   <LogOut size={20} />
                   <span>Keluar Aplikasi</span>

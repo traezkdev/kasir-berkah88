@@ -62,20 +62,20 @@ const DashboardMobile = ({ setActivePage }) => {
   return (
     <div className="pb-24 space-y-6 px-6 pt-4">
       {/* Balance Card Mobile */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-xl text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 relative overflow-hidden transition-all duration-500">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
         <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Total Saldo Anda</p>
         <h2 className="text-3xl font-black mb-6 italic tracking-tighter">{formatCurrency(stats.totalBalance)}</h2>
         
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/5">
+          <div className="bg-white/10 backdrop-blur-md p-3 rounded-lg border border-white/5">
             <div className="flex items-center gap-2 text-white/70 text-[9px] font-black uppercase mb-1">
               <ArrowUpRight size={10} />
               <span>Masuk (Bulan Ini)</span>
             </div>
             <p className="font-black text-xs tracking-tight">{formatCurrency(stats.monthlyIncome)}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/5">
+          <div className="bg-white/10 backdrop-blur-md p-3 rounded-lg border border-white/5">
             <div className="flex items-center gap-2 text-white/70 text-[9px] font-black uppercase mb-1">
               <ArrowDownRight size={10} />
               <span>Keluar (Bulan Ini)</span>
@@ -86,18 +86,18 @@ const DashboardMobile = ({ setActivePage }) => {
       </div>
 
       {/* Quick Action */}
-      <div className="flex justify-between items-center bg-white p-2 rounded-2xl border border-gray-100 shadow-sm shadow-gray-50">
+      <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm shadow-gray-50 dark:shadow-none transition-colors duration-500">
         <button 
           onClick={() => setActivePage('transaksi')}
-          className="flex-1 flex items-center justify-center gap-2 py-3 text-indigo-600 font-black text-xs uppercase tracking-widest"
+          className="flex-1 flex items-center justify-center gap-2 py-3 text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase tracking-widest"
         >
           <Plus size={16} />
           <span>Transaksi</span>
         </button>
-        <div className="w-px h-6 bg-gray-100"></div>
+        <div className="w-px h-6 bg-gray-100 dark:bg-slate-800"></div>
         <button 
           onClick={() => setActivePage('laporan')}
-          className="flex-1 flex items-center justify-center gap-2 py-3 text-gray-500 font-black text-xs uppercase tracking-widest"
+          className="flex-1 flex items-center justify-center gap-2 py-3 text-gray-500 dark:text-gray-400 font-black text-xs uppercase tracking-widest"
         >
           <TrendingUp size={16} />
           <span>Laporan</span>
@@ -107,17 +107,17 @@ const DashboardMobile = ({ setActivePage }) => {
       {/* Target Tabungan Mobile */}
       <div>
         <div className="flex justify-between items-center mb-4 px-1">
-          <h3 className="text-lg font-black text-gray-800 italic uppercase">Target Saya</h3>
+          <h3 className="text-lg font-black text-gray-800 dark:text-white italic uppercase">Target Saya</h3>
           <button 
             onClick={() => setActivePage('tabungan')}
-            className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full"
+            className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 rounded-full"
           >
             Semua
           </button>
         </div>
         
         {stats.savings.length === 0 ? (
-          <div className="p-8 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-200 text-gray-400 text-[10px] font-bold uppercase italic">
+          <div className="p-8 text-center bg-gray-50/50 dark:bg-slate-900/50 rounded-lg border border-dashed border-gray-200 dark:border-slate-800 text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase italic">
             Belum ada target tabungan aktif
           </div>
         ) : (
@@ -125,22 +125,22 @@ const DashboardMobile = ({ setActivePage }) => {
             {stats.savings.map(item => {
               const percentage = Math.round((item.current_amount / item.target_amount) * 100);
               return (
-                <div 
-                  key={item.id} 
-                  onClick={() => setActivePage('tabungan')}
-                  className="min-w-[260px] bg-white p-5 rounded-[2rem] border border-gray-50 shadow-sm flex flex-col gap-4 active:scale-95 transition-transform"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-50">
+                  <div 
+                    key={item.id} 
+                    onClick={() => setActivePage('tabungan')}
+                    className="min-w-[260px] bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-50 dark:border-slate-800 shadow-sm flex flex-col gap-4 active:scale-95 transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-50 dark:shadow-indigo-900/20">
                       <Target size={18} />
                     </div>
-                    <span className="text-[10px] font-black italic bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{percentage}%</span>
+                    <span className="text-[10px] font-black italic bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full">{percentage}%</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-gray-800 line-clamp-1 italic uppercase tracking-tight">{item.name}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{formatCurrency(item.current_amount)} TERKUMPUL</p>
+                    <p className="text-sm font-black text-gray-800 dark:text-white line-clamp-1 italic uppercase tracking-tight">{item.name}</p>
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{formatCurrency(item.current_amount)} TERKUMPUL</p>
                   </div>
-                  <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden p-0.5 border border-gray-100">
+                  <div className="w-full h-2 bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-gray-100 dark:border-slate-700">
                     <div 
                       className="h-full bg-indigo-600 rounded-full transition-all duration-1000 shadow-sm"
                       style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -156,38 +156,40 @@ const DashboardMobile = ({ setActivePage }) => {
       {/* Recent Transactions Mobile */}
       <div>
         <div className="flex justify-between items-center mb-4 px-1">
-          <h3 className="text-lg font-black text-gray-800 italic uppercase tracking-tight">Riwayat</h3>
+          <h3 className="text-lg font-black text-gray-800 dark:text-white italic uppercase tracking-tight">Riwayat</h3>
           <button 
             onClick={() => setActivePage('transaksi')}
-            className="text-[10px] font-black uppercase tracking-widest text-gray-400"
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500"
           >
             Lainnya
           </button>
         </div>
         <div className="space-y-3">
           {stats.recentTransactions.length === 0 ? (
-             <div className="p-8 text-center bg-white rounded-2xl border border-gray-100 text-gray-400 text-[10px] font-bold uppercase">Belum ada transaksi</div>
+             <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase">Belum ada transaksi</div>
           ) : (
             stats.recentTransactions.map(tx => (
-              <div 
-                key={tx.id} 
-                onClick={() => setActivePage('transaksi')}
-                className="bg-white p-4 rounded-2xl border border-gray-50 flex items-center justify-between active:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-2xl ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {tx.type === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                <div 
+                  key={tx.id} 
+                  onClick={() => setActivePage('transaksi')}
+                  className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 flex items-center justify-between active:bg-gray-50 dark:active:bg-slate-800/50 transition-all shadow-sm active:scale-[0.97]"
+                >
+                  <div className="flex items-center gap-5 min-w-0 flex-1">
+                    <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${tx.type === 'income' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>
+                    {tx.type === 'income' ? <ArrowUpRight size={24} strokeWidth={3} /> : <ArrowDownRight size={24} strokeWidth={3} />}
                   </div>
-                  <div>
-                    <p className="text-xs font-black text-gray-800 italic uppercase tracking-tight">{tx.category}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black text-gray-800 dark:text-white italic uppercase tracking-tight truncate leading-tight">{tx.category}</p>
+                    <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mt-1.5 truncate">
                       {new Date(tx.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
                     </p>
                   </div>
                 </div>
-                <p className={`font-black text-sm tracking-tighter ${tx.type === 'income' ? 'text-green-600' : 'text-gray-900'}`}>
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                </p>
+                <div className="text-right ml-4">
+                  <p className={`text-base font-black tracking-tighter ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                  </p>
+                </div>
               </div>
             ))
           )}

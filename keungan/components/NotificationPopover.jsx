@@ -26,7 +26,6 @@ const NotificationPopover = ({ user }) => {
     }
   }, [isOpen]);
 
-  // Polling setiap 1 menit untuk update notifikasi (opsional, bisa pakai web sockets tapi ini lebih simple)
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
@@ -73,11 +72,11 @@ const NotificationPopover = ({ user }) => {
 
   const getTypeStyles = (type) => {
     switch (type) {
-      case 'bill': return 'bg-amber-50 text-amber-600 border-amber-100 ring-amber-100';
-      case 'budget': return 'bg-rose-50 text-rose-600 border-rose-100 ring-rose-100';
-      case 'success': return 'bg-emerald-50 text-emerald-600 border-emerald-100 ring-emerald-100';
-      case 'transaction': return 'bg-indigo-50 text-indigo-600 border-indigo-100 ring-indigo-100';
-      default: return 'bg-slate-50 text-slate-600 border-slate-100 ring-slate-100';
+      case 'bill': return 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20';
+      case 'budget': return 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20';
+      case 'success': return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
+      case 'transaction': return 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/20';
+      default: return 'bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-500/20';
     }
   };
 
@@ -95,42 +94,41 @@ const NotificationPopover = ({ user }) => {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2.5 rounded-2xl transition-all duration-300 ${
+        className={`relative p-2.5 rounded-lg transition-all duration-300 ${
           isOpen 
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
-            : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40' 
+            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'
         }`}
       >
         <Bell size={20} className={isOpen ? 'animate-pulse' : ''} />
         {unreadCount > 0 && (
-          <span className={`absolute top-2 right-2 w-3 h-3 bg-rose-500 rounded-full border-2 ${isOpen ? 'border-indigo-600' : 'border-white'} animate-bounce`}></span>
+          <span className={`absolute top-2 right-2 w-3 h-3 bg-rose-500 rounded-full border-2 ${isOpen ? 'border-indigo-600' : 'border-white dark:border-slate-900'} animate-bounce`}></span>
         )}
       </button>
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[100] backdrop-blur-[2px] bg-black/5 md:bg-transparent" onClick={() => setIsOpen(false)} />
-          <div className="fixed inset-4 md:inset-auto md:absolute md:right-0 md:top-full md:mt-4 w-auto md:w-[400px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 z-[101] overflow-hidden flex flex-col max-h-[80vh] md:max-h-[650px] animate-in fade-in zoom-in-95 duration-200 origin-center md:origin-top-right m-auto md:m-0">
+          <div className="fixed inset-0 z-[100] backdrop-blur-[2px] bg-black/5 dark:bg-black/20 md:bg-transparent" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-4 md:inset-auto md:absolute md:right-0 md:top-full md:mt-4 w-auto md:w-[400px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-gray-100 dark:border-slate-800 z-[101] overflow-hidden flex flex-col max-h-[80vh] md:max-h-[650px] animate-in fade-in zoom-in-95 duration-200 origin-center md:origin-top-right m-auto md:m-0">
             
-            {/* Header with Gradient Background */}
-            <div className="p-8 pb-6 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 opacity-50" />
+            <div className="p-6 pb-4 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 dark:bg-indigo-500/5 rounded-full -mr-12 -mt-12 opacity-50" />
                <div className="relative flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Notifikasi</h3>
-                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1">Update Aktivitas Terbaru</p>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Notifikasi</h3>
+                    <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-[0.2em] mt-1">Update Aktivitas Terbaru</p>
                   </div>
-                  <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                  <div className="flex bg-gray-50 dark:bg-slate-800 p-1.5 rounded-lg border border-gray-100 dark:border-slate-700">
                     <button 
                       onClick={markAllRead}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
+                      className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded-lg transition-all"
                       title="Baca Semua"
                     >
                       <Check size={18} />
                     </button>
                     <button 
                       onClick={clearAll}
-                      className="p-2 text-gray-400 hover:text-rose-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
+                      className="p-2 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded-lg transition-all"
                       title="Hapus Semua"
                     >
                       <Trash2 size={18} />
@@ -139,23 +137,22 @@ const NotificationPopover = ({ user }) => {
                </div>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 overflow-y-auto px-4 pb-6 custom-scrollbar">
               {loading && notifications.length === 0 ? (
                 <div className="py-24 flex flex-col items-center justify-center text-gray-400 gap-4">
                   <div className="relative">
-                    <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
-                    <Bell size={16} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600" />
+                    <div className="w-12 h-12 border-4 border-indigo-100 dark:border-slate-800 border-t-indigo-600 dark:border-t-indigo-500 rounded-full animate-spin" />
+                    <Bell size={16} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 dark:text-indigo-500" />
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Sinkronisasi...</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 dark:text-indigo-500">Sinkronisasi...</p>
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="py-24 flex flex-col items-center justify-center text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-[3rem] flex items-center justify-center mb-6 rotate-3">
-                    <Inbox size={40} className="text-gray-200" />
+                  <div className="w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-800/50 rounded-xl flex items-center justify-center mb-6 rotate-3">
+                    <Inbox size={40} className="text-gray-200 dark:text-slate-700" />
                   </div>
-                  <h4 className="text-base font-bold text-gray-800">Kotak Masuk Kosong</h4>
-                  <p className="text-xs text-gray-400 mt-2 max-w-[200px] leading-relaxed">Belum ada notifikasi baru untuk Anda saat ini.</p>
+                  <h4 className="text-base font-bold text-gray-800 dark:text-gray-200">Kotak Masuk Kosong</h4>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 max-w-[200px] leading-relaxed">Belum ada notifikasi baru untuk Anda saat ini.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -163,27 +160,27 @@ const NotificationPopover = ({ user }) => {
                     <div 
                       key={n.id}
                       onClick={() => markAsRead(n.id)}
-                      className={`group relative p-5 rounded-[2rem] transition-all duration-300 border ${
+                      className={`group relative p-4 rounded-lg transition-all duration-300 border ${
                         !n.is_read 
-                          ? 'bg-gradient-to-br from-indigo-50/50 to-white border-indigo-100/50 shadow-sm' 
-                          : 'bg-white border-transparent hover:bg-gray-50/80 hover:border-gray-100'
+                          ? 'bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-800/50 dark:to-slate-800 border-indigo-100/50 dark:border-indigo-500/20 shadow-sm' 
+                          : 'bg-white dark:bg-slate-900 border-transparent dark:border-transparent hover:bg-gray-50/80 dark:hover:bg-slate-800 hover:border-gray-100 dark:hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex gap-5">
-                        <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center flex-shrink-0 border-2 ring-4 ring-opacity-10 transition-transform group-hover:scale-110 ${getTypeStyles(n.type)}`}>
+                      <div className="flex gap-4">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border ring-4 ring-opacity-5 transition-transform group-hover:scale-110 ${getTypeStyles(n.type)}`}>
                           {getTypeIcon(n.type)}
                         </div>
                         <div className="flex-1 min-w-0 pr-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className={`text-sm font-black tracking-tight ${!n.is_read ? 'text-gray-900' : 'text-gray-500'}`}>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h4 className={`text-xs font-black tracking-tight ${!n.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-500'}`}>
                               {n.title}
                             </h4>
-                            {!n.is_read && <span className="w-2 h-2 bg-indigo-500 rounded-full" />}
+                            {!n.is_read && <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />}
                           </div>
-                          <p className={`text-xs leading-relaxed ${!n.is_read ? 'text-gray-600 font-bold' : 'text-gray-400 font-medium'}`}>
+                          <p className={`text-[10px] leading-relaxed ${!n.is_read ? 'text-gray-600 dark:text-gray-300 font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'}`}>
                             {n.message}
                           </p>
-                          <div className="flex items-center gap-2 mt-3 text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                          <div className="flex items-center gap-2 mt-3 text-[9px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-widest">
                             <Clock size={10} />
                             {new Date(n.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {new Date(n.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                           </div>
@@ -192,7 +189,7 @@ const NotificationPopover = ({ user }) => {
 
                       <button 
                         onClick={(e) => deleteNotification(n.id, e)}
-                        className="absolute top-5 right-5 p-2 text-gray-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all rounded-xl hover:bg-rose-50 hover:shadow-sm"
+                        className="absolute top-5 right-5 p-2 text-gray-300 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:shadow-sm"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -202,12 +199,11 @@ const NotificationPopover = ({ user }) => {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">v1.0.2 • trzfinance</p>
+            <div className="p-5 bg-gray-50/50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+               <p className="text-[8px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">v1.0.2 • trzfinance</p>
                <button 
                   onClick={() => setIsOpen(false)}
-                  className="px-5 py-2.5 bg-white border border-gray-100 rounded-2xl text-[10px] font-black text-gray-600 uppercase tracking-widest hover:bg-gray-100 transition-all shadow-sm"
+                  className="px-4 py-2 bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-xl text-[9px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-slate-600 transition-all shadow-sm"
                >
                   Tutup
                </button>

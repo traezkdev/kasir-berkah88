@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Plus, Search, ArrowUpRight, ArrowDownRight,
   X, Loader2, AlertCircle, Edit2, Trash2, ChevronRight, Download
 } from 'lucide-react';
@@ -78,7 +78,7 @@ const TransaksiMobile = () => {
   // Filter
   const filteredTransactions = transactions.filter(tx => {
     const matchSearch = (tx.note || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (tx.category || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (tx.category || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchFilter = filterType === 'all' || tx.type === filterType;
     return matchSearch && matchFilter;
   });
@@ -114,15 +114,15 @@ const TransaksiMobile = () => {
   // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validasi Saldo Mobile
     if (form.type === 'expense') {
       const amountToSpend = Number(form.amount);
       const oldAmount = editingId ? transactions.find(t => t.id === editingId)?.amount || 0 : 0;
       const oldType = editingId ? transactions.find(t => t.id === editingId)?.type : 'expense';
-      
+
       const balanceWithoutThis = totalBalance + (oldType === 'expense' ? Number(oldAmount) : 0);
-      
+
       if (amountToSpend > balanceWithoutThis) {
         alert(`Saldo tidak cukup! Sisa saldo: ${formatCurrency(balanceWithoutThis)}`);
         return;
@@ -149,6 +149,7 @@ const TransaksiMobile = () => {
 
   // Delete
   const handleDelete = async (id) => {
+    if (!window.confirm('Hapus transaksi ini?')) return;
     setDeletingId(id);
     try {
       await api.delete(`/transactions/${id}`);
@@ -164,26 +165,28 @@ const TransaksiMobile = () => {
 
   return (
     <>
-      <div className="pb-24 space-y-6 px-6 pt-4">
+      <div className="pb-32 space-y-6 px-6 pt-4 animate-in fade-in duration-500">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">Transaksi</h1>
-          <div className="flex items-center gap-2">
-            <button 
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Transaksi</h1>
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Riwayat Aktivitas</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
               onClick={() => downloadTransaksiPDF(filteredTransactions)}
-              title="Download PDF"
-              className="bg-white border border-gray-100 text-gray-500 p-2.5 rounded-2xl shadow-sm">
+              className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-gray-500 dark:text-gray-400 p-3 rounded-2xl shadow-sm active:scale-90 transition-all">
               <Download size={20} />
             </button>
-            <button onClick={openAddModal} className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-lg shadow-indigo-100">
-              <Plus size={20} />
+            <button onClick={openAddModal} className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all">
+              <Plus size={20} strokeWidth={3} />
             </button>
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="p-4 bg-red-50 text-red-600 text-xs font-medium rounded-2xl flex items-center gap-2">
+          <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-2xl flex items-center gap-2 border border-rose-100 dark:border-rose-500/20">
             <AlertCircle size={16} /> {error}
           </div>
         )}
@@ -191,38 +194,38 @@ const TransaksiMobile = () => {
         {/* Info Cards Mobile */}
         <div className="space-y-4">
           {totalBalance < 50000 && !loading && (
-            <div className="bg-orange-50 border border-orange-100 p-4 rounded-[1.5rem] flex items-center gap-3 animate-pulse">
-               <div className="p-2 bg-orange-100 text-orange-600 rounded-xl">
-                 <AlertCircle size={20} />
-               </div>
-               <div>
-                  <h3 className="text-[11px] font-bold text-orange-800 leading-tight">Saldo kamu kurang nih!</h3>
-                  <p className="text-[9px] text-orange-600 leading-tight">Ayo tambah pemasukan dulu.</p>
-               </div>
+            <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 p-4 rounded-[1.5rem] flex items-center gap-4 animate-pulse">
+              <div className="p-2.5 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl">
+                <AlertCircle size={20} strokeWidth={3} />
+              </div>
+              <div>
+                <h3 className="text-[11px] font-black text-amber-900 dark:text-amber-100 uppercase tracking-tight">Saldo Menipis!</h3>
+                <p className="text-[9px] text-amber-700 dark:text-amber-500 font-bold">Harap segera tambah saldo utama.</p>
+              </div>
             </div>
           )}
 
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-5 rounded-[2rem] text-white shadow-lg shadow-indigo-100 relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 opacity-10">
-              <ArrowUpRight size={80} />
+          <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-[2.2rem] text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden transition-all">
+            <div className="absolute -right-6 -bottom-6 opacity-10 transform rotate-12">
+              <ArrowUpRight size={100} strokeWidth={1} />
             </div>
             <div className="relative z-10">
-              <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mb-1">Saldo Bersih</p>
-              <p className="text-2xl font-black">
+              <p className="text-indigo-100/60 text-[9px] font-black uppercase tracking-[0.3em] mb-2">Sisa Saldo Anda</p>
+              <p className="text-3xl font-black tracking-tight">
                 {formatCurrency(totalBalance)}
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white p-4 rounded-3xl border border-gray-50 flex flex-col gap-1 shadow-sm">
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total Masuk</p>
-              <p className="text-sm font-black text-green-600">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-800 flex flex-col gap-2 shadow-sm">
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Pemasukan</p>
+              <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
                 {formatCurrency(transactions.filter(tx => tx.type === 'income').reduce((acc, tx) => acc + Number(tx.amount), 0))}
               </p>
             </div>
-            <div className="bg-white p-4 rounded-3xl border border-gray-50 flex flex-col gap-1 shadow-sm">
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total Keluar</p>
-              <p className="text-sm font-black text-red-500">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-800 flex flex-col gap-2 shadow-sm">
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Pengeluaran</p>
+              <p className="text-sm font-black text-rose-500 dark:text-rose-400 tracking-tight">
                 {formatCurrency(transactions.filter(tx => tx.type === 'expense').reduce((acc, tx) => acc + Number(tx.amount), 0))}
               </p>
             </div>
@@ -231,20 +234,28 @@ const TransaksiMobile = () => {
 
         {/* Search & Filter */}
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input type="text" placeholder="Cari transaksi..."
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm shadow-sm"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600 group-focus-within:text-indigo-500 transition-colors" size={20} />
+            <input
+              type="text"
+              placeholder="Cari transaksi..."
+              className="w-full pl-12 pr-6 py-4 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200 shadow-sm transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
             {[
-              { id: 'all', label: 'Semua', active: 'bg-indigo-600 text-white shadow-indigo-100' },
-              { id: 'income', label: 'Masuk', active: 'bg-green-600 text-white shadow-green-100' },
-              { id: 'expense', label: 'Keluar', active: 'bg-red-500 text-white shadow-red-100' },
+              { id: 'all', label: 'Semua', color: 'bg-indigo-600 dark:bg-indigo-600 shadow-indigo-100 dark:shadow-indigo-900/20' },
+              { id: 'income', label: 'Masuk', color: 'bg-emerald-600 dark:bg-emerald-600 shadow-emerald-100 dark:shadow-emerald-900/20' },
+              { id: 'expense', label: 'Keluar', color: 'bg-rose-500 dark:bg-rose-500 shadow-rose-100 dark:shadow-rose-900/20' },
             ].map(f => (
-              <button key={f.id} onClick={() => setFilterType(f.id)}
-                className={`px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-md ${filterType === f.id ? f.active : 'bg-white text-gray-500 border border-gray-100'}`}>
+              <button
+                key={f.id}
+                onClick={() => setFilterType(f.id)}
+                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all shadow-sm flex-1 ${filterType === f.id ? f.color + ' text-white scale-105' : 'bg-white dark:bg-slate-900 text-gray-400 dark:text-gray-600 border border-gray-100 dark:border-slate-800'
+                  }`}
+              >
                 {f.label}
               </button>
             ))}
@@ -253,66 +264,73 @@ const TransaksiMobile = () => {
 
         {/* Transaction List */}
         {loading ? (
-          <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
-            <Loader2 className="animate-spin" size={32} />
-            <span className="text-xs font-medium">Memuat data...</span>
+          <div className="py-24 flex flex-col items-center gap-4 text-gray-400">
+            <div className="w-10 h-10 border-4 border-indigo-100 dark:border-slate-800 border-t-indigo-600 rounded-full animate-spin" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Sinkronisasi...</span>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredTransactions.map((tx) => (
-              <div key={tx.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 shadow-sm space-y-4 transition-all active:scale-[0.98]">
+              <div key={tx.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-5 transition-all active:scale-[0.97]">
                 {/* Header: Icon, Category & Amount */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3.5 rounded-[1.2rem] ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                      {tx.type === 'income' ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
+                    <div className={`p-4 rounded-[1.5rem] shadow-sm transform transition-transform group-hover:scale-110 ${tx.type === 'income'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                      }`}>
+                      {tx.type === 'income' ? <ArrowUpRight size={22} strokeWidth={3} /> : <ArrowDownRight size={22} strokeWidth={3} />}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-gray-800">{tx.category}</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{formatDateDisplay(tx.date)}</p>
+                      <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{tx.category}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mt-0.5">{formatDateDisplay(tx.date)}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`text-base font-black ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                    <p className={`text-lg font-black tracking-tight ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
                       {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
                   </div>
                 </div>
 
-                {/* Body: Note (Styled as a small quote/box) */}
+                {/* Body: Note */}
                 {tx.note && (
                   <div className="px-1">
-                    <div className="bg-gray-50/50 p-3 rounded-2xl border-l-[3px] border-indigo-200">
-                      <p className="text-[11px] text-gray-500 font-medium leading-relaxed italic">
-                        "{tx.note}"
+                    <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border-l-4 border-indigo-500 dark:border-indigo-600 shadow-sm">
+                      <p className="text-xs text-gray-600 dark:text-gray-300 font-bold leading-relaxed italic">
+                        "{tx.note.toUpperCase()}"
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Footer: Action Buttons */}
-                <div className="flex items-center gap-2 pt-1">
-                  <button 
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <button
                     onClick={() => openEditModal(tx)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold active:bg-indigo-50 active:text-indigo-600 transition-all"
+                    className="flex items-center justify-center gap-2 py-3.5 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest active:bg-indigo-600 active:text-white transition-all border border-transparent active:border-indigo-500"
                   >
-                    <Edit2 size={12} /> Edit
+                    <Edit2 size={12} strokeWidth={3} /> EDIT
                   </button>
-                  <button 
-                    onClick={() => handleDelete(tx.id)} 
+                  <button
+                    onClick={() => handleDelete(tx.id)}
                     disabled={deletingId === tx.id}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold active:bg-red-50 active:text-red-600 transition-all"
+                    className="flex items-center justify-center gap-2 py-3.5 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest active:bg-rose-600 active:text-white transition-all border border-transparent active:border-rose-500"
                   >
-                    {deletingId === tx.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Hapus
+                    {deletingId === tx.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} strokeWidth={3} />} HAPUS
                   </button>
                 </div>
               </div>
             ))}
 
             {filteredTransactions.length === 0 && (
-              <div className="py-16 text-center">
-                <p className="text-gray-400 text-sm font-medium">Belum ada transaksi.</p>
-                <button onClick={openAddModal} className="mt-3 text-indigo-500 text-xs font-bold underline">Tambah sekarang</button>
+              <div className="py-24 text-center px-10">
+                <div className="w-20 h-20 bg-gray-50 dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 rotate-6 transition-transform hover:rotate-0">
+                  <Search size={32} className="text-gray-200 dark:text-slate-800" />
+                </div>
+                <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">KOSONG</h3>
+                <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-2 font-bold leading-relaxed">Belum ada catatan transaksi untuk kategori ini.</p>
+                <button onClick={openAddModal} className="mt-6 px-8 py-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-xl">TAMBAH SEKARANG</button>
               </div>
             )}
           </div>
@@ -320,90 +338,133 @@ const TransaksiMobile = () => {
       </div>
 
       {/* Floating Action Button Mobile */}
-      <div className="fixed bottom-24 right-6 z-[100]">
-        <button 
+      <div className="fixed bottom-28 right-6 z-[100]">
+        <button
           onClick={openAddModal}
-          className="bg-indigo-600 text-white w-14 h-14 rounded-full shadow-2xl shadow-indigo-200 flex items-center justify-center active:scale-95 transition-all"
+          className="bg-indigo-600 text-white w-16 h-16 rounded-[2rem] shadow-2xl shadow-indigo-400 dark:shadow-indigo-900/60 flex items-center justify-center active:scale-90 active:rotate-12 transition-all transform"
         >
-          <Plus size={28} />
+          <Plus size={32} strokeWidth={3} />
         </button>
       </div>
 
-      {/* ===== BOTTOM SHEET MODAL ===== */}
+      {/* ===== BOTTOM SHEET MODAL (Dark Mode Support) ===== */}
       {showModal && (
         <div className="fixed inset-0 z-[200] flex items-end">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closeModal} />
 
           {/* Bottom Sheet */}
-          <div className="relative w-full bg-white rounded-t-[2.5rem] shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-20 max-h-[95vh] overflow-y-auto animate-in slide-in-from-bottom duration-500">
             {/* Handle */}
-            <div className="pt-4 pb-2 flex justify-center">
-              <div className="w-10 h-1 bg-gray-200 rounded-full"></div>
+            <div className="pt-5 pb-3 flex justify-center sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10">
+              <div className="w-12 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full"></div>
             </div>
 
             {/* Modal Header */}
-            <div className="px-6 pb-4 flex items-center justify-between border-b border-gray-50">
-              <h2 className="text-base font-bold text-gray-800">
-                {editingId ? 'Edit Transaksi' : 'Transaksi Baru'}
-              </h2>
-              <button onClick={closeModal} className="p-2 text-gray-400 hover:bg-gray-50 rounded-xl">
-                <X size={20} />
+            <div className="px-8 pb-6 flex items-center justify-between border-b border-gray-50 dark:border-slate-800">
+              <div>
+                <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                  {editingId ? 'Edit Transaksi' : 'Transaksi Baru'}
+                </h2>
+                <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Lengkapi rincian berikut</p>
+              </div>
+              <button onClick={closeModal} className="p-3 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-2xl transition-all">
+                <X size={24} strokeWidth={3} />
               </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-8 space-y-8">
               {/* Tipe */}
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setForm({ ...form, type: 'expense', category: categories.expense[0] || '' })}
-                  className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all ${form.type === 'expense' ? 'bg-red-600 text-white shadow-lg shadow-red-100' : 'bg-gray-50 text-gray-500'}`}>
-                  Pengeluaran
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, type: 'expense', category: categories.expense[0] || '' })}
+                  className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${form.type === 'expense'
+                      ? 'bg-rose-600 text-white shadow-xl shadow-rose-900/20'
+                      : 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-600'
+                    }`}
+                >
+                  🚀 Keluar
                 </button>
-                <button type="button" onClick={() => setForm({ ...form, type: 'income', category: categories.income[0] || '' })}
-                  className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all ${form.type === 'income' ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-gray-50 text-gray-500'}`}>
-                  Pemasukan
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, type: 'income', category: categories.income[0] || '' })}
+                  className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${form.type === 'income'
+                      ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-900/20'
+                      : 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-600'
+                    }`}
+                >
+                  💰 Masuk
                 </button>
               </div>
 
               {/* Nominal */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nominal (Rp)</label>
-                <input type="number" required min="0" value={form.amount}
+              <div className="space-y-3 px-1">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nominal (Rp)</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={form.amount}
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
                   placeholder="0"
-                  className="w-full px-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-xl font-black text-center" />
+                  className="w-full px-8 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-[2rem] focus:ring-4 focus:ring-indigo-500/10 text-3xl font-black text-center text-indigo-600 dark:text-indigo-400 shadow-sm placeholder:text-gray-200 dark:placeholder:text-gray-700"
+                />
               </div>
 
               {/* Kategori & Tanggal */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Kategori</label>
-                  <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Kategori</label>
+                  <select
+                    required
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    className="w-full px-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-4 focus:ring-indigo-500/10 text-gray-700 dark:text-gray-200"
+                  >
                     {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tanggal</label>
-                  <input type="date" required value={form.date}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Tanggal</label>
+                  <input
+                    type="date"
+                    required
+                    value={form.date}
                     onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
+                    className="w-full px-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-4 focus:ring-indigo-500/10 text-gray-700 dark:text-gray-200"
+                  />
                 </div>
               </div>
 
               {/* Catatan */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Catatan (Opsional)</label>
-                <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })}
-                  placeholder="Contoh: Beli makan siang"
-                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100" />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Catatan Pesan</label>
+                <input
+                  type="text"
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  placeholder="Keterangan transaksi..."
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                />
               </div>
 
               {/* Submit */}
-              <button type="submit" disabled={submitting}
-                className={`w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-70 ${form.type === 'income' ? 'bg-green-600 shadow-green-100' : 'bg-indigo-600 shadow-indigo-100'}`}>
-                {submitting ? <Loader2 className="animate-spin" size={22} /> : (editingId ? 'Simpan Perubahan' : 'Simpan Transaksi')}
+              <button
+                type="submit"
+                disabled={submitting}
+                className={`w-full py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs text-white shadow-2xl flex items-center justify-center gap-3 transition-all transform active:scale-95 disabled:opacity-50 mt-4 mb-2 ${form.type === 'income'
+                    ? 'bg-emerald-600 shadow-emerald-900/20'
+                    : 'bg-indigo-600 shadow-indigo-900/20'
+                  }`}
+              >
+                {submitting ? <Loader2 className="animate-spin" size={20} /> : (
+                  <>
+                    <span>{editingId ? 'SIMPAN PERUBAHAN' : 'MASUKKAN DATA'}</span>
+                    <ArrowUpRight size={20} strokeWidth={3} />
+                  </>
+                )}
               </button>
             </form>
           </div>

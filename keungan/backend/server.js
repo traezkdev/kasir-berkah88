@@ -104,7 +104,8 @@ app.post('/api/auth/login', async (req, res) => {
                 notif_tagihan: user.notif_tagihan,
                 notif_budget: user.notif_budget,
                 currency: user.currency,
-                language: user.language
+                language: user.language,
+                dark_mode: user.dark_mode
             }
         });
     } catch (error) {
@@ -115,7 +116,7 @@ app.post('/api/auth/login', async (req, res) => {
 // GET Profile
 app.get('/api/auth/profile', authMiddleware, async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT id, name, email, avatar, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language FROM users WHERE id = ?", [req.user.id]);
+        const [rows] = await pool.query("SELECT id, name, email, avatar, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, dark_mode FROM users WHERE id = ?", [req.user.id]);
         if (rows.length === 0) return res.status(404).json({ message: "User tidak ditemukan" });
         res.json(rows[0]);
     } catch (error) {
@@ -126,12 +127,12 @@ app.get('/api/auth/profile', authMiddleware, async (req, res) => {
 // UPDATE Profile
 app.put('/api/auth/profile', authMiddleware, async (req, res) => {
     try {
-        const { name, email, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, avatar } = req.body;
+        const { name, email, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, avatar, dark_mode } = req.body;
         await pool.query(
-            "UPDATE users SET name = ?, email = ?, phone = ?, notif_transaksi = ?, notif_tagihan = ?, notif_budget = ?, currency = ?, language = ?, avatar = ? WHERE id = ?",
-            [name, email, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, avatar, req.user.id]
+            "UPDATE users SET name = ?, email = ?, phone = ?, notif_transaksi = ?, notif_tagihan = ?, notif_budget = ?, currency = ?, language = ?, avatar = ?, dark_mode = ? WHERE id = ?",
+            [name, email, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, avatar, dark_mode, req.user.id]
         );
-        const [updated] = await pool.query("SELECT id, name, email, avatar, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language FROM users WHERE id = ?", [req.user.id]);
+        const [updated] = await pool.query("SELECT id, name, email, avatar, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, dark_mode FROM users WHERE id = ?", [req.user.id]);
         res.json({ message: "Profil berhasil diperbarui", user: updated[0] });
     } catch (error) {
         res.status(500).json({ message: "Gagal memperbarui profil", error: error.message });

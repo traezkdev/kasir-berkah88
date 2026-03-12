@@ -116,54 +116,60 @@ const TabunganMobile = () => {
   };
 
   return (
-    <div className="pb-24 space-y-8 px-6 pt-4">
+    <div className="pb-32 space-y-8 px-6 pt-4 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-800">Target Menabung</h1>
+         <div>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Tabungan</h1>
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Wujudkan Impianmu</p>
+         </div>
         <button 
           onClick={openAddTargetModal}
-          className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-lg shadow-indigo-100 italic"
+          className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all font-black"
         >
-          <Plus size={20} />
+          <Plus size={20} strokeWidth={3} />
         </button>
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-gray-400">
-          <Loader2 className="animate-spin" size={32} />
-          <p className="text-xs font-bold uppercase tracking-widest">Memuat Data...</p>
+        <div className="py-24 flex flex-col items-center justify-center gap-4 text-gray-400">
+          <div className="w-10 h-10 border-4 border-indigo-100 dark:border-slate-800 border-t-indigo-600 rounded-full animate-spin" />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Sinkronisasi Impian...</p>
         </div>
       ) : (
         <>
           {/* Hero Stats Mobile */}
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 text-white flex flex-col items-center text-center gap-2">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-2">
-                <Wallet size={32} />
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/40 text-white flex flex-col items-center text-center gap-4 relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12"><Wallet size={120} strokeWidth={1} /></div>
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-1 backdrop-blur-sm shadow-sm relative z-10">
+                <Wallet size={32} strokeWidth={2.5} />
               </div>
-              <p className="text-[10px] font-bold text-indigo-100 border border-white/10 px-3 py-1 rounded-full uppercase tracking-widest">Saldo Tabungan Sekarang</p>
-              <p className="text-3xl font-black">
-                {formatCurrency(totalCurrent)}
-              </p>
+              <div className="relative z-10">
+                 <p className="text-[10px] font-black text-indigo-100/60 uppercase tracking-[0.3em] mb-2">Total Tabungan Sekarang</p>
+                 <p className="text-3xl font-black tracking-tight">
+                   {formatCurrency(totalCurrent)}
+                 </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-5">
-                <div className="p-4 bg-green-50 text-green-600 rounded-2xl">
-                  <Target size={24} />
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                  <Target size={24} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Target Kumulatif</p>
-                  <p className="text-xl font-black text-gray-900">{formatCurrency(totalTarget)}</p>
+                  <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Target Kumulatif</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalTarget)}</p>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-5">
-                <div className="p-4 bg-orange-50 text-orange-600 rounded-2xl">
-                  <TrendingUp size={24} />
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5">
+                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl">
+                  <TrendingUp size={24} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sisa Kekurangan</p>
-                  <p className="text-xl font-black text-gray-900">{formatCurrency(totalTarget - totalCurrent)}</p>
+                  <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Sisa Kekurangan</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalTarget - totalCurrent)}</p>
                 </div>
               </div>
             </div>
@@ -171,54 +177,55 @@ const TabunganMobile = () => {
 
           {/* Goals List Mobile */}
           <div className="space-y-6">
-            <div className="flex justify-between items-center px-1">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Daftar Impian</p>
-              <span className="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md font-bold">{savings.length} Target</span>
+            <div className="flex justify-between items-center px-2">
+              <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Daftar Impian</p>
+              <span className="text-[10px] bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full font-black uppercase tracking-widest">{savings.length} Target</span>
             </div>
 
             {savings.length === 0 ? (
-              <div className="py-12 text-center bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
-                 <Target className="mx-auto text-gray-300 mb-2" size={32} />
-                 <p className="text-xs font-bold text-gray-400 italic">Belum ada target menabung</p>
+              <div className="py-20 text-center bg-gray-50/50 dark:bg-slate-900/50 rounded-[3rem] border-4 border-dashed border-gray-100 dark:border-slate-800">
+                 <Target className="mx-auto text-gray-200 dark:text-slate-800 mb-4" size={48} strokeWidth={2} />
+                 <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Belum ada target impian</p>
+                 <button onClick={openAddTargetModal} className="mt-6 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-widest underline underline-offset-4">MULAI SEKARANG</button>
               </div>
             ) : (
               savings.map((item) => {
                 const progress = (Number(item.current_amount) / Number(item.target_amount)) * 100;
                 return (
-                  <div key={item.id} className="bg-white p-6 rounded-[2.5rem] border border-gray-50 shadow-sm flex flex-col gap-6 transition-all overflow-hidden relative">
-                    <div className="flex items-start justify-between">
+                  <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-6 transition-all active:scale-[0.98] relative overflow-hidden">
+                    <div className="flex items-start justify-between relative z-10">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                          <Target size={24} />
+                        <div className="w-14 h-14 bg-indigo-600 dark:bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20">
+                          <Target size={24} strokeWidth={2.5} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-tight">{item.name}</h3>
-                          <p className="text-[10px] font-bold text-green-600">{Math.round(progress)}% Tercapai</p>
+                          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{item.name}</h3>
+                          <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-widest">{Math.round(progress)}% Tercapai</p>
                         </div>
                       </div>
                       <div className="relative">
                         <button 
                           onClick={() => setShowActionId(showActionId === item.id ? null : item.id)}
-                          className="p-1 text-gray-300"
+                          className="p-3 text-gray-300 dark:text-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                         >
-                          <MoreVertical size={20} />
+                          <MoreVertical size={24} strokeWidth={3} />
                         </button>
 
                         {showActionId === item.id && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setShowActionId(null)} />
-                            <div className="absolute right-0 mt-2 w-32 bg-white rounded-2xl shadow-xl border border-gray-100 z-20 overflow-hidden py-1">
+                            <div className="absolute right-0 mt-3 w-36 bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-2xl border border-gray-50 dark:border-slate-800 z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
                               <button 
                                 onClick={() => openEditTargetModal(item)}
-                                className="w-full px-4 py-2 text-left text-[11px] font-bold text-gray-600 flex items-center gap-2"
+                                className="w-full px-5 py-3 text-left text-[11px] font-black text-gray-600 dark:text-gray-400 flex items-center gap-3 uppercase tracking-widest"
                               >
-                                <Edit2 size={14} /> EDIT
+                                <Edit2 size={14} strokeWidth={3} /> EDIT
                               </button>
                               <button 
                                 onClick={() => { handleDelete(item.id); setShowActionId(null); }}
-                                className="w-full px-4 py-2 text-left text-[11px] font-bold text-red-500 flex items-center gap-2"
+                                className="w-full px-5 py-3 text-left text-[11px] font-black text-rose-500 flex items-center gap-3 uppercase tracking-widest"
                               >
-                                <Trash2 size={14} /> HAPUS
+                                <Trash2 size={14} strokeWidth={3} /> HAPUS
                               </button>
                             </div>
                           </>
@@ -226,25 +233,28 @@ const TabunganMobile = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="h-4 w-full bg-gray-50 rounded-full overflow-hidden p-1">
+                    <div className="space-y-3 relative z-10">
+                      <div className="h-4 w-full bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-1 border border-gray-100 dark:border-slate-800 shadow-inner">
                         <div 
-                          className="h-full bg-indigo-600 rounded-full transition-all duration-700 shadow-sm"
+                          className="h-full bg-indigo-600 rounded-full transition-all duration-[1500ms] cubic-bezier(0.34, 1.56, 0.64, 1) shadow-sm"
                           style={{ width: `${Math.min(progress, 100)}%` }}
                         ></div>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] font-black italic uppercase text-gray-400">
-                        <span className="text-indigo-600">{formatCurrency(item.current_amount)}</span>
-                        <span>Sisa {formatCurrency(Math.max(0, item.target_amount - item.current_amount))} Lagi</span>
+                      <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-600 px-1">
+                        <span className="text-indigo-600 dark:text-indigo-400">{formatCurrency(item.current_amount)}</span>
+                        <span>Sisa {formatCurrency(Math.max(0, item.target_amount - item.current_amount))}</span>
                       </div>
                     </div>
 
                     <button 
                       onClick={() => openDepositModal(item)}
-                      className="w-full bg-gray-50 text-indigo-600 px-4 py-3 rounded-2xl text-[11px] font-bold flex items-center justify-center gap-2 active:bg-slate-900 active:text-white transition-all"
+                      className="w-full bg-gray-50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 px-4 py-4.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:bg-indigo-600 active:text-white dark:active:bg-indigo-600 transition-all font-black shadow-sm"
                     >
-                      Tambah Saldo Tabungan <ChevronRight size={14} />
+                      <span>Tambah Tabungan</span> <ChevronRight size={16} strokeWidth={3} />
                     </button>
+
+                    {/* BG Decorative */}
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 dark:bg-indigo-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-indigo-500/10 transition-colors" />
                   </div>
                 );
               })
@@ -254,67 +264,79 @@ const TabunganMobile = () => {
       )}
       
       {/* Tip Card Mobile */}
-      <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-[2.5rem] border border-indigo-100 flex items-start gap-4">
-         <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-600">
-            <TrendingUp size={24} />
+      <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 rounded-[3rem] border border-indigo-100 dark:border-slate-800 flex items-start gap-5 shadow-sm">
+         <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 shrink-0 transform rotate-6">
+            <TrendingUp size={28} strokeWidth={2.5} />
          </div>
-         <div>
-            <p className="text-xs font-bold text-gray-800 mb-1">Tips Menabung</p>
-            <p className="text-[10px] text-gray-500 leading-relaxed font-medium">Sisihkan minimal 10% dari pemasukan setiap bulan untuk mempercepat target impianmu.</p>
+         <div className="pt-1">
+            <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-2">💡 Tips Menabung</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed font-bold uppercase tracking-tight">Sisihkan minimal 10% dari pemasukan setiap bulan untuk mempercepat target impianmu.</p>
          </div>
       </div>
 
-      {/* Modals Mobile */}
+      {/* Modals Mobile (Dark Mode Support) */}
       {showTargetModal && (
         <div className="fixed inset-0 z-[300] flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowTargetModal(false)} />
-          <div className="relative bg-white w-full rounded-t-[2.5rem] p-6 pb-10 space-y-6 animate-in slide-in-from-bottom duration-300">
-            <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto mb-2" />
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowTargetModal(false)} />
+          <div className="relative bg-white dark:bg-slate-900 w-full rounded-t-[3rem] p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
+            <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full mx-auto -mt-2 mb-2" />
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-gray-800 italic">{editingId ? 'EDIT IMPIAN' : 'IMPIAN BARU'}</h2>
-              <button onClick={() => setShowTargetModal(false)} className="p-2 bg-gray-50 rounded-full text-gray-400">
-                <X size={20} />
+               <div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">{editingId ? 'Edit Impian' : 'Impian Baru'}</h2>
+                  <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Gantungkan mimpimu di sini</p>
+               </div>
+              <button onClick={() => setShowTargetModal(false)} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-all font-black">
+                <X size={24} strokeWidth={3} />
               </button>
             </div>
             
-            <form onSubmit={handleTargetSubmit} className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama Impian</label>
+            <form onSubmit={handleTargetSubmit} className="space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nama Impian Anda</label>
                 <input 
                   type="text" required
                   value={targetForm.name}
                   onChange={(e) => setTargetForm({...targetForm, name: e.target.value})}
-                  className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold"
-                  placeholder="Misal: Beli HP Baru"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                  placeholder="Misal: Beli Laptop Baru"
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Biaya</label>
-                <input 
-                  type="number" required min="1"
-                  value={targetForm.target_amount}
-                  onChange={(e) => setTargetForm({...targetForm, target_amount: e.target.value})}
-                  className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold text-indigo-600"
-                  placeholder="2.000.000"
-                />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Target Nominal (Rp)</label>
+                <div className="relative">
+                   <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-700 text-lg">Rp</span>
+                   <input 
+                    type="number" required min="1"
+                    value={targetForm.target_amount}
+                    onChange={(e) => setTargetForm({...targetForm, target_amount: e.target.value})}
+                    className="w-full pl-16 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-xl font-black text-indigo-600 dark:text-indigo-400 placeholder:text-gray-200 dark:placeholder:text-gray-800"
+                    placeholder="0"
+                  />
+                </div>
               </div>
               {!editingId && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Setoran Awal (Opsional)</label>
+                <div className="space-y-3 px-1">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Saldo Awal (Opsional)</label>
                   <input 
                     type="number" min="0"
                     value={targetForm.current_amount}
                     onChange={(e) => setTargetForm({...targetForm, current_amount: e.target.value})}
-                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold"
+                    className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-bold text-gray-700 dark:text-gray-200"
                     placeholder="0"
                   />
+                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold italic ml-2">⚠️ OTOMATIS TERCATAT SEBAGAI PENGELUARAN.</p>
                 </div>
               )}
               <button 
                 disabled={submitting}
-                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black italic shadow-xl shadow-indigo-100 flex items-center justify-center"
+                className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="animate-spin" size={20} /> : (editingId ? 'SIMPAN PERUBAHAN' : 'MULAI MENABUNG')}
+                {submitting ? <Loader2 className="animate-spin" size={20} /> : (
+                   <>
+                      <span>{editingId ? 'SIMPAN PERUBAHAN' : 'MULAI MENABUNG'}</span>
+                      <Plus size={20} strokeWidth={3} />
+                   </>
+                )}
               </button>
             </form>
           </div>
@@ -323,36 +345,44 @@ const TabunganMobile = () => {
 
       {showDepositModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center px-6">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDepositModal(false)} />
-          <div className="relative bg-white w-full rounded-[2.5rem] p-8 space-y-6">
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowDepositModal(false)} />
+          <div className="relative bg-white dark:bg-slate-900 w-full rounded-[3rem] p-10 space-y-8 animate-in zoom-in-95 duration-300 shadow-2xl">
             <div className="text-center">
-              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Tambah Setoran</p>
-              <h2 className="text-xl font-black text-gray-800 uppercase italic leading-tight">{selectedSaving?.name}</h2>
+              <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.3em] mb-2 font-black">Tambah Setoran</p>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">{selectedSaving?.name}</h2>
             </div>
 
-            <form onSubmit={handleDepositSubmit} className="space-y-6">
-              <input 
-                type="number" required min="1" autoFocus
-                value={depositForm.amount}
-                onChange={(e) => setDepositForm({...depositForm, amount: e.target.value})}
-                className="w-full px-5 py-6 bg-gray-50 border-none rounded-[2rem] text-2xl font-black text-center text-indigo-600 ring-4 ring-indigo-50"
-                placeholder="RP 0"
-              />
+            <form onSubmit={handleDepositSubmit} className="space-y-8">
+              <div className="relative">
+                 <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-700 text-lg">Rp</span>
+                 <input 
+                  type="number" required min="1" autoFocus
+                  value={depositForm.amount}
+                  onChange={(e) => setDepositForm({...depositForm, amount: e.target.value})}
+                  className="w-full pl-16 pr-6 py-7 bg-gray-50 dark:bg-slate-800 border-none rounded-[2rem] text-3xl font-black text-center text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-50 dark:ring-indigo-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800"
+                  placeholder="0"
+                />
+              </div>
               
-              <div className="flex items-start gap-3 bg-indigo-50 p-4 rounded-2xl">
-                <AlertCircle className="text-indigo-600 shrink-0" size={16} />
-                <p className="text-[10px] text-indigo-700 font-bold leading-relaxed italic">
-                  *Saldo utama akan otomatis berkurang sesuai jumlah setoran ini.
+              <div className="flex items-start gap-4 bg-amber-50 dark:bg-amber-500/5 p-5 rounded-[2rem] border border-amber-100 dark:border-amber-500/10">
+                <AlertCircle className="text-amber-600 dark:text-amber-500 shrink-0" size={20} strokeWidth={3} />
+                <p className="text-[9px] text-amber-900 dark:text-amber-200 font-bold leading-relaxed uppercase tracking-tighter">
+                  SALDO UTAMA AKAN OTOMATIS BERKURANG SESUAI JUMLAH SETORAN INI.
                 </p>
               </div>
 
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setShowDepositModal(false)} className="flex-1 py-4 bg-gray-50 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest">BATAL</button>
+              <div className="flex gap-4">
+                <button type="button" onClick={() => setShowDepositModal(false)} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest">BATAL</button>
                 <button 
                   disabled={submitting}
-                  className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 flex items-center justify-center"
+                  className="flex-2 px-6 py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50"
                 >
-                  {submitting ? <Loader2 className="animate-spin" size={16} /> : 'KONFIRMASI'}
+                  {submitting ? <Loader2 className="animate-spin" size={18} /> : (
+                     <>
+                        <span>KONFIRMASI</span>
+                        <ArrowRight size={18} strokeWidth={3} />
+                     </>
+                  )}
                 </button>
               </div>
             </form>

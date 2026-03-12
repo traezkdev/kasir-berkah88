@@ -79,14 +79,14 @@ const LaporanMobile = () => {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(val);
+    }).format(val || 0);
   };
 
   if (loading && !reportData) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-indigo-600" size={40} />
-        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Menyusun Laporan...</p>
+      <div className="h-[60vh] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-500">
+        <div className="w-10 h-10 border-4 border-indigo-100 dark:border-slate-800 border-t-indigo-600 rounded-full animate-spin" />
+        <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">Menyusun Analisis...</p>
       </div>
     );
   }
@@ -99,14 +99,17 @@ const LaporanMobile = () => {
   };
 
   return (
-    <div className="pb-24 space-y-6 px-4 pt-4">
+    <div className="pb-32 space-y-8 px-5 pt-4 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-800">Laporan</h1>
-        <div className="flex items-center gap-2">
+         <div>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Laporan</h1>
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Statistik Keuangan</p>
+         </div>
+        <div className="flex items-center gap-3">
           <select 
             value={selectedMonth} 
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="bg-white border border-gray-100 text-[10px] font-bold py-2 px-3 rounded-xl focus:ring-0 outline-none"
+            className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest py-3 px-4 rounded-2xl focus:ring-0 outline-none shadow-sm appearance-none pr-8 text-gray-700 dark:text-gray-200"
           >
             {Array.from({length: 12}, (_, i) => (
               <option key={i+1} value={i+1}>
@@ -116,94 +119,103 @@ const LaporanMobile = () => {
           </select>
           <button 
             onClick={handleExportPDF}
-            className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-lg shadow-indigo-100 active:scale-95 transition-transform"
+            className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-[0.85] transition-all"
           >
-            <Download size={20} />
+            <Download size={20} strokeWidth={3} />
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 text-red-600 text-xs font-bold rounded-2xl flex items-center gap-2">
-           <AlertCircle size={16} />
-           {error}
+        <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-500/20 rounded-2xl flex items-center gap-3">
+           <AlertCircle size={18} strokeWidth={3} />
+           <span>{error}</span>
         </div>
       )}
 
       {/* Hero Analytics Mobile */}
-      <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-        <p className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-4">Ringkasan Periode</p>
-        <div className="grid grid-cols-2 gap-6 relative z-10">
-          <div className="space-y-1">
-             <div className="flex items-center gap-2 text-indigo-100">
-                <ArrowUpRight size={14} className="bg-white/20 p-0.5 rounded-full" />
-                <span className="text-[10px] font-bold">Pemasukan</span>
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 dark:from-indigo-700 dark:to-indigo-900 rounded-[3rem] p-10 text-white shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden group active:scale-[0.98] transition-all">
+        <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12 group-hover:rotate-45 transition-transform duration-700"><BarChart3 size={150} strokeWidth={1} /></div>
+        <p className="text-[10px] font-black text-indigo-100/60 uppercase tracking-[0.3em] mb-6 relative z-10">Ringkasan Arus Kas ✨</p>
+        <div className="grid grid-cols-2 gap-8 relative z-10">
+          <div className="space-y-2">
+             <div className="flex items-center gap-2.5 text-indigo-100/80">
+                <ArrowUpRight size={14} strokeWidth={4} className="bg-white/20 p-1 rounded-md" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Pemasukan</span>
              </div>
-             <p className="text-base font-black">{formatCurrency(summary.totalIncome)}</p>
+             <p className="text-xl font-black tracking-tight">{formatCurrency(summary.totalIncome)}</p>
           </div>
-          <div className="space-y-1">
-             <div className="flex items-center gap-2 text-indigo-100">
-                <ArrowDownRight size={14} className="bg-white/20 p-0.5 rounded-full" />
-                <span className="text-[10px] font-bold">Pengeluaran</span>
+          <div className="space-y-2">
+             <div className="flex items-center gap-2.5 text-indigo-100/80">
+                <ArrowDownRight size={14} strokeWidth={4} className="bg-white/20 p-1 rounded-md" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Pengeluaran</span>
              </div>
-             <p className="text-base font-black">{formatCurrency(summary.totalExpense)}</p>
+             <p className="text-xl font-black tracking-tight">{formatCurrency(summary.totalExpense)}</p>
           </div>
         </div>
         
         {/* Sisa Saldo Badge */}
-        <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center relative z-10">
-           <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">Sisa Saldo</span>
-           <span className="text-sm font-black">{formatCurrency(summary.balance)}</span>
+        <div className="mt-8 pt-8 border-t border-white/10 flex justify-between items-end relative z-10">
+           <div>
+              <p className="text-[9px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Total Tabungan</p>
+              <p className="text-2xl font-black tracking-tighter">{formatCurrency(summary.balance)}</p>
+           </div>
+           <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20">
+              <p className="text-[8px] font-black uppercase tracking-widest text-indigo-100">Hemat</p>
+              <p className="text-sm font-black text-white">{summary.savingsPercentage}%</p>
+           </div>
         </div>
         
         {/* Decorative elements */}
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-white/5 rounded-full blur-[80px]"></div>
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-[40px]"></div>
       </div>
 
       {/* Chart Mobile */}
-      <div className="bg-white p-6 rounded-[2rem] border border-gray-50 shadow-sm space-y-6">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 transition-transform hover:scale-[1.01]">
         <div className="flex items-center justify-between">
-           <h3 className="text-sm font-bold text-gray-800">
-             Tren {reportType === 'monthly' ? 'Bulanan' : 'Mingguan'}
-           </h3>
+           <div>
+              <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Tren Saldo</h3>
+              <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Grafik {reportType === 'monthly' ? 'Bulanan' : 'Mingguan'}</p>
+           </div>
            <button 
              onClick={() => setReportType(reportType === 'monthly' ? 'weekly' : 'monthly')}
-             className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+             className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 rounded-xl active:scale-[0.85] transition-all uppercase tracking-widest"
            >
-             {reportType === 'monthly' ? 'Lihat Mingguan' : 'Lihat Bulanan'}
+             Ubah
            </button>
         </div>
-        <div className="h-[200px] w-full">
+        <div className="h-[220px] w-full mt-4">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#CBD5E1', fontSize: 10}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94A3B8', fontSize: 9, fontWeight: '900'}} dy={10} />
                 <Tooltip 
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{borderRadius: '12px', border: 'none', fontSize: '10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                  cursor={{fill: 'rgba(79, 70, 229, 0.05)'}}
+                  contentStyle={{borderRadius: '16px', border: 'none', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
                 />
-                <Bar dataKey="income" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={reportType === 'monthly' ? 8 : 15} />
-                <Bar dataKey="expense" fill="#F43F5E" radius={[4, 4, 0, 0]} barSize={reportType === 'monthly' ? 8 : 15} />
+                <Bar dataKey="income" fill="#4F46E5" radius={[6, 6, 0, 0]} barSize={reportType === 'monthly' ? 10 : 20} animationDuration={1000} />
+                <Bar dataKey="expense" fill="#F43F5E" radius={[6, 6, 0, 0]} barSize={reportType === 'monthly' ? 10 : 20} animationDuration={1000} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-300 text-[10px] font-bold uppercase">
-              Tidak ada data
+            <div className="h-full flex flex-col items-center justify-center text-gray-200 dark:text-slate-800 gap-3">
+               <BarChart3 size={48} strokeWidth={1} />
+               <p className="text-[9px] font-black uppercase tracking-widest">Kosong</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Category Distribution Mobile */}
-      <div className="bg-white p-6 rounded-[2rem] border border-gray-50 shadow-sm space-y-6">
-        <h3 className="text-sm font-bold text-gray-800">Persentase Kategori</h3>
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 relative overflow-hidden">
+        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight px-1">Alokasi Budget</h3>
         {categoryData.length > 0 ? (
-          <div className="flex items-center gap-6">
-            <div className="w-1/2 h-[150px] relative">
+          <div className="flex flex-col gap-10">
+            <div className="w-full h-[180px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={categoryData} innerRadius={40} outerRadius={55} paddingAngle={8} dataKey="value">
+                  <Pie data={categoryData} innerRadius={55} outerRadius={75} paddingAngle={12} dataKey="value" stroke="none">
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -211,55 +223,73 @@ const LaporanMobile = () => {
                 </PieChart>
               </ResponsiveContainer>
                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-lg font-black text-gray-800">100%</span>
+                <span className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">100%</span>
+                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Share</span>
               </div>
             </div>
-            <div className="w-1/2 space-y-3 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-2 gap-4 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar px-2">
               {categoryData.map((cat) => (
-                <div key={cat.name} className="flex items-center justify-between">
+                <div key={cat.name} className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-3xl border border-gray-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: cat.color}}></div>
-                    <span className="text-[10px] font-bold text-gray-500 uppercase truncate max-w-[60px]">{cat.name}</span>
+                    <div className="w-2 h-2 rounded-full shadow-sm" style={{backgroundColor: cat.color}}></div>
+                    <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate">{cat.name}</span>
                   </div>
-                  <span className="text-[10px] font-black text-gray-800">{formatCurrency(cat.value)}</span>
+                  <span className="text-[11px] font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(cat.value)}</span>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div className="h-[100px] flex items-center justify-center text-gray-300 text-[10px] font-bold uppercase">
-            Belum ada data pengeluaran
+          <div className="h-[120px] flex flex-col items-center justify-center text-gray-200 dark:text-slate-800 gap-3">
+             <PieChartIcon size={48} strokeWidth={1} />
+             <p className="text-[9px] font-black uppercase tracking-widest">Belum ada pengeluaran</p>
           </div>
         )}
       </div>
 
       {/* List Transaksi Laporan */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Transaksi Berpengaruh</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em]">HITS TRANSAKSI 🔥</p>
         </div>
         
         {topTransactions.length > 0 ? topTransactions.map((tx) => (
-          <div key={tx.id} className="bg-white p-5 rounded-[1.8rem] border border-gray-50 flex items-center justify-between active:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                {tx.type === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+          <div key={tx.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-5 transition-all active:scale-[0.97] active:bg-gray-50 dark:active:bg-slate-800/50">
+            {/* Header: Icon, Category & Amount */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-5 min-w-0 flex-1">
+                <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 shadow-sm ${tx.type === 'income' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>
+                  {tx.type === 'income' ? <ArrowUpRight size={24} strokeWidth={3} /> : <ArrowDownRight size={24} strokeWidth={3} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight truncate leading-tight">{tx.category}</p>
+                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-0.5 truncate">
+                    {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-black text-gray-800">{tx.category}</p>
-                <p className="text-[10px] text-gray-400 font-bold">
-                  {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {tx.note || '-'}
+              <div className="text-right flex-shrink-0 ml-4">
+                <p className={`text-base font-black tracking-tighter ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                 </p>
               </div>
             </div>
-            <p className={`text-xs font-black ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
-              {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-            </p>
+
+            {/* Body: Note Block (Style dari TransaksiMobile) */}
+            {tx.note && (
+              <div className="px-1">
+                <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border-l-4 border-indigo-500 dark:border-indigo-600 shadow-sm">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 font-bold leading-relaxed italic">
+                    "{tx.note.toUpperCase()}"
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )) : (
-          <div className="bg-white p-10 rounded-[2rem] border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2">
-             <BarChart3 size={32} className="text-gray-200" />
-             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Belum ada transaksi di periode ini</p>
+          <div className="bg-white dark:bg-slate-900 p-20 rounded-[3rem] border-4 border-dashed border-gray-100 dark:border-slate-800 flex flex-col items-center justify-center gap-4 transition-colors">
+             <FileText size={48} className="text-gray-200 dark:text-slate-800" strokeWidth={1} />
+             <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest text-center leading-relaxed">BELUM ADA TRANSAKSI<br/>DI PERIODE INI ✨</p>
           </div>
         )}
       </div>

@@ -52,6 +52,14 @@ const App = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    if (user?.dark_mode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [user?.dark_mode]);
+
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     localStorage.setItem('trzUser', JSON.stringify(userData));
@@ -134,12 +142,13 @@ const App = () => {
   // Main Application
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50/50 flex flex-col font-sans">
+      <div className="min-h-screen bg-gray-50/50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-500">
         <MobileHeader 
           user={user} 
           activePage={activePage} 
           setActivePage={setActivePage} 
           onLogout={handleLogout} 
+          onUpdateUser={handleUpdateUser}
         />
         <main className="flex-1 overflow-y-auto">
           {renderPage()}
@@ -150,10 +159,10 @@ const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 font-sans">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-slate-950 font-sans transition-colors duration-500">
       <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} />
       <div className="ml-64">
-        <Navbar user={user} />
+        <Navbar user={user} onUpdateUser={handleUpdateUser} />
         <main className={`pt-28 pb-10 transition-all duration-300 ${
           layoutMode === 'fullwide' ? 'px-6' : 'px-8 max-w-[1400px] mx-auto'
         }`}>

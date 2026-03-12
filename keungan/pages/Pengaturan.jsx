@@ -151,60 +151,61 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
     switch (activeTab) {
       case 'profile':
         return (
-          <div className="space-y-8">
-            <div className="flex flex-col items-center gap-4 pb-8 border-b border-gray-50">
-              <div className="relative">
+          <div className="space-y-10 animate-in fade-in duration-500">
+            <div className="flex flex-col items-center gap-4 pb-8 border-b border-gray-50 dark:border-slate-800 relative">
+               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl -z-10" />
+              <div className="relative group">
                 <img
-                  src={form.avatar || `https://ui-avatars.com/api/?name=${form.name || 'U'}&background=4F46E5&color=fff&size=128`}
+                  src={form.avatar || `https://ui-avatars.com/api/?name=${form.name || 'U'}&background=4F46E5&color=fff&size=200`}
                   alt="avatar"
-                  className="w-28 h-28 rounded-3xl shadow-lg border-4 border-white object-cover"
+                  className="w-24 h-24 rounded-lg shadow-xl border-4 border-white dark:border-slate-800 object-cover transform group-hover:scale-105 transition-all duration-500 shadow-indigo-200/50 dark:shadow-black/50"
                 />
                 <button 
                   onClick={() => {
                     const url = prompt('Masukkan URL gambar profil baru:', form.avatar);
                     if (url !== null) setForm({...form, avatar: url});
                   }}
-                  className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-xl shadow-md hover:bg-indigo-700 transition-colors"
+                  className="absolute -bottom-1 -right-1 bg-indigo-600 dark:bg-indigo-500 text-white p-2 rounded-lg shadow-xl hover:bg-indigo-700 active:scale-90 transition-all border-2 border-white dark:border-slate-800"
                 >
-                  <Camera size={16} />
+                  <Camera size={16} strokeWidth={2.5} />
                 </button>
               </div>
               <div className="text-center">
-                <h2 className="text-lg font-bold text-gray-800">{initialUser?.name || 'User'}</h2>
-                <p className="text-sm text-gray-400">{initialUser?.email}</p>
+                <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">{initialUser?.name || 'User'}</h2>
+                <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-[0.3em]">{initialUser?.email}</p>
               </div>
             </div>
-            <form onSubmit={handleUpdateProfile} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nama Lengkap</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+            <form onSubmit={handleUpdateProfile} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nama Lengkap</label>
+                  <div className="relative group">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={18} strokeWidth={3} />
                     <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
+                      className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xs font-black text-gray-700 dark:text-gray-200 shadow-inner" />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Alamat Email</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={18} strokeWidth={3} />
                     <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
+                      className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xs font-black text-gray-700 dark:text-gray-200 shadow-inner" />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Telepon</label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">No. WhatsApp</label>
+                  <div className="relative group">
+                    <Smartphone className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={18} strokeWidth={3} />
                     <input type="tel" value={form.phone} placeholder="08xxxxxxxxxx" onChange={e => setForm({...form, phone: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
+                      className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xs font-black text-gray-700 dark:text-gray-200 shadow-inner" />
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-4 pt-6">
                 <button type="submit" disabled={loading}
-                  className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-70">
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  className="flex items-center gap-3 bg-indigo-600 text-white px-10 py-5 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-indigo-900/20 active:scale-95 hover:bg-indigo-700 transition-all disabled:opacity-70">
+                  {loading ? <Loader2 size={18} className="animate-spin" strokeWidth={3} /> : <Save size={18} strokeWidth={3} />}
                   <span>Simpan Perubahan</span>
                 </button>
               </div>
@@ -216,90 +217,107 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
         const incomeCategories = categories.filter(c => c.type === 'income');
         const expenseCategories = categories.filter(c => c.type === 'expense');
         return (
-          <div className="space-y-8">
+          <div className="space-y-10 animate-in fade-in duration-500">
             <div>
-              <h3 className="text-base font-bold text-gray-800 mb-1">Kelola Kategori Transaksi</h3>
-              <p className="text-sm text-gray-400">Kategori yang kamu buat akan otomatis muncul di form tambah transaksi.</p>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Daftar Kategori</h3>
+              <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Atur kategori pemasukan dan pengeluaran anda.</p>
             </div>
 
             {/* Form Tambah Kategori */}
-            <form onSubmit={handleAddCategory} className="flex items-end gap-3 p-5 bg-gray-50 rounded-2xl text-left">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nama Kategori Baru</label>
+            <form onSubmit={handleAddCategory} className="flex flex-col md:flex-row items-end gap-6 p-8 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800 shadow-inner">
+              <div className="flex-1 w-full space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2 leading-none">Nama Kategori</label>
                 <input
                   type="text"
                   value={newCatName}
                   onChange={e => setNewCatName(e.target.value)}
-                  placeholder="Contoh: Laundry, Gym, dll."
-                  className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
+                  placeholder="Laundry, Listrik, Bonus, dll."
+                  className="w-full px-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg text-sm font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10"
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tipe</label>
+              <div className="w-full md:w-auto space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2 leading-none">Tipe Arus Kas</label>
                 <select value={newCatType} onChange={e => setNewCatType(e.target.value)}
-                  className="px-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100">
-                  <option value="expense">Pengeluaran</option>
-                  <option value="income">Pemasukan</option>
+                  className="w-full px-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg text-sm font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 focus:ring-4 focus:ring-indigo-500/10 appearance-none pr-12 cursor-pointer">
+                  <option value="expense">📉 Pengeluaran</option>
+                  <option value="income">📈 Pemasukan</option>
                 </select>
               </div>
               <button type="submit" disabled={addingCat || !newCatName.trim()}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold shadow-md shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-60">
-                {addingCat ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-                <span>Tambah</span>
+                className="w-full md:w-auto flex items-center justify-center gap-3 bg-indigo-600 text-white px-8 py-5 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-900/20 active:scale-95 hover:bg-indigo-700 transition-all disabled:opacity-60 h-[60px]">
+                {addingCat ? <Loader2 size={18} className="animate-spin" strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
+                <span>TAMBAH</span>
               </button>
             </form>
 
             {catLoading ? (
-              <div className="py-10 flex items-center justify-center">
-                <Loader2 className="animate-spin text-indigo-400" size={28} />
+              <div className="py-20 flex flex-col items-center gap-4 text-gray-400">
+                <Loader2 className="animate-spin text-indigo-500" size={32} strokeWidth={3} />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Sinkronisasi Kategori...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Pemasukan */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpRight size={16} className="text-green-600" />
-                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Kategori Pemasukan</h4>
-                    <span className="ml-auto bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{incomeCategories.length}</span>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 px-2">
+                    <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl">
+                       <ArrowUpRight size={18} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+                    </div>
+                    <div>
+                       <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Pemasukan</h4>
+                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total: {incomeCategories.length} Kategori</p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {incomeCategories.map(cat => (
-                      <div key={cat.id} className="flex items-center justify-between px-4 py-3.5 bg-green-50/50 border border-green-100 rounded-2xl group">
-                        <div className="flex items-center gap-3">
-                          <Tag size={14} className="text-green-600" />
-                          <span className="text-sm font-semibold text-gray-700">{cat.name}</span>
+                      <div key={cat.id} className="flex items-center justify-between px-6 py-5 bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100/50 dark:border-emerald-500/10 rounded-lg group active:scale-[0.98] transition-all">
+                        <div className="flex items-center gap-4">
+                          <Tag size={16} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+                          <span className="text-xs font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest leading-none">{cat.name}</span>
                         </div>
                         <button onClick={() => handleDeleteCategory(cat.id)} disabled={deletingCatId === cat.id}
-                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                          {deletingCatId === cat.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          className="p-2 text-gray-300 dark:text-gray-700 hover:text-rose-500 transition-all px-1 group-hover:scale-110">
+                          {deletingCatId === cat.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} strokeWidth={2.5} />}
                         </button>
                       </div>
                     ))}
-                    {incomeCategories.length === 0 && <p className="text-xs text-gray-400 py-2 text-center">Belum ada kategori pemasukan</p>}
+                    {incomeCategories.length === 0 && (
+                       <div className="py-10 text-center border-4 border-dashed border-gray-50 dark:border-slate-800/50 rounded-3xl">
+                          <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-widest">Belum ada kategori</p>
+                       </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Pengeluaran */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <ArrowDownRight size={16} className="text-red-500" />
-                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Kategori Pengeluaran</h4>
-                    <span className="ml-auto bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{expenseCategories.length}</span>
+                <div className="space-y-6">
+                   <div className="flex items-center gap-4 px-2">
+                    <div className="p-2.5 bg-rose-50 dark:bg-rose-500/10 rounded-xl">
+                       <ArrowDownRight size={18} className="text-rose-600 dark:text-rose-400" strokeWidth={3} />
+                    </div>
+                    <div>
+                       <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Pengeluaran</h4>
+                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total: {expenseCategories.length} Kategori</p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {expenseCategories.map(cat => (
-                      <div key={cat.id} className="flex items-center justify-between px-4 py-3.5 bg-red-50/30 border border-red-100 rounded-2xl group">
-                        <div className="flex items-center gap-3">
-                          <Tag size={14} className="text-red-500" />
-                          <span className="text-sm font-semibold text-gray-700">{cat.name}</span>
+                      <div key={cat.id} className="flex items-center justify-between px-6 py-5 bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100/50 dark:border-rose-500/10 rounded-lg group active:scale-[0.98] transition-all">
+                        <div className="flex items-center gap-4">
+                          <Tag size={16} className="text-rose-600 dark:text-rose-400" strokeWidth={3} />
+                          <span className="text-xs font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest leading-none">{cat.name}</span>
                         </div>
                         <button onClick={() => handleDeleteCategory(cat.id)} disabled={deletingCatId === cat.id}
-                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                          {deletingCatId === cat.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          className="p-2 text-gray-300 dark:text-gray-700 hover:text-rose-500 transition-all px-1 group-hover:scale-110">
+                          {deletingCatId === cat.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} strokeWidth={2.5} />}
                         </button>
                       </div>
                     ))}
-                    {expenseCategories.length === 0 && <p className="text-xs text-gray-400 py-2 text-center">Belum ada kategori pengeluaran</p>}
+                    {expenseCategories.length === 0 && (
+                       <div className="py-10 text-center border-4 border-dashed border-gray-50 dark:border-slate-800/50 rounded-3xl">
+                          <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-widest">Belum ada kategori</p>
+                       </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -309,84 +327,91 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
 
       case 'notifikasi':
         return (
-          <div className="space-y-6">
-            <div className="pb-4">
-              <h3 className="text-base font-bold text-gray-800 mb-1">Push Notifikasi</h3>
-              <p className="text-sm text-gray-400">Atur saat kapan aplikasi harus mengirimkan kamu pengingat.</p>
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div>
+              <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Push Notifikasi</h3>
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Personalisasi pemberitahuan aktivitas anda.</p>
             </div>
-            {[
-              { key: 'notif_transaksi', label: 'Transaksi Baru', desc: 'Notifikasi setiap ada transaksi yang dicatat' },
-              { key: 'notif_tagihan', label: 'Pengingat Tagihan', desc: 'Notifikasi H-3 sebelum tagihan jatuh tempo' },
-              { key: 'notif_budget', label: 'Peringatan Budget', desc: 'Notif saat pengeluaran melebihi 80% dari budget' },
-            ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-6 bg-gray-50/80 rounded-2xl">
-                <div>
-                  <p className="text-sm font-bold text-gray-800 text-left">{item.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 text-left">{item.desc}</p>
+            <div className="grid grid-cols-1 gap-4">
+              {[
+                { key: 'notif_transaksi', label: 'Transaksi Baru ✨', desc: 'Dapatkan konfirmasi setiap kali mencatat pengeluaran atau pemasukan baru.' },
+                { key: 'notif_tagihan', label: 'Pengingat Tagihan 🕒', desc: 'Kami akan mengirimkan pengingat H-3 sebelum masa jatuh tempo tagihan anda.' },
+                { key: 'notif_budget', label: 'Peringatan Budget 📉', desc: 'Notifikasi krisis saat pengeluaran anda sudah melebihi 80% dari budget yang diatur.' },
+              ].map((item) => (
+                <div key={item.key} className="flex items-center justify-between p-5 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-800 active:scale-[0.99] transition-all group">
+                  <div className="flex-1 pr-10">
+                    <p className="text-[10px] font-black text-gray-800 dark:text-gray-200 uppercase tracking-widest mb-0.5 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{item.label}</p>
+                    <p className="text-[8px] text-gray-400 dark:text-gray-500 leading-relaxed max-w-sm font-bold uppercase tracking-wider">{item.desc}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newForm = {...form, [item.key]: !form[item.key]};
+                      setForm(newForm);
+                      // Langsung simpan untuk UX toggle
+                      api.put('/auth/profile', newForm).then(res => onUpdateUser(res.data.user));
+                    }}
+                    className={`relative w-10 h-5 rounded-full transition-all duration-500 ring-4 ring-transparent hover:ring-indigo-500/10 ${form[item.key] ? 'bg-indigo-600 shadow-lg shadow-indigo-900/20' : 'bg-gray-200 dark:bg-slate-700'}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-500 flex items-center justify-center ${form[item.key] ? 'left-5.5' : 'left-0.5'}`}>
+                       {form[item.key] && <div className="w-1 h-1 bg-indigo-600 rounded-full" />}
+                    </span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    const newForm = {...form, [item.key]: !form[item.key]};
-                    setForm(newForm);
-                    // Langsung simpan untuk UX toggle
-                    api.put('/auth/profile', newForm).then(res => onUpdateUser(res.data.user));
-                  }}
-                  className={`relative w-12 h-6 rounded-full transition-all duration-300 ${form[item.key] ? 'bg-indigo-600' : 'bg-gray-200'}`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${form[item.key] ? 'left-7' : 'left-1'}`}></span>
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
 
       case 'keamanan':
         return (
-          <div className="space-y-8">
-             <div className="pb-4">
-              <h3 className="text-base font-bold text-gray-800 mb-1">Ganti Kata Sandi</h3>
-              <p className="text-sm text-gray-400">Pastikan menggunakan password yang kuat dan unik.</p>
+          <div className="space-y-10 animate-in fade-in duration-500">
+             <div>
+              <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Kata Sandi Akun</h3>
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Update keamanan akun anda secara berkala.</p>
             </div>
-            <form onSubmit={handleChangePassword} className="space-y-5">
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Password Lama</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+            <form onSubmit={handleChangePassword} className="space-y-8">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Password Saat Ini</label>
+                  <div className="relative group">
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-rose-500 transition-colors" size={18} strokeWidth={3} />
                     <input type="password" required value={passwordForm.oldPassword} onChange={e => setPasswordForm({...passwordForm, oldPassword: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
+                      className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-rose-500/10 text-xs font-black text-gray-700 dark:text-gray-200 shadow-inner" placeholder="••••••••" />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Password Baru</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                    <input type="password" required value={passwordForm.newPassword} onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Password Baru ✨</label>
+                    <div className="relative group">
+                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={18} strokeWidth={3} />
+                      <input type="password" required value={passwordForm.newPassword} onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xs font-black text-gray-700 dark:text-gray-200 shadow-inner" placeholder="Minimal 8 karakter" />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Konfirmasi Password Baru</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                    <input type="password" required value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium" />
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Konfirmasi Password</label>
+                    <div className="relative group">
+                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={18} strokeWidth={3} />
+                      <input type="password" required value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                        className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xs font-black text-gray-700 dark:text-gray-200 shadow-inner" placeholder="Ulangi password" />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end pt-4">
                 <button type="submit" disabled={loading}
-                  className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-70">
-                  {loading ? 'Sedang Memproses...' : 'Ubah Password'}
+                  className="bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[9px] shadow-xl shadow-indigo-900/20 active:scale-95 hover:bg-indigo-700 transition-all disabled:opacity-70 flex items-center gap-3">
+                  {loading ? <Loader2 size={16} className="animate-spin" strokeWidth={3} /> : <CheckCircle2 size={16} strokeWidth={3} />}
+                  <span>Update Password</span>
                 </button>
               </div>
             </form>
 
-            <div className="pt-8 border-t border-gray-50">
+            <div className="pt-8 border-t border-gray-50 dark:border-slate-800">
                <button onClick={onLogout}
-                className="w-full flex items-center justify-center gap-3 py-4 bg-red-50 text-red-600 rounded-2xl font-bold hover:bg-red-100 transition-colors">
-                <LogOut size={20} />
-                <span>Keluar dari Akun</span>
+                className="w-full flex items-center justify-center gap-4 py-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg font-black uppercase tracking-[0.2em] hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all text-[9px] shadow-sm">
+                <LogOut size={18} strokeWidth={3} />
+                <span>KELUAR DARI AKUN</span>
               </button>
             </div>
           </div>
@@ -394,16 +419,16 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
 
       case 'preferensi':
         return (
-          <div className="space-y-8">
-            <div className="pb-4">
-              <h3 className="text-base font-bold text-gray-800 mb-1">Bahasa & Lokalisasi</h3>
-              <p className="text-sm text-gray-400">Sesuaikan format mata uang dan bahasa aplikasi.</p>
+          <div className="space-y-10 animate-in fade-in duration-500">
+            <div>
+              <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Regional & Tampilan</h3>
+              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Atur lokalisasi agar sesuai dengan kebutuhan anda.</p>
             </div>
-            <div className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mata Uang</label>
-                <div className="relative">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Mata Uang (Currency)</label>
+                <div className="relative group">
+                  <Globe className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={20} strokeWidth={3} />
                   <select 
                     value={form.currency}
                     onChange={(e) => {
@@ -411,18 +436,18 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
                       setForm(newForm);
                       api.put('/auth/profile', newForm).then(res => onUpdateUser(res.data.user));
                     }}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium appearance-none"
+                    className="w-full pl-16 pr-12 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-black uppercase tracking-widest text-gray-700 dark:text-gray-200 shadow-inner appearance-none cursor-pointer"
                   >
-                    <option value="IDR">IDR - Rupiah Indonesia</option>
-                    <option value="USD">USD - US Dollar</option>
+                    <option value="IDR">🇮🇩 IDR - Rupiah Indonesia</option>
+                    <option value="USD">🇺🇸 USD - US Dollar</option>
                   </select>
-                  <ChevronRight size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 rotate-90" />
+                  <ChevronRight size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 rotate-90" strokeWidth={3} />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bahasa Aplikasi</label>
-                <div className="relative">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Bahasa Sistem (Language)</label>
+                <div className="relative group">
+                  <Globe className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 group-focus-within:text-indigo-500 transition-colors" size={20} strokeWidth={3} />
                   <select 
                     value={form.language}
                     onChange={(e) => {
@@ -430,19 +455,20 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
                       setForm(newForm);
                       api.put('/auth/profile', newForm).then(res => onUpdateUser(res.data.user));
                     }}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 text-sm font-medium appearance-none"
+                    className="w-full pl-16 pr-12 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-black uppercase tracking-widest text-gray-700 dark:text-gray-200 shadow-inner appearance-none cursor-pointer"
                   >
                     <option value="id">Bahasa Indonesia</option>
-                    <option value="en">English (Coming Soon)</option>
+                    <option value="en">English (Mendatang)</option>
                   </select>
-                  <ChevronRight size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 rotate-90" />
+                  <ChevronRight size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-700 rotate-90" strokeWidth={3} />
                 </div>
               </div>
             </div>
-            <div className="p-6 bg-gray-50 rounded-2xl space-y-1 text-left">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Versi Aplikasi</p>
-              <p className="text-sm font-bold text-gray-800">trzfinance v1.0.0</p>
-              <p className="text-[10px] text-gray-400">© 2024 trzfinance. All Rights Reserved.</p>
+            <div className="p-8 bg-gradient-to-br from-indigo-500/5 to-transparent dark:from-indigo-500/10 dark:to-transparent rounded-xl border border-gray-50 dark:border-slate-800/50 space-y-1 relative overflow-hidden group hover:scale-[1.01] transition-transform">
+               <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-indigo-500/20 transition-all duration-700" />
+               <p className="text-[9px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-[0.4em] mb-4">Informasi Sistem ✨</p>
+               <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">KASIR BERKAH v1.2.0</h4>
+               <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-loose">Engineered for superior financial management.<br/>© 2024 Kasir Berkah Inc. All rights reserved.</p>
             </div>
           </div>
         );
@@ -453,41 +479,57 @@ const Pengaturan = ({ user: initialUser, onLogout, onUpdateUser }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-left">
-        <h1 className="text-2xl font-bold text-gray-800">Pengaturan</h1>
-        <p className="text-gray-500">Kelola profil dan konfigurasi akun kamu.</p>
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">Pusat Kendali</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Personalisasi dan optimasi akun kamu sekarang.</p>
+        </div>
+        <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
+           <div className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-sm shadow-emerald-500/50" />
+              SISTEM AKTIF
+           </div>
+        </div>
       </div>
 
       {success && (
-        <div className="p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-           <Save size={18} />
-           <p className="text-sm font-bold">{success}</p>
+        <div className="p-6 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 shadow-xl shadow-emerald-100 dark:shadow-none relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500" />
+           <Save size={24} strokeWidth={3} />
+           <p className="text-sm font-black uppercase tracking-wide">{success}</p>
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3 animate-pulse">
-           <AlertCircle size={18} />
-           <p className="text-sm font-bold">{error}</p>
+        <div className="p-6 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl flex items-center gap-4 animate-in fade-in shake duration-500 shadow-xl shadow-rose-100 dark:shadow-none relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-2 h-full bg-rose-500" />
+           <AlertCircle size={24} strokeWidth={3} />
+           <p className="text-sm font-black uppercase tracking-wide">{error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col gap-1 h-fit">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2 h-fit transition-transform hover:scale-[1.01] sticky top-8">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm transition-all ${
-                activeTab === tab.id ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-500 hover:bg-gray-50'
+              className={`group flex items-center gap-3 px-5 py-4 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                activeTab === tab.id 
+                  ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-200 dark:shadow-none transform scale-105 active:scale-95' 
+                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'
               }`}>
-              <tab.icon size={18} className={activeTab === tab.id ? 'text-indigo-600' : 'text-gray-400'} />
+              <tab.icon size={16} strokeWidth={3} className={`transition-transform duration-500 group-hover:scale-110 ${activeTab === tab.id ? 'text-white' : 'text-gray-300 dark:text-gray-700'}`} />
               <span>{tab.label}</span>
+              {activeTab === tab.id && <div className="ml-auto w-1 h-1 bg-white rounded-full animate-pulse" />}
             </button>
           ))}
         </div>
 
-        <div className="lg:col-span-3 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
-          {renderContent()}
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-12 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+           <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-32 -mb-32" />
+           <div className="relative z-10">
+              {renderContent()}
+           </div>
         </div>
       </div>
     </div>

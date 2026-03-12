@@ -139,6 +139,9 @@ export const initDB = async () => {
         if (!colNames.includes('language')) {
             await pool.query("ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'id'");
         }
+        if (!colNames.includes('dark_mode')) {
+            await pool.query("ALTER TABLE users ADD COLUMN dark_mode BOOLEAN DEFAULT FALSE");
+        }
 
         console.log("Semua tabel berhasil disinkronkan.");
     } catch (error) {
