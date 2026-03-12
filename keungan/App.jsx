@@ -54,6 +54,12 @@ const App = () => {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+    localStorage.setItem('trzUser', JSON.stringify(userData));
+  };
+
+  const handleUpdateUser = (updatedData) => {
+    setUser(updatedData);
+    localStorage.setItem('trzUser', JSON.stringify(updatedData));
   };
 
   const handleLogout = () => {
@@ -81,7 +87,7 @@ const App = () => {
         case 'budget': return <BudgetMobile user={user} />;
         case 'tabungan': return <TabunganMobile user={user} />;
         case 'laporan': return <LaporanMobile user={user} />;
-        case 'pengaturan': return <PengaturanMobile user={user} onLogout={handleLogout} />;
+        case 'pengaturan': return <PengaturanMobile user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
         default: return <DashboardMobile user={user} setActivePage={setActivePage} />;
       }
     }
@@ -94,7 +100,7 @@ const App = () => {
       case 'budget': return <Budget user={user} />;
       case 'tabungan': return <Tabungan user={user} />;
       case 'laporan': return <Laporan user={user} />;
-      case 'pengaturan': return <Pengaturan user={user} onLogout={handleLogout} />;
+      case 'pengaturan': return <Pengaturan user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
       default: return <Dashboard user={user} setActivePage={setActivePage} />;
     }
   };

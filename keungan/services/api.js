@@ -39,4 +39,9 @@ export const savingsAPI = {
   delete: (id) => api.delete(`/savings/${id}`)
 };
 
+export const reportsAPI = {
+  getReport: (params) => api.get('/reports', { params })
+};
+
+
 export default api;

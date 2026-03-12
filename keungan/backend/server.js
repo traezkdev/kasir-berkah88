@@ -82,12 +82,69 @@ app.post('/api/auth/login', async (req, res) => {
 
         res.json({ 
             token, 
-            user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                email: user.email, 
+                avatar: user.avatar,
+                phone: user.phone,
+                notif_transaksi: user.notif_transaksi,
+                notif_tagihan: user.notif_tagihan,
+                notif_budget: user.notif_budget,
+                currency: user.currency,
+                language: user.language
+            } 
         });
     } catch (error) {
         res.status(500).json({ message: "Gagal login", error: error.message });
     }
 });
+
+// GET Profile
+app.get('/api/auth/profile', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT id, name, email, avatar, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language FROM users WHERE id = ?", [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ message: "User tidak ditemukan" });
+        res.json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil profil", error: error.message });
+    }
+});
+
+// UPDATE Profile
+app.put('/api/auth/profile', authMiddleware, async (req, res) => {
+    try {
+        const { name, email, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, avatar } = req.body;
+        await pool.query(
+            "UPDATE users SET name = ?, email = ?, phone = ?, notif_transaksi = ?, notif_tagihan = ?, notif_budget = ?, currency = ?, language = ?, avatar = ? WHERE id = ?",
+            [name, email, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language, avatar, req.user.id]
+        );
+        const [updated] = await pool.query("SELECT id, name, email, avatar, phone, notif_transaksi, notif_tagihan, notif_budget, currency, language FROM users WHERE id = ?", [req.user.id]);
+        res.json({ message: "Profil berhasil diperbarui", user: updated[0] });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal memperbarui profil", error: error.message });
+    }
+});
+
+// CHANGE Password
+app.put('/api/auth/password', authMiddleware, async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        const [rows] = await pool.query("SELECT password FROM users WHERE id = ?", [req.user.id]);
+        const user = rows[0];
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) return res.status(401).json({ message: "Password lama salah" });
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, req.user.id]);
+        
+        res.json({ message: "Password berhasil diubah" });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengubah password", error: error.message });
+    }
+});
+
 
 // --- CATEGORIES ROUTES ---
 
@@ -638,6 +695,100 @@ app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
         res.status(500).json({ message: "Gagal mengambil statistik", error: error.message });
     }
 });
+// --- REPORTS ROUTES ---
+app.get('/api/reports', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { month, year, type } = req.query; // type can be 'monthly' or 'weekly'
+        
+        const targetMonth = month || new Date().getMonth() + 1;
+        const targetYear = year || new Date().getFullYear();
+
+        // 1. Summary Stats
+        const [incomeSummary] = await pool.query(
+            "SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income' AND MONTH(date) = ? AND YEAR(date) = ?",
+            [userId, targetMonth, targetYear]
+        );
+        const [expenseSummary] = await pool.query(
+            "SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND MONTH(date) = ? AND YEAR(date) = ?",
+            [userId, targetMonth, targetYear]
+        );
+
+        const totalIncome = parseFloat(incomeSummary[0].total) || 0;
+        const totalExpense = parseFloat(expenseSummary[0].total) || 0;
+        const balance = totalIncome - totalExpense;
+        const savingsPercentage = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome * 100).toFixed(1) : 0;
+
+        // 2. Chart Data
+        let chartData = [];
+        if (type === 'weekly') {
+            const [weekly] = await pool.query(`
+                SELECT 
+                    DATE_FORMAT(date, '%d %b') as name,
+                    SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+                    SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
+                FROM transactions 
+                WHERE user_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                GROUP BY date
+                ORDER BY date ASC
+            `, [userId]);
+            chartData = weekly;
+        } else {
+            const [monthly] = await pool.query(`
+                SELECT 
+                    DATE_FORMAT(date, '%d') as name,
+                    SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+                    SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
+                FROM transactions 
+                WHERE user_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
+                GROUP BY date
+                ORDER BY date ASC
+            `, [userId, targetMonth, targetYear]);
+            chartData = monthly;
+        }
+
+        // 3. Category Data (Expense Distribution)
+        const [categories] = await pool.query(`
+            SELECT 
+                category as name,
+                SUM(amount) as value
+            FROM transactions 
+            WHERE user_id = ? AND type = 'expense' AND MONTH(date) = ? AND YEAR(date) = ?
+            GROUP BY category
+            ORDER BY value DESC
+        `, [userId, targetMonth, targetYear]);
+        
+        const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#06B6D4'];
+        const formattedCategoryData = categories.map((cat, index) => ({
+            name: cat.name,
+            value: parseFloat(cat.value),
+            color: colors[index % colors.length]
+        }));
+
+        // 4. Top Transactions
+        const [topTransactions] = await pool.query(`
+            SELECT * FROM transactions 
+            WHERE user_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
+            ORDER BY amount DESC 
+            LIMIT 5
+        `, [userId, targetMonth, targetYear]);
+
+        res.json({
+            summary: {
+                totalIncome,
+                totalExpense,
+                balance,
+                savingsPercentage
+            },
+            chartData,
+            categoryData: formattedCategoryData,
+            topTransactions
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil data laporan", error: error.message });
+    }
+});
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

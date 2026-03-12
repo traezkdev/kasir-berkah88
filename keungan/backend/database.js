@@ -107,6 +107,29 @@ export const initDB = async () => {
             await pool.query("ALTER TABLE bills ADD COLUMN paid_amount DECIMAL(15, 2) DEFAULT 0");
         }
 
+        // Tambah kolom profil dan settings ke tabel users
+        const [userCols] = await pool.query("SHOW COLUMNS FROM users");
+        const colNames = userCols.map(c => c.Field);
+        
+        if (!colNames.includes('phone')) {
+            await pool.query("ALTER TABLE users ADD COLUMN phone VARCHAR(20)");
+        }
+        if (!colNames.includes('notif_transaksi')) {
+            await pool.query("ALTER TABLE users ADD COLUMN notif_transaksi BOOLEAN DEFAULT TRUE");
+        }
+        if (!colNames.includes('notif_tagihan')) {
+            await pool.query("ALTER TABLE users ADD COLUMN notif_tagihan BOOLEAN DEFAULT TRUE");
+        }
+        if (!colNames.includes('notif_budget')) {
+            await pool.query("ALTER TABLE users ADD COLUMN notif_budget BOOLEAN DEFAULT FALSE");
+        }
+        if (!colNames.includes('currency')) {
+            await pool.query("ALTER TABLE users ADD COLUMN currency VARCHAR(10) DEFAULT 'IDR'");
+        }
+        if (!colNames.includes('language')) {
+            await pool.query("ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'id'");
+        }
+
         console.log("Semua tabel berhasil disinkronkan.");
     } catch (error) {
         console.error("Gagal inisialisasi database:", error.message);
