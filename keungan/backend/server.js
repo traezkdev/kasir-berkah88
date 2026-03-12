@@ -453,12 +453,14 @@ app.put('/api/bills/:id', authMiddleware, async (req, res) => {
 app.patch('/api/bills/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
-        const [check] = await pool.query("SELECT id, name, amount, paid_amount FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        const [check] = await pool.query("SELECT id, name, amount, status, paid_amount FROM bills WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
         if (check.length === 0) return res.status(404).json({ message: "Tagihan tidak ditemukan" });
 
         const bill = check[0];
-        // Jika ditandai lunas manual, sisa yang belum dibayar dicatat ke transaksi
+        let finalPaidAmount = bill.paid_amount;
+
         if (status === 'paid' && bill.status !== 'paid') {
+            // Jika ditandai lunas manual, sisa yang belum dibayar dicatat ke transaksi
             const remainingToPay = bill.amount - (bill.paid_amount || 0);
             if (remainingToPay > 0) {
                 await pool.query(
@@ -466,10 +468,23 @@ app.patch('/api/bills/:id/status', authMiddleware, async (req, res) => {
                     [req.user.id, remainingToPay, `Pelunasan Tagihan: ${bill.name}`]
                 );
             }
+            finalPaidAmount = bill.amount;
+        } else if (status === 'unpaid' && bill.status === 'paid') {
+            // TARIK KEMBALI: Hapus transaksi pelunasan jika dibatalkan
+            await pool.query(
+                "DELETE FROM transactions WHERE user_id = ? AND note = ? AND type = 'expense' ORDER BY id DESC LIMIT 1",
+                [req.user.id, `Pelunasan Tagihan: ${bill.name}`]
+            );
+            
+            // Hitung ulang paid_amount dari riwayat cicilan yang tersisa (Pembayaran Tagihan: ...)
+            const [cicilan] = await pool.query(
+                "SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND note = ? AND type = 'expense'",
+                [req.user.id, `Pembayaran Tagihan: ${bill.name}`]
+            );
+            finalPaidAmount = cicilan[0].total || 0;
         }
 
-        const paidAmount = status === 'paid' ? bill.amount : 0;
-        await pool.query("UPDATE bills SET status = ?, paid_amount = ? WHERE id = ? AND user_id = ?", [status, paidAmount, req.params.id, req.user.id]);
+        await pool.query("UPDATE bills SET status = ?, paid_amount = ? WHERE id = ? AND user_id = ?", [status, finalPaidAmount, req.params.id, req.user.id]);
 
         const [updated] = await pool.query("SELECT * FROM bills WHERE id = ?", [req.params.id]);
         res.json(updated[0]);

@@ -172,20 +172,20 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
         <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Pengaturan</h1>
 
         {success && (
-          <div className="p-5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-[1.8rem] flex items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-emerald-900/5">
+          <div className="p-5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-emerald-900/5">
             <Save size={20} strokeWidth={3} />
             <p className="text-[10px] font-black uppercase tracking-widest">{success}</p>
           </div>
         )}
 
         {/* Profile Card Mobile */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 relative overflow-hidden group">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-indigo-500/10 transition-all duration-700" />
           <div className="relative flex-shrink-0 group">
             <img
               src={initialUser?.avatar || `https://ui-avatars.com/api/?name=${initialUser?.name || 'U'}&background=4F46E5&color=fff&size=200`}
               alt="avatar"
-              className="w-20 h-20 rounded-[1.5rem] shadow-xl border-4 border-white dark:border-slate-800 object-cover transform active:scale-95 transition-transform"
+              className="w-20 h-20 rounded-lg shadow-xl border-4 border-white dark:border-slate-800 object-cover transform active:scale-95 transition-transform"
             />
             <button 
               onClick={() => {
@@ -211,10 +211,10 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
         {/* Akun Group */}
         <div className="space-y-4">
           <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] ml-2">DATA & KEAMANAN 🔥</p>
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-gray-50 dark:divide-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-gray-50 dark:divide-slate-800">
              <button onClick={() => setShowEditProfile(true)} className="w-full flex items-center justify-between p-7 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-all active:scale-[0.98]">
                 <div className="flex items-center gap-5">
-                  <div className="p-3.5 rounded-2xl text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 shadow-sm">
+                  <div className="p-3.5 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 shadow-sm">
                     <User size={20} strokeWidth={3} />
                   </div>
                   <div className="text-left font-black uppercase tracking-tight">
@@ -226,7 +226,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
              </button>
              <button onClick={() => setShowChangePass(true)} className="w-full flex items-center justify-between p-7 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-all active:scale-[0.98]">
                 <div className="flex items-center gap-5">
-                  <div className="p-3.5 rounded-2xl text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 shadow-sm">
+                  <div className="p-3.5 rounded-lg text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 shadow-sm">
                     <Lock size={20} strokeWidth={3} />
                   </div>
                   <div className="text-left font-black uppercase tracking-tight">
@@ -244,10 +244,10 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
           <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] ml-2">ARSIP & KATEGORI 📂</p>
           <button
             onClick={() => setShowCatSheet(true)}
-            className="w-full bg-white dark:bg-slate-900 p-7 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all"
+            className="w-full bg-white dark:bg-slate-900 p-7 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-5">
-              <div className="p-3.5 rounded-2xl text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 shadow-sm">
+              <div className="p-3.5 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 shadow-sm">
                 <Tags size={20} strokeWidth={3} />
               </div>
               <div className="text-left font-black uppercase tracking-tight">
@@ -260,7 +260,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
         </div>
 
         {/* Notifikasi Toggle */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.2rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-5 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm space-y-5 relative overflow-hidden">
            <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-600 opacity-20" />
           <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.4em] flex items-center gap-3">
             <Bell size={12} strokeWidth={3} /> PUSH NOTIFIKASI
@@ -289,7 +289,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
         {/* Preferensi */}
         <div className="space-y-4">
           <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] ml-2">REGIONAL SETTINGS 🌏</p>
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden p-8 space-y-7">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden p-8 space-y-7">
              <div className="flex items-center justify-between">
                 <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Format Mata Uang</p>
                 <div className="relative group">
@@ -332,7 +332,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
         {/* Logout */}
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-4 py-6 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-rose-900/5 active:scale-95 transition-all mb-4"
+          className="w-full flex items-center justify-center gap-4 py-6 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-rose-900/5 active:scale-95 transition-all mb-4"
         >
           <LogOut size={22} strokeWidth={3} />
           Keluar dari Akun
@@ -347,7 +347,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
       {showEditProfile && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center px-6 transition-all duration-300">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowEditProfile(false)} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-[3rem] p-10 space-y-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-xl p-10 space-y-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="flex items-center justify-between relative z-10">
                <div>
@@ -362,7 +362,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                 <input 
                   type="text" required value={profileForm.name} 
                   onChange={e => setProfileForm({...profileForm, name: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
                 />
               </div>
               <div className="space-y-2 px-1">
@@ -370,7 +370,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                 <input 
                   type="email" required value={profileForm.email} 
                   onChange={e => setProfileForm({...profileForm, email: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
                 />
               </div>
               <div className="space-y-2 px-1">
@@ -378,12 +378,12 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                 <input 
                   type="tel" value={profileForm.phone} placeholder="08xxxxxxxxxx"
                   onChange={e => setProfileForm({...profileForm, phone: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
                 />
               </div>
               <div className="flex gap-4 pt-4">
-                 <button type="button" onClick={() => setShowEditProfile(false)} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px]">BATAL</button>
-                 <button type="submit" disabled={loading} className="flex-2 px-8 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all disabled:opacity-50">
+                 <button type="button" onClick={() => setShowEditProfile(false)} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600 rounded-lg font-black uppercase tracking-widest text-[10px]">BATAL</button>
+                 <button type="submit" disabled={loading} className="flex-2 px-8 py-5 bg-indigo-600 text-white rounded-lg font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all disabled:opacity-50">
                    {loading ? <Loader2 className="animate-spin mx-auto" size={20} strokeWidth={3}/> : 'SIMPAN PERUBAHAN'}
                  </button>
               </div>
@@ -396,7 +396,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
       {showChangePass && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowChangePass(false)} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-[3rem] p-10 space-y-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden text-center">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-xl p-10 space-y-8 shadow-[0_30px_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden text-center">
              <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="flex items-center justify-between text-left relative z-10">
                <div>
@@ -406,7 +406,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
               <button onClick={() => setShowChangePass(false)} className="p-3 text-gray-400 dark:text-gray-700 hover:text-rose-500 transition-colors"><X size={24} strokeWidth={3}/></button>
             </div>
             {error && (
-              <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-[1.5rem] flex items-center gap-3 border border-rose-100 dark:border-rose-500/10">
+              <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-3 border border-rose-100 dark:border-rose-500/10">
                 <AlertCircle size={18} strokeWidth={3}/> {error}
               </div>
             )}
@@ -414,21 +414,21 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
               <input 
                 type="password" placeholder="PASSWORD LAMA" required 
                 value={passForm.oldPassword} onChange={e => setPassForm({...passForm, oldPassword: e.target.value})}
-                className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-black uppercase tracking-widest text-center focus:ring-4 focus:ring-rose-500/10 shadow-inner placeholder:text-gray-200 dark:placeholder:text-gray-700"
+                className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-black uppercase tracking-widest text-center focus:ring-4 focus:ring-rose-500/10 shadow-inner placeholder:text-gray-200 dark:placeholder:text-gray-700"
               />
               <div className="space-y-4">
                  <input 
                   type="password" placeholder="PASSWORD BARU" required 
                   value={passForm.newPassword} onChange={e => setPassForm({...passForm, newPassword: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-black uppercase tracking-widest text-center focus:ring-4 focus:ring-indigo-500/10 shadow-inner placeholder:text-gray-200 dark:placeholder:text-gray-700"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-black uppercase tracking-widest text-center focus:ring-4 focus:ring-indigo-500/10 shadow-inner placeholder:text-gray-200 dark:placeholder:text-gray-700"
                 />
                 <input 
                   type="password" placeholder="KONFIRMASI PASSWORD" required 
                   value={passForm.confirmPassword} onChange={e => setPassForm({...passForm, confirmPassword: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-black uppercase tracking-widest text-center focus:ring-4 focus:ring-indigo-500/10 shadow-inner placeholder:text-gray-200 dark:placeholder:text-gray-700"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-black uppercase tracking-widest text-center focus:ring-4 focus:ring-indigo-500/10 shadow-inner placeholder:text-gray-200 dark:placeholder:text-gray-700"
                 />
               </div>
-              <button type="submit" disabled={loading} className="w-full py-6 bg-emerald-600 text-white rounded-[1.8rem] font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-emerald-900/20 active:scale-95 transition-all disabled:opacity-50 h-[70px]">
+              <button type="submit" disabled={loading} className="w-full py-6 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-emerald-900/20 active:scale-95 transition-all disabled:opacity-50 h-[70px]">
                 {loading ? <Loader2 className="animate-spin mx-auto" size={24} strokeWidth={3}/> : 'UPDATE SEKARANG ✨'}
               </button>
             </form>
@@ -443,7 +443,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowCatSheet(false)} />
 
           {/* Sheet */}
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3.5rem] shadow-[0_-20px_100px_rgba(0,0,0,0.5)] z-10 max-h-[92vh] flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden pb-12">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-xl shadow-[0_-20px_100px_rgba(0,0,0,0.5)] z-10 max-h-[92vh] flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden pb-12">
             {/* Handle */}
             <div className="pt-6 pb-2 flex justify-center flex-shrink-0 sticky top-0 bg-white dark:bg-slate-900 z-20 px-6">
               <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full"></div>
@@ -469,14 +469,14 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                   value={newCatName}
                   onChange={e => setNewCatName(e.target.value)}
                   placeholder="NAMA KATEGORI BARU..."
-                  className="w-full px-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-sm placeholder:text-gray-200 dark:placeholder:text-gray-700"
+                  className="w-full px-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg text-xs font-black uppercase tracking-widest text-gray-800 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10 shadow-sm placeholder:text-gray-200 dark:placeholder:text-gray-700"
                 />
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1">
                     <select
                       value={newCatType}
                       onChange={e => setNewCatType(e.target.value)}
-                      className="w-full px-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 focus:ring-4 focus:ring-indigo-500/10 shadow-sm appearance-none pr-10"
+                      className="w-full px-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 focus:ring-4 focus:ring-indigo-500/10 shadow-sm appearance-none pr-10"
                     >
                       <option value="expense">📉 Pengeluaran</option>
                       <option value="income">📈 Pemasukan</option>
@@ -486,7 +486,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                   <button
                     type="submit"
                     disabled={addingCat || !newCatName.trim()}
-                    className="flex-1 flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-900/20 disabled:opacity-50 active:scale-95 transition-all"
+                    className="flex-1 flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-900/20 disabled:opacity-50 active:scale-95 transition-all"
                   >
                     {addingCat ? <Loader2 size={18} className="animate-spin" strokeWidth={3} /> : <Plus size={18} strokeWidth={4} />}
                     TAMBAH
@@ -513,7 +513,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                     </div>
                     <div className="grid grid-cols-1 gap-3">
                        {incomeCategories.map(cat => (
-                        <div key={cat.id} className="flex items-center justify-between px-6 py-5 bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100/50 dark:border-emerald-500/10 rounded-3xl active:scale-[0.98] transition-all group">
+                        <div key={cat.id} className="flex items-center justify-between px-6 py-5 bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100/50 dark:border-emerald-500/10 rounded-lg active:scale-[0.98] transition-all group">
                           <div className="flex items-center gap-4">
                             <Tag size={16} className="text-emerald-500 dark:text-emerald-400" strokeWidth={3} />
                             <span className="text-xs font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest">{cat.name}</span>
@@ -528,7 +528,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                         </div>
                       ))}
                       {incomeCategories.length === 0 && (
-                        <div className="py-12 text-center border-4 border-dashed border-gray-50 dark:border-slate-800/50 rounded-[2.5rem]">
+                        <div className="py-12 text-center border-4 border-dashed border-gray-50 dark:border-slate-800/50 rounded-xl">
                            <p className="text-[9px] font-black text-gray-300 dark:text-gray-800 uppercase tracking-[0.3em]">Belum Ada Data</p>
                         </div>
                       )}
@@ -544,7 +544,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                     </div>
                     <div className="grid grid-cols-1 gap-3">
                        {expenseCategories.map(cat => (
-                        <div key={cat.id} className="flex items-center justify-between px-6 py-5 bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100/50 dark:border-rose-500/10 rounded-3xl active:scale-[0.98] transition-all group">
+                        <div key={cat.id} className="flex items-center justify-between px-6 py-5 bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100/50 dark:border-rose-500/10 rounded-lg active:scale-[0.98] transition-all group">
                           <div className="flex items-center gap-4">
                             <Tag size={16} className="text-rose-500 dark:text-rose-400" strokeWidth={3} />
                             <span className="text-xs font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest">{cat.name}</span>
@@ -559,7 +559,7 @@ const PengaturanMobile = ({ user: initialUser, onLogout, onUpdateUser }) => {
                         </div>
                       ))}
                       {expenseCategories.length === 0 && (
-                        <div className="py-12 text-center border-4 border-dashed border-gray-50 dark:border-slate-800/50 rounded-[2.5rem]">
+                        <div className="py-12 text-center border-4 border-dashed border-gray-50 dark:border-slate-800/50 rounded-xl">
                            <p className="text-[9px] font-black text-gray-300 dark:text-gray-800 uppercase tracking-[0.3em]">Belum Ada Data</p>
                         </div>
                       )}

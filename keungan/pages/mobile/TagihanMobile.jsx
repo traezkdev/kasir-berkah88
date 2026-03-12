@@ -121,9 +121,16 @@ const TagihanMobile = () => {
 
   // Toggle Status Lunas
   const toggleStatus = async (bill) => {
+    const isPaying = bill.status !== 'paid';
+    const message = isPaying 
+      ? `Lanjutkan melunasi tagihan "${bill.name}"?` 
+      : `Batalkan status lunas tagihan "${bill.name}"? Transaksi pelunasan akan dihapus.`;
+    
+    if (!window.confirm(message)) return;
+
     setTogglingId(bill.id);
     try {
-      const newStatus = bill.status === 'paid' ? 'unpaid' : 'paid';
+      const newStatus = isPaying ? 'paid' : 'unpaid';
       const res = await api.patch(`/bills/${bill.id}/status`, { status: newStatus });
       setBills(prev => prev.map(b => b.id === bill.id ? res.data : b));
     } catch {
@@ -155,27 +162,27 @@ const TagihanMobile = () => {
               <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Tagihan Rutin</h1>
               <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Payment Reminder</p>
            </div>
-          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all">
+          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3.5 rounded-lg shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all">
             <Plus size={20} strokeWidth={3} />
           </button>
         </div>
 
         {error && (
-          <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-500/20 rounded-2xl flex items-center gap-3">
+          <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3">
             <AlertCircle size={18} strokeWidth={3} /> {error}
           </div>
         )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse shadow-sm shadow-rose-500/50"></div>
               <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sisa Tagihan</p>
             </div>
             <p className="text-base font-black text-rose-600 dark:text-rose-400 tracking-tight">{formatCurrency(unpaidTotal)}</p>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 size={12} className="text-emerald-500" strokeWidth={3} />
               <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sudah Bayar</p>
@@ -188,7 +195,7 @@ const TagihanMobile = () => {
         <div className="relative">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-700" size={20} strokeWidth={3} />
           <input type="text" placeholder="Cari tagihan anda..."
-            className="w-full pl-14 pr-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl focus:ring-4 focus:ring-indigo-500/10 text-xs font-black uppercase tracking-widest placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-700 dark:text-gray-200 shadow-sm"
+            className="w-full pl-14 pr-6 py-5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xs font-black uppercase tracking-widest placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-700 dark:text-gray-200 shadow-sm"
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
 
@@ -206,13 +213,13 @@ const TagihanMobile = () => {
               const percent = Math.min((paid / total) * 100, 100);
 
               return (
-                <div key={bill.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm overflow-hidden active:scale-[0.98] transition-all border border-gray-100 dark:border-slate-800 group relative">
+                <div key={bill.id} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden active:scale-[0.98] transition-all border border-gray-100 dark:border-slate-800 group relative">
                   <div className={`h-2 w-full transition-colors duration-500 ${bill.status === 'paid' ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
 
                   <div className="p-7 space-y-6 relative z-10">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0 flex-1">
-                        <div className={`p-4 rounded-[1.2rem] flex-shrink-0 shadow-sm transform group-active:scale-95 transition-transform ${bill.status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
+                        <div className={`p-4 rounded-lg flex-shrink-0 shadow-sm transform group-active:scale-95 transition-transform ${bill.status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
                           <CreditCard size={22} strokeWidth={2.5} />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -252,14 +259,14 @@ const TagihanMobile = () => {
                       {bill.status !== 'paid' && (
                         <button
                           onClick={() => openPayModal(bill)}
-                          className="flex-1 px-5 py-4 bg-indigo-50 dark:bg-indigo-500/5 text-indigo-600 dark:text-indigo-400 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:bg-indigo-600 active:text-white transition-all">
+                          className="flex-1 px-5 py-4 bg-indigo-50 dark:bg-indigo-500/5 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:bg-indigo-600 active:text-white transition-all">
                           <Coins size={16} strokeWidth={3} /> CICIL
                         </button>
                       )}
                       <button
                         onClick={() => toggleStatus(bill)}
                         disabled={togglingId === bill.id}
-                        className={`px-5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl transition-all ${bill.status === 'unpaid' ? (percent > 0 ? 'w-24 bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-600' : 'flex-1 bg-indigo-600 text-white shadow-indigo-900/20') : 'w-full bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600'}`}>
+                        className={`px-5 py-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl transition-all ${bill.status === 'unpaid' ? (percent > 0 ? 'w-24 bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-600' : 'flex-1 bg-indigo-600 text-white shadow-indigo-900/20') : 'w-full bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600'}`}>
                         {togglingId === bill.id ? <Loader2 size={16} className="animate-spin" /> : (bill.status === 'unpaid' ? (percent > 0 ? 'LUNAS' : 'BAYAR LUNAS') : 'BATAL')}
                       </button>
                     </div>
@@ -273,7 +280,7 @@ const TagihanMobile = () => {
             
             {filteredBills.length === 0 && !loading && (
               <div className="py-24 text-center px-10">
-                <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 rotate-6 transform transition-transform hover:rotate-0 shadow-sm border border-gray-50 dark:border-slate-800">
+                <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center mx-auto mb-6 rotate-6 transform transition-transform hover:rotate-0 shadow-sm border border-gray-50 dark:border-slate-800">
                   <CreditCard size={32} className="text-gray-200 dark:text-slate-800" strokeWidth={1.5} />
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-600 text-center leading-relaxed">BELUM ADA TAGIHAN TERCATAT.<br/>KLIK TOMBOL DI ATAS UNTUK MULAI.</p>
@@ -288,7 +295,7 @@ const TagihanMobile = () => {
       {showModal && (
         <div className="fixed inset-0 z-[300] flex items-end">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closeModal} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-30 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-500 pb-12">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-xl shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-30 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-500 pb-12">
             <div className="pt-6 pb-2 flex justify-center sticky top-0 bg-white dark:bg-slate-900 z-10 px-6">
               <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full"></div>
             </div>
@@ -307,7 +314,7 @@ const TagihanMobile = () => {
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nama Keperluan Tagihan</label>
                 <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
                   placeholder="Misal: Listrik, Internet, dll."
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:ring-4 focus:ring-indigo-500/10 shadow-inner" />
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:ring-4 focus:ring-indigo-500/10 shadow-inner" />
               </div>
               <div className="grid grid-cols-1 gap-8">
                 <div className="space-y-3 px-1">
@@ -316,19 +323,19 @@ const TagihanMobile = () => {
                      <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-700 text-lg">Rp</span>
                      <input required type="number" min="1" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})}
                       placeholder="0"
-                      className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.8rem] text-2xl font-black text-emerald-600 dark:text-emerald-400 focus:ring-4 focus:ring-emerald-500/10 shadow-inner" />
+                      className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-2xl font-black text-emerald-600 dark:text-emerald-400 focus:ring-4 focus:ring-emerald-500/10 shadow-inner" />
                   </div>
                 </div>
                 <div className="space-y-3 px-1">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Tanggal Jatuh Tempo</label>
                   <input required type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})}
-                    className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.8rem] text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
+                    className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
                 </div>
               </div>
               <div className="flex gap-4 pt-4">
-                 <button type="button" onClick={closeModal} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all">BATAL</button>
+                 <button type="button" onClick={closeModal} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all">BATAL</button>
                  <button type="submit" disabled={submitting}
-                   className="flex-2 px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                   className="flex-2 px-10 py-5 bg-indigo-600 text-white rounded-lg font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
                    {submitting ? <Loader2 className="animate-spin" size={20} /> : (
                       <>
                          <span>{editingId ? 'SIMPAN' : 'TAMBAHKAN'}</span>
@@ -346,7 +353,7 @@ const TagihanMobile = () => {
       {showPayModal && (
         <div className="fixed inset-0 z-[300] flex items-end">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closePayModal} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3.5rem] shadow-[0_-20px_100px_rgba(0,0,0,0.5)] z-40 p-10 pb-16 space-y-10 animate-in slide-in-from-bottom duration-500 overflow-hidden">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-xl shadow-[0_-20px_100px_rgba(0,0,0,0.5)] z-40 p-10 pb-16 space-y-10 animate-in slide-in-from-bottom duration-500 overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-500/5 rounded-full -mr-16 -mt-16" />
             <div className="flex items-center justify-between relative z-10">
                <div>
@@ -358,7 +365,7 @@ const TagihanMobile = () => {
               </button>
             </div>
             
-            <div className="bg-emerald-50 dark:bg-emerald-500/5 p-8 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-500/10 shadow-inner relative z-10">
+            <div className="bg-emerald-50 dark:bg-emerald-500/5 p-8 rounded-xl border border-emerald-100 dark:border-emerald-500/10 shadow-inner relative z-10">
               <p className="text-[9px] font-black text-emerald-400 dark:text-emerald-500 uppercase tracking-[0.2em] mb-2 leading-none">Tagihan: {selectedBill?.name}</p>
               <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 tracking-tighter">Sisa: {formatCurrency(selectedBill?.amount - (selectedBill?.paid_amount || 0))}</p>
             </div>
@@ -371,11 +378,11 @@ const TagihanMobile = () => {
                    <input required type="number" min="1" max={selectedBill?.amount - (selectedBill?.paid_amount || 0)}
                     value={payAmount} onChange={e => setPayAmount(e.target.value)}
                     placeholder="0" autoFocus
-                    className="w-full pl-20 pr-8 py-9 bg-gray-50 dark:bg-slate-800 border-none rounded-[2.5rem] text-4xl font-black text-center text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-500/5 focus:ring-indigo-500/10 shadow-inner transition-all placeholder:text-gray-200 dark:placeholder:text-gray-800" />
+                    className="w-full pl-20 pr-8 py-9 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-4xl font-black text-center text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-500/5 focus:ring-indigo-500/10 shadow-inner transition-all placeholder:text-gray-200 dark:placeholder:text-gray-800" />
                 </div>
               </div>
               <button type="submit" disabled={submitting || !payAmount}
-                className="w-full py-7 rounded-[2.2rem] font-black text-white text-[12px] uppercase tracking-[0.2em] bg-indigo-600 shadow-[0_20px_40px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-[0.97] transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                className="w-full py-7 rounded-lg font-black text-white text-[12px] uppercase tracking-[0.2em] bg-indigo-600 shadow-[0_20px_40px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-[0.97] transition-all flex items-center justify-center gap-3 disabled:opacity-50">
                 {submitting ? <Loader2 className="animate-spin" size={24} /> : (
                    <>
                       <span>KONFIRMASI BAYAR</span>

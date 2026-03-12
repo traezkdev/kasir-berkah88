@@ -40,7 +40,7 @@ const Login = ({ onSwitchToRegister, onLoginSuccess }) => {
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl text-white shadow-xl shadow-indigo-100 mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-lg text-white shadow-xl shadow-indigo-100 mb-6">
             <HandCoins size={32} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Selamat Datang</h1>
@@ -48,7 +48,7 @@ const Login = ({ onSwitchToRegister, onLoginSuccess }) => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-100">
+          <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100">
             {error}
           </div>
         )}
@@ -65,7 +65,7 @@ const Login = ({ onSwitchToRegister, onLoginSuccess }) => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="alfin@example.com"
-                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 transition-all text-sm font-medium"
+                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-100 transition-all text-sm font-medium"
               />
             </div>
           </div>
@@ -92,7 +92,7 @@ const Login = ({ onSwitchToRegister, onLoginSuccess }) => {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-lg font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <Loader2 className="animate-spin" size={20} />

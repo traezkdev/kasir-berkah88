@@ -62,7 +62,7 @@ const DashboardMobile = ({ setActivePage }) => {
   return (
     <div className="pb-24 space-y-6 px-6 pt-4">
       {/* Balance Card Mobile */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-xl text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 relative overflow-hidden transition-all duration-500">
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-lg text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 relative overflow-hidden transition-all duration-500">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
         <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Total Saldo Anda</p>
         <h2 className="text-3xl font-black mb-6 italic tracking-tighter">{formatCurrency(stats.totalBalance)}</h2>
@@ -128,7 +128,7 @@ const DashboardMobile = ({ setActivePage }) => {
                   <div 
                     key={item.id} 
                     onClick={() => setActivePage('tabungan')}
-                    className="min-w-[260px] bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-50 dark:border-slate-800 shadow-sm flex flex-col gap-4 active:scale-95 transition-all duration-300"
+                    className="min-w-[260px] bg-white dark:bg-slate-900 p-5 rounded-lg border border-gray-50 dark:border-slate-800 shadow-sm flex flex-col gap-4 active:scale-95 transition-all duration-300"
                   >
                     <div className="flex items-center justify-between">
                       <div className="p-2.5 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-50 dark:shadow-indigo-900/20">
@@ -166,13 +166,13 @@ const DashboardMobile = ({ setActivePage }) => {
         </div>
         <div className="space-y-3">
           {stats.recentTransactions.length === 0 ? (
-             <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase">Belum ada transaksi</div>
+             <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase">Belum ada transaksi</div>
           ) : (
             stats.recentTransactions.map(tx => (
                 <div 
                   key={tx.id} 
                   onClick={() => setActivePage('transaksi')}
-                  className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 flex items-center justify-between active:bg-gray-50 dark:active:bg-slate-800/50 transition-all shadow-sm active:scale-[0.97]"
+                  className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-100 dark:border-slate-800 flex items-center justify-between active:bg-gray-50 dark:active:bg-slate-800/50 transition-all shadow-sm active:scale-[0.97]"
                 >
                   <div className="flex items-center gap-5 min-w-0 flex-1">
                     <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${tx.type === 'income' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>

@@ -129,9 +129,16 @@ const Tagihan = () => {
 
   // Toggle Status Lunas
   const toggleStatus = async (bill) => {
+    const isPaying = bill.status !== 'paid';
+    const message = isPaying 
+      ? `Lanjutkan melunasi tagihan "${bill.name}"?` 
+      : `Batalkan status lunas tagihan "${bill.name}"? Transaksi pelunasan akan dihapus.`;
+    
+    if (!window.confirm(message)) return;
+
     setTogglingId(bill.id);
     try {
-      const newStatus = bill.status === 'paid' ? 'unpaid' : 'paid';
+      const newStatus = isPaying ? 'paid' : 'unpaid';
       const res = await api.patch(`/bills/${bill.id}/status`, { status: newStatus });
       setBills(prev => prev.map(b => b.id === bill.id ? res.data : b));
     } catch {

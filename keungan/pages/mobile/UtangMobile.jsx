@@ -122,37 +122,37 @@ const UtangMobile = () => {
               <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Utang & Piutang</h1>
               <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Finansial Tracker</p>
            </div>
-          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 font-black transition-all active:scale-90">
+          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3 rounded-lg shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 font-black transition-all active:scale-90">
             <Plus size={20} strokeWidth={3} />
           </button>
         </div>
 
         {error && (
-          <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-2xl flex items-center gap-2 border border-rose-100 dark:border-rose-500/20">
+          <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-rose-100 dark:border-rose-500/20">
             <AlertCircle size={16} /> {error}
           </div>
         )}
 
         {/* Stats Summary */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-rose-50 dark:bg-rose-500/10 p-5 rounded-[2rem] border border-rose-100 dark:border-rose-500/20">
+          <div className="bg-rose-50 dark:bg-rose-500/10 p-5 rounded-lg border border-rose-100 dark:border-rose-500/20">
             <p className="text-[9px] font-black text-rose-400 dark:text-rose-500 uppercase tracking-[0.2em] mb-2 leading-none">Total Utang 📉</p>
             <p className="text-sm font-black text-rose-600 dark:text-rose-400">{formatCurrency(utangList.reduce((a, b) => a + Number(b.amount), 0))}</p>
           </div>
-          <div className="bg-emerald-50 dark:bg-emerald-500/10 p-5 rounded-[2rem] border border-emerald-100 dark:border-emerald-500/20">
+          <div className="bg-emerald-50 dark:bg-emerald-500/10 p-5 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
             <p className="text-[9px] font-black text-emerald-400 dark:text-emerald-500 uppercase tracking-[0.2em] mb-2 leading-none">Total Piutang 📈</p>
             <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(piutangList.reduce((a, b) => a + Number(b.amount), 0))}</p>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-[1.8rem] border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+        <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <button onClick={() => setActiveTab('utang')}
-            className={`flex-1 py-3.5 rounded-[1.3rem] text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'utang' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/20' : 'text-gray-400 dark:text-gray-600'}`}>
+            className={`flex-1 py-3.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'utang' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/20' : 'text-gray-400 dark:text-gray-600'}`}>
             Utang Saya ({utangList.length})
           </button>
           <button onClick={() => setActiveTab('piutang')}
-            className={`flex-1 py-3.5 rounded-[1.3rem] text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'piutang' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-gray-400 dark:text-gray-600'}`}>
+            className={`flex-1 py-3.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === 'piutang' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-gray-400 dark:text-gray-600'}`}>
             Piutang ({piutangList.length})
           </button>
         </div>
@@ -166,10 +166,10 @@ const UtangMobile = () => {
         ) : (
           <div className="space-y-5">
             {filteredDebts.map((debt) => (
-              <div key={debt.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-6 active:scale-[0.98] transition-all group relative overflow-hidden">
+              <div key={debt.id} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-6 active:scale-[0.98] transition-all group relative overflow-hidden">
                 <div className="flex justify-between items-start relative z-10">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className={`p-3.5 rounded-[1.2rem] shadow-sm transform group-active:scale-95 transition-transform ${activeTab === 'utang' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                    <div className={`p-3.5 rounded-lg shadow-sm transform group-active:scale-95 transition-transform ${activeTab === 'utang' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
                       <HandCoins size={22} strokeWidth={2.5} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -214,7 +214,7 @@ const UtangMobile = () => {
 
             {filteredDebts.length === 0 && (
               <div className="py-24 text-center px-10">
-                <div className="w-20 h-20 bg-gray-50 dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 rotate-6 transform transition-transform hover:rotate-0">
+                <div className="w-20 h-20 bg-gray-50 dark:bg-slate-900 rounded-lg flex items-center justify-center mx-auto mb-6 rotate-6 transform transition-transform hover:rotate-0">
                   <HandCoins size={32} className="text-gray-200 dark:text-slate-800" strokeWidth={1.5} />
                 </div>
                 <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em] leading-relaxed">
@@ -231,7 +231,7 @@ const UtangMobile = () => {
       {showModal && (
         <div className="fixed inset-0 z-[300] flex items-end">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closeModal} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-30 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-500">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-xl shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-30 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-500">
             <div className="pt-6 pb-2 flex justify-center sticky top-0 bg-white dark:bg-slate-900 z-10">
               <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full"></div>
             </div>
@@ -241,20 +241,20 @@ const UtangMobile = () => {
                   <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">{editingId ? 'Ubah Catatan' : 'Catatan Baru'}</h2>
                   <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Kelola arus kas keluar-masuk</p>
                </div>
-              <button onClick={closeModal} className="p-3 text-gray-400 dark:text-gray-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-2xl transition-all relative z-10">
+              <button onClick={closeModal} className="p-3 text-gray-400 dark:text-gray-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all relative z-10">
                 <X size={24} strokeWidth={3} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-10 space-y-8">
               {/* Tipe Selector Mobile */}
-              <div className="flex p-2 bg-gray-50 dark:bg-slate-800 rounded-[2rem] gap-2 shadow-inner">
+              <div className="flex p-2 bg-gray-50 dark:bg-slate-800 rounded-xl gap-2 shadow-inner">
                 <button type="button" onClick={() => setForm({...form, status: 'utang'})}
-                  className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${form.status === 'utang' ? 'bg-white dark:bg-rose-600 text-rose-600 dark:text-white shadow-xl shadow-black/5' : 'text-gray-400 dark:text-gray-600'}`}>
+                  className={`flex-1 py-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${form.status === 'utang' ? 'bg-white dark:bg-rose-600 text-rose-600 dark:text-white shadow-xl shadow-black/5' : 'text-gray-400 dark:text-gray-600'}`}>
                   Utang Saya
                 </button>
                 <button type="button" onClick={() => setForm({...form, status: 'piutang'})}
-                  className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${form.status === 'piutang' ? 'bg-white dark:bg-emerald-600 text-emerald-600 dark:text-white shadow-xl shadow-black/5' : 'text-gray-400 dark:text-gray-600'}`}>
+                  className={`flex-1 py-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${form.status === 'piutang' ? 'bg-white dark:bg-emerald-600 text-emerald-600 dark:text-white shadow-xl shadow-black/5' : 'text-gray-400 dark:text-gray-600'}`}>
                   Piutang
                 </button>
               </div>
@@ -264,7 +264,7 @@ const UtangMobile = () => {
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nama Pihak / Keperluan</label>
                 <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
                   placeholder="Misal: Bank, Teman, dll."
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-inner" />
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-inner" />
               </div>
 
               {/* Nominal Mobile */}
@@ -274,7 +274,7 @@ const UtangMobile = () => {
                    <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-700 text-lg">Rp</span>
                    <input required type="number" min="1" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})}
                     placeholder="0"
-                    className={`w-full pl-16 pr-6 py-7 bg-gray-50 dark:bg-slate-800 border-none rounded-[2rem] text-3xl font-black text-center focus:ring-4 transition-all ${form.status === 'utang' ? 'text-rose-600 dark:text-rose-400 focus:ring-rose-500/10' : 'text-emerald-600 dark:text-emerald-400 focus:ring-emerald-500/10'}`} />
+                    className={`w-full pl-16 pr-6 py-7 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-3xl font-black text-center focus:ring-4 transition-all ${form.status === 'utang' ? 'text-rose-600 dark:text-rose-400 focus:ring-rose-500/10' : 'text-emerald-600 dark:text-emerald-400 focus:ring-emerald-500/10'}`} />
                 </div>
               </div>
 
@@ -283,12 +283,12 @@ const UtangMobile = () => {
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Tanggal</label>
                   <input type="date" required value={form.date} onChange={e => setForm({...form, date: e.target.value})}
-                    className="w-full px-4 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
+                    className="w-full px-4 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Jatuh Tempo</label>
                   <input type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})}
-                    className="w-full px-4 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
+                    className="w-full px-4 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-[10px] font-black text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-indigo-500/10" />
                 </div>
               </div>
 
@@ -297,13 +297,13 @@ const UtangMobile = () => {
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Catatan Tambahan</label>
                 <input type="text" value={form.note} onChange={e => setForm({...form, note: e.target.value})}
                   placeholder="Keterangan opsional..."
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:ring-4 focus:ring-indigo-500/10" />
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:ring-4 focus:ring-indigo-500/10" />
               </div>
 
               <div className="flex gap-4 pt-4">
-                 <button type="button" onClick={closeModal} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-all transform active:scale-95">BATAL</button>
+                 <button type="button" onClick={closeModal} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-lg font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-all transform active:scale-95">BATAL</button>
                  <button type="submit" disabled={submitting}
-                   className={`flex-2 px-8 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[10px] text-white flex items-center justify-center gap-3 shadow-2xl transition-all disabled:opacity-50 transform active:scale-95 ${form.status === 'utang' ? 'bg-rose-600 shadow-rose-900/20' : 'bg-emerald-600 shadow-emerald-900/20'}`}>
+                   className={`flex-2 px-8 py-5 rounded-lg font-black uppercase tracking-widest text-[10px] text-white flex items-center justify-center gap-3 shadow-2xl transition-all disabled:opacity-50 transform active:scale-95 ${form.status === 'utang' ? 'bg-rose-600 shadow-rose-900/20' : 'bg-emerald-600 shadow-emerald-900/20'}`}>
                    {submitting ? <Loader2 className="animate-spin" size={20} /> : (
                       <>
                          <span>{editingId ? 'SIMPAN' : 'TAMBAHKAN'}</span>

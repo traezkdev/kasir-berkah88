@@ -41,7 +41,7 @@ const App = () => {
     // Check for existing session
     const savedUser = localStorage.getItem('trzUser');
     const token = localStorage.getItem('trzToken');
-    
+
     if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
@@ -87,7 +87,7 @@ const App = () => {
 
   const renderPage = () => {
     if (isMobile) {
-      switch(activePage) {
+      switch (activePage) {
         case 'dashboard': return <DashboardMobile user={user} setActivePage={setActivePage} />;
         case 'transaksi': return <TransaksiMobile user={user} />;
         case 'utang': return <UtangMobile user={user} />;
@@ -100,7 +100,7 @@ const App = () => {
       }
     }
 
-    switch(activePage) {
+    switch (activePage) {
       case 'dashboard': return <Dashboard user={user} setActivePage={setActivePage} />;
       case 'transaksi': return <Transaksi user={user} />;
       case 'utang': return <Utang user={user} />;
@@ -125,16 +125,16 @@ const App = () => {
   if (!user) {
     if (authMode === 'register') {
       return (
-        <Register 
-          onSwitchToLogin={() => setAuthMode('login')} 
-          onRegisterSuccess={() => setAuthMode('login')} 
+        <Register
+          onSwitchToLogin={() => setAuthMode('login')}
+          onRegisterSuccess={() => setAuthMode('login')}
         />
       );
     }
     return (
-      <Login 
-        onSwitchToRegister={() => setAuthMode('register')} 
-        onLoginSuccess={handleLoginSuccess} 
+      <Login
+        onSwitchToRegister={() => setAuthMode('register')}
+        onLoginSuccess={handleLoginSuccess}
       />
     );
   }
@@ -143,11 +143,11 @@ const App = () => {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50/50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-500">
-        <MobileHeader 
-          user={user} 
-          activePage={activePage} 
-          setActivePage={setActivePage} 
-          onLogout={handleLogout} 
+        <MobileHeader
+          user={user}
+          activePage={activePage}
+          setActivePage={setActivePage}
+          onLogout={handleLogout}
           onUpdateUser={handleUpdateUser}
         />
         <main className="flex-1 overflow-y-auto">
@@ -163,9 +163,8 @@ const App = () => {
       <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} />
       <div className="ml-64">
         <Navbar user={user} onUpdateUser={handleUpdateUser} />
-        <main className={`pt-28 pb-10 transition-all duration-300 ${
-          layoutMode === 'fullwide' ? 'px-6' : 'px-8 max-w-[1400px] mx-auto'
-        }`}>
+        <main className={`pt-28 pb-10 transition-all duration-300 ${layoutMode === 'fullwide' ? 'px-6' : 'px-8 max-w-[1400px] mx-auto'
+          }`}>
           {renderPage()}
         </main>
       </div>

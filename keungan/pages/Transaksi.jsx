@@ -255,26 +255,25 @@ const Transaksi = () => {
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600" size={20} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Cari kategori atau catatan..."
               className="w-full pl-12 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all"
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex bg-gray-50 dark:bg-slate-800 p-1.5 rounded-lg border border-gray-200/50 dark:border-slate-700">
             {['all', 'income', 'expense'].map((t) => (
-              <button 
-                key={t} 
+              <button
+                key={t}
                 onClick={() => setFilterType(t)}
-                className={`flex-1 md:flex-none px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  filterType === t
+                className={`flex-1 md:flex-none px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filterType === t
                     ? t === 'income' ? 'bg-white dark:bg-emerald-600 text-emerald-600 dark:text-white shadow-xl shadow-emerald-900/10'
                       : t === 'expense' ? 'bg-white dark:bg-rose-600 text-rose-600 dark:text-white shadow-xl shadow-rose-900/10'
                         : 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xl shadow-indigo-900/10'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 {t === 'all' ? 'Semua' : t === 'income' ? 'Masuk' : 'Keluar'}
               </button>
@@ -317,11 +316,10 @@ const Transaksi = () => {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-lg transition-transform group-hover:scale-110 ${
-                          tx.type === 'income' 
-                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                        <div className={`p-3 rounded-lg transition-transform group-hover:scale-110 ${tx.type === 'income'
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                        }`}>
+                          }`}>
                           {tx.type === 'income' ? <ArrowUpRight size={16} strokeWidth={3} /> : <ArrowDownRight size={16} strokeWidth={3} />}
                         </div>
                         <span className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{tx.category}</span>
@@ -337,14 +335,14 @@ const Transaksi = () => {
                     </td>
                     <td className="px-8 py-6 text-center">
                       <div className="flex items-center justify-center gap-3">
-                        <button 
+                        <button
                           onClick={() => openEditModal(tx)}
                           className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-slate-600"
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(tx.id)} 
+                        <button
+                          onClick={() => handleDelete(tx.id)}
                           disabled={deletingId === tx.id}
                           className="p-2 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-slate-600"
                         >
@@ -377,14 +375,14 @@ const Transaksi = () => {
           <div className="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-xl shadow-[0_30px_100px_rgba(0,0,0,0.4)] overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
             <div className="p-10 pb-6 flex items-center justify-between relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-500/5 rounded-full -ml-16 -mt-16" />
-               <div className="relative">
-                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                    {editingId ? 'Edit Transaksi' : 'Transaksi Baru'}
-                  </h2>
-                  <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-[0.2em] mt-1">Lengkapi data di bawah ini</p>
-               </div>
-               <button onClick={closeModal} className="relative z-10 p-3 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-500/5 rounded-full -ml-16 -mt-16" />
+              <div className="relative">
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                  {editingId ? 'Edit Transaksi' : 'Transaksi Baru'}
+                </h2>
+                <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-[0.2em] mt-1">Lengkapi data di bawah ini</p>
+              </div>
+              <button onClick={closeModal} className="relative z-10 p-3 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all">
                 <X size={24} strokeWidth={3} />
               </button>
             </div>
@@ -395,25 +393,23 @@ const Transaksi = () => {
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Pilih Tipe Transaksi</label>
                 <div className="flex gap-4">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setForm({ ...form, type: 'expense', category: 'Makan' })}
-                    className={`flex-1 py-4 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                      form.type === 'expense' 
-                        ? 'bg-rose-600 text-white shadow-xl shadow-rose-900/20' 
+                    className={`flex-1 py-4 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${form.type === 'expense'
+                        ? 'bg-rose-600 text-white shadow-xl shadow-rose-900/20'
                         : 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-500'
-                    }`}
+                      }`}
                   >
                     🚀 Pengeluaran
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setForm({ ...form, type: 'income', category: 'Gaji' })}
-                    className={`flex-1 py-4 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                      form.type === 'income' 
-                        ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-900/20' 
+                    className={`flex-1 py-4 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${form.type === 'income'
+                        ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-900/20'
                         : 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-gray-500'
-                    }`}
+                      }`}
                   >
                     💰 Pemasukan
                   </button>
@@ -424,19 +420,19 @@ const Transaksi = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Tanggal</label>
-                  <input 
-                    type="date" 
-                    required 
-                    value={form.date} 
+                  <input
+                    type="date"
+                    required
+                    value={form.date}
                     onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="w-full px-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200" 
+                    className="w-full px-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200"
                   />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Kategori</label>
-                  <select 
-                    required 
-                    value={form.category} 
+                  <select
+                    required
+                    value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className="w-full px-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200 cursor-pointer"
                   >
@@ -450,14 +446,14 @@ const Transaksi = () => {
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Nominal Transaksi (Rp)</label>
                 <div className="relative">
                   <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-300 dark:text-gray-600 text-lg">Rp</span>
-                  <input 
-                    type="number" 
-                    required 
-                    min="0" 
-                    value={form.amount} 
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })}
                     placeholder="0"
-                    className="w-full pl-16 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xl font-black text-indigo-600 dark:text-indigo-400 placeholder:text-gray-200 dark:placeholder:text-gray-700" 
+                    className="w-full pl-16 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-xl font-black text-indigo-600 dark:text-indigo-400 placeholder:text-gray-200 dark:placeholder:text-gray-700"
                   />
                 </div>
               </div>
@@ -466,36 +462,35 @@ const Transaksi = () => {
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-2">Catatan Keterangan</label>
                 <div className="relative">
-                   <div className="absolute left-6 top-5 text-gray-300 dark:text-gray-600">
-                      <Edit2 size={16} />
-                   </div>
-                   <input 
-                    type="text" 
-                    value={form.note} 
+                  <div className="absolute left-6 top-5 text-gray-300 dark:text-gray-600">
+                    <Edit2 size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
                     placeholder="Contoh: Belanja bahan baku..."
-                    className="w-full pl-14 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-600" 
+                    className="w-full pl-14 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-600"
                   />
                 </div>
               </div>
 
               {/* Tombol Submit */}
               <div className="flex gap-4 pt-4">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={closeModal}
                   className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 rounded-lg font-black uppercase tracking-[0.2em] text-[10px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"
                 >
                   Batal
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={submitting}
-                  className={`flex-2 px-10 py-5 rounded-lg font-black uppercase tracking-[0.2em] text-[10px] text-white shadow-2xl flex items-center justify-center gap-3 transition-all transform hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 ${
-                    form.type === 'income' 
-                      ? 'bg-emerald-600 shadow-emerald-900/20 hover:bg-emerald-700' 
+                  className={`flex-2 px-10 py-5 rounded-lg font-black uppercase tracking-[0.2em] text-[10px] text-white shadow-2xl flex items-center justify-center gap-3 transition-all transform hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 ${form.type === 'income'
+                      ? 'bg-emerald-600 shadow-emerald-900/20 hover:bg-emerald-700'
                       : 'bg-indigo-600 shadow-indigo-900/20 hover:bg-indigo-700'
-                  }`}
+                    }`}
                 >
                   {submitting ? <Loader2 className="animate-spin" size={18} /> : (
                     <>

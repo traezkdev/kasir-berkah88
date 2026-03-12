@@ -145,19 +145,19 @@ const BudgetMobile = () => {
               <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Anggaran</h1>
               <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Limit Pengeluaran</p>
            </div>
-          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all">
+          <button onClick={openAddModal} className="bg-indigo-600 text-white p-3 rounded-lg shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all">
             <Plus size={20} strokeWidth={3} />
           </button>
         </div>
 
         {error && (
-          <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-2xl flex items-center gap-2 border border-rose-100 dark:border-rose-500/20">
+          <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-rose-100 dark:border-rose-500/20">
             <AlertCircle size={16} /> {error}
           </div>
         )}
 
         {/* Hero Card */}
-        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-8 text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12"><PieChart size={120} strokeWidth={1} /></div>
           <div className="space-y-6 relative z-10">
             <div>
@@ -192,10 +192,10 @@ const BudgetMobile = () => {
               const remaining = limit - used;
 
               return (
-                <div key={budget.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm overflow-hidden border border-gray-100 dark:border-slate-800 p-6 space-y-6 transition-all active:scale-[0.98]">
+                <div key={budget.id} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-800 p-6 space-y-6 transition-all active:scale-[0.98]">
                   <div className="flex justify-between items-start">
                     <div className="flex gap-4">
-                      <div className={`p-4 rounded-[1.5rem] shadow-sm ${percent >= 90 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
+                      <div className={`p-4 rounded-lg shadow-sm ${percent >= 90 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
                         <PieChart size={22} strokeWidth={2.5} />
                       </div>
                       <div>
@@ -204,10 +204,10 @@ const BudgetMobile = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => openEditModal(budget)} className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition-all">
+                      <button onClick={() => openEditModal(budget)} className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all">
                         <Edit2 size={16} strokeWidth={2.5} />
                       </button>
-                      <button onClick={() => handleDelete(budget.id)} disabled={deletingId === budget.id} className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl transition-all">
+                      <button onClick={() => handleDelete(budget.id)} disabled={deletingId === budget.id} className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition-all">
                         {deletingId === budget.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} strokeWidth={2.5} />}
                       </button>
                     </div>
@@ -230,7 +230,7 @@ const BudgetMobile = () => {
 
                   <div className="pt-2">
                     <button onClick={() => openInputModal(budget)} 
-                        className="w-full py-4.5 bg-indigo-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20">
+                        className="w-full py-6 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20">
                       <Plus size={16} strokeWidth={3} /> Masukkan Belanja
                     </button>
                   </div>
@@ -240,7 +240,7 @@ const BudgetMobile = () => {
             
             {budgets.length === 0 && (
               <div className="py-24 text-center px-10">
-                <div className="w-20 h-20 bg-gray-50 dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 rotate-6 transform">
+                <div className="w-20 h-20 bg-gray-50 dark:bg-slate-900 rounded-lg flex items-center justify-center mx-auto mb-6 rotate-6 transform">
                   <PieChart size={32} className="text-gray-200 dark:text-slate-800" />
                 </div>
                 <p className="text-xs font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Belum ada budget aktif</p>
@@ -255,14 +255,14 @@ const BudgetMobile = () => {
       {showModal && (
         <div className="fixed inset-0 z-[200] flex items-end">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closeModal} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-20 p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-xl shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-20 p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
             <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full mx-auto -mt-2 mb-2"></div>
             <div className="flex items-center justify-between">
                <div>
                   <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{editingId ? 'Ubah Budget' : 'Anggaran Baru'}</h2>
                   <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Atur limit pengeluaranmu</p>
                </div>
-               <button onClick={closeModal} className="p-3 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-2xl transition-all">
+               <button onClick={closeModal} className="p-3 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-all">
                 <X size={24} strokeWidth={3} />
               </button>
             </div>
@@ -274,7 +274,7 @@ const BudgetMobile = () => {
                   required 
                   value={form.category} 
                   onChange={e => setForm({...form, category: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 text-gray-700 dark:text-gray-200"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 text-gray-700 dark:text-gray-200"
                 >
                   <option value="" disabled>-- Pilih Kategori --</option>
                   {expenseCategories.map(cat => (
@@ -292,14 +292,14 @@ const BudgetMobile = () => {
                     value={form.limit_amount} 
                     onChange={e => setForm({...form, limit_amount: e.target.value})}
                     placeholder="0" 
-                    className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-[2rem] text-2xl font-black text-center text-indigo-600 dark:text-indigo-400 focus:ring-4 focus:ring-indigo-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800" 
+                    className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-2xl font-black text-center text-indigo-600 dark:text-indigo-400 focus:ring-4 focus:ring-indigo-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800" 
                    />
                 </div>
               </div>
               <button 
                 type="submit" 
                 disabled={submitting}
-                className="w-full py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs text-white bg-indigo-600 shadow-2xl shadow-indigo-900/20 flex items-center justify-center gap-3 transition-all transform active:scale-95 disabled:opacity-50"
+                className="w-full py-5 rounded-lg font-black uppercase tracking-[0.2em] text-xs text-white bg-indigo-600 shadow-2xl shadow-indigo-900/20 flex items-center justify-center gap-3 transition-all transform active:scale-95 disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="animate-spin" size={20} /> : (
                   <>
@@ -317,7 +317,7 @@ const BudgetMobile = () => {
       {showInputModal && (
         <div className="fixed inset-0 z-[200] flex items-end">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={closeInputModal} />
-          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-20 p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-xl shadow-[0_-20px_60px_rgba(0,0,0,0.3)] z-20 p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
             <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full mx-auto -mt-2 mb-2"></div>
             <div className="text-center">
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Catat Belanja</h2>
@@ -337,7 +337,7 @@ const BudgetMobile = () => {
                     onChange={e => setInputAmount(e.target.value)}
                     placeholder="0" 
                     autoFocus
-                    className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-[2rem] text-3xl font-black text-center text-rose-600 dark:text-rose-400 focus:ring-4 focus:ring-rose-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800 shadow-sm" 
+                    className="w-full pl-16 pr-6 py-6 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-3xl font-black text-center text-rose-600 dark:text-rose-400 focus:ring-4 focus:ring-rose-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800 shadow-sm" 
                   />
                 </div>
               </div>
@@ -347,13 +347,13 @@ const BudgetMobile = () => {
                   value={inputNote} 
                   onChange={e => setInputNote(e.target.value)}
                   placeholder="Catatan belanja hari ini..."
-                  className="w-full px-8 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-sm text-center font-bold text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-rose-500/10 placeholder:text-gray-300 dark:placeholder:text-gray-700 transition-all" 
+                  className="w-full px-8 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm text-center font-bold text-gray-700 dark:text-gray-200 focus:ring-4 focus:ring-rose-500/10 placeholder:text-gray-300 dark:placeholder:text-gray-700 transition-all" 
                 />
               </div>
               <button 
                 type="submit" 
                 disabled={submitting || !inputAmount}
-                className="w-full py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs text-white bg-emerald-600 shadow-2xl shadow-emerald-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                className="w-full py-5 rounded-lg font-black uppercase tracking-[0.2em] text-xs text-white bg-emerald-600 shadow-2xl shadow-emerald-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 {submitting ? <Loader2 className="animate-spin" size={24} /> : (
                   <>

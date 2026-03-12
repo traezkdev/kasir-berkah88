@@ -109,7 +109,7 @@ const LaporanMobile = () => {
           <select 
             value={selectedMonth} 
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest py-3 px-4 rounded-2xl focus:ring-0 outline-none shadow-sm appearance-none pr-8 text-gray-700 dark:text-gray-200"
+            className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest py-3 px-4 rounded-lg focus:ring-0 outline-none shadow-sm appearance-none pr-8 text-gray-700 dark:text-gray-200"
           >
             {Array.from({length: 12}, (_, i) => (
               <option key={i+1} value={i+1}>
@@ -119,7 +119,7 @@ const LaporanMobile = () => {
           </select>
           <button 
             onClick={handleExportPDF}
-            className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-[0.85] transition-all"
+            className="bg-indigo-600 text-white p-3.5 rounded-lg shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-[0.85] transition-all"
           >
             <Download size={20} strokeWidth={3} />
           </button>
@@ -127,14 +127,14 @@ const LaporanMobile = () => {
       </div>
 
       {error && (
-        <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-500/20 rounded-2xl flex items-center gap-3">
+        <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3">
            <AlertCircle size={18} strokeWidth={3} />
            <span>{error}</span>
         </div>
       )}
 
       {/* Hero Analytics Mobile */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 dark:from-indigo-700 dark:to-indigo-900 rounded-[3rem] p-10 text-white shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden group active:scale-[0.98] transition-all">
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 dark:from-indigo-700 dark:to-indigo-900 rounded-xl p-10 text-white shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden group active:scale-[0.98] transition-all">
         <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12 group-hover:rotate-45 transition-transform duration-700"><BarChart3 size={150} strokeWidth={1} /></div>
         <p className="text-[10px] font-black text-indigo-100/60 uppercase tracking-[0.3em] mb-6 relative z-10">Ringkasan Arus Kas ✨</p>
         <div className="grid grid-cols-2 gap-8 relative z-10">
@@ -160,7 +160,7 @@ const LaporanMobile = () => {
               <p className="text-[9px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Total Tabungan</p>
               <p className="text-2xl font-black tracking-tighter">{formatCurrency(summary.balance)}</p>
            </div>
-           <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20">
+           <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20">
               <p className="text-[8px] font-black uppercase tracking-widest text-indigo-100">Hemat</p>
               <p className="text-sm font-black text-white">{summary.savingsPercentage}%</p>
            </div>
@@ -172,7 +172,7 @@ const LaporanMobile = () => {
       </div>
 
       {/* Chart Mobile */}
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 transition-transform hover:scale-[1.01]">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 transition-transform hover:scale-[1.01]">
         <div className="flex items-center justify-between">
            <div>
               <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Tren Saldo</h3>
@@ -180,7 +180,7 @@ const LaporanMobile = () => {
            </div>
            <button 
              onClick={() => setReportType(reportType === 'monthly' ? 'weekly' : 'monthly')}
-             className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 rounded-xl active:scale-[0.85] transition-all uppercase tracking-widest"
+             className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 rounded-lg active:scale-[0.85] transition-all uppercase tracking-widest"
            >
              Ubah
            </button>
@@ -208,7 +208,7 @@ const LaporanMobile = () => {
       </div>
 
       {/* Category Distribution Mobile */}
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 relative overflow-hidden">
         <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight px-1">Alokasi Budget</h3>
         {categoryData.length > 0 ? (
           <div className="flex flex-col gap-10">
@@ -229,7 +229,7 @@ const LaporanMobile = () => {
             </div>
             <div className="grid grid-cols-2 gap-4 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar px-2">
               {categoryData.map((cat) => (
-                <div key={cat.name} className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-3xl border border-gray-100 dark:border-slate-800">
+                <div key={cat.name} className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full shadow-sm" style={{backgroundColor: cat.color}}></div>
                     <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate">{cat.name}</span>
@@ -254,11 +254,11 @@ const LaporanMobile = () => {
         </div>
         
         {topTransactions.length > 0 ? topTransactions.map((tx) => (
-          <div key={tx.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-5 transition-all active:scale-[0.97] active:bg-gray-50 dark:active:bg-slate-800/50">
+          <div key={tx.id} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm space-y-5 transition-all active:scale-[0.97] active:bg-gray-50 dark:active:bg-slate-800/50">
             {/* Header: Icon, Category & Amount */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-5 min-w-0 flex-1">
-                <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 shadow-sm ${tx.type === 'income' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>
+                <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${tx.type === 'income' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>
                   {tx.type === 'income' ? <ArrowUpRight size={24} strokeWidth={3} /> : <ArrowDownRight size={24} strokeWidth={3} />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -278,7 +278,7 @@ const LaporanMobile = () => {
             {/* Body: Note Block (Style dari TransaksiMobile) */}
             {tx.note && (
               <div className="px-1">
-                <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border-l-4 border-indigo-500 dark:border-indigo-600 shadow-sm">
+                <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border-l-4 border-indigo-500 dark:border-indigo-600 shadow-sm">
                   <p className="text-xs text-gray-600 dark:text-gray-300 font-bold leading-relaxed italic">
                     "{tx.note.toUpperCase()}"
                   </p>
@@ -287,7 +287,7 @@ const LaporanMobile = () => {
             )}
           </div>
         )) : (
-          <div className="bg-white dark:bg-slate-900 p-20 rounded-[3rem] border-4 border-dashed border-gray-100 dark:border-slate-800 flex flex-col items-center justify-center gap-4 transition-colors">
+          <div className="bg-white dark:bg-slate-900 p-20 rounded-xl border-4 border-dashed border-gray-100 dark:border-slate-800 flex flex-col items-center justify-center gap-4 transition-colors">
              <FileText size={48} className="text-gray-200 dark:text-slate-800" strokeWidth={1} />
              <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest text-center leading-relaxed">BELUM ADA TRANSAKSI<br/>DI PERIODE INI ✨</p>
           </div>

@@ -124,7 +124,7 @@ const TabunganMobile = () => {
          </div>
         <button 
           onClick={openAddTargetModal}
-          className="bg-indigo-600 text-white p-3 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all font-black"
+          className="bg-indigo-600 text-white p-3 rounded-lg shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-90 transition-all font-black"
         >
           <Plus size={20} strokeWidth={3} />
         </button>
@@ -139,9 +139,9 @@ const TabunganMobile = () => {
         <>
           {/* Hero Stats Mobile */}
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/40 text-white flex flex-col items-center text-center gap-4 relative overflow-hidden">
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 rounded-xl shadow-xl shadow-indigo-100 dark:shadow-indigo-900/40 text-white flex flex-col items-center text-center gap-4 relative overflow-hidden">
                <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12"><Wallet size={120} strokeWidth={1} /></div>
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-1 backdrop-blur-sm shadow-sm relative z-10">
+              <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mb-1 backdrop-blur-sm shadow-sm relative z-10">
                 <Wallet size={32} strokeWidth={2.5} />
               </div>
               <div className="relative z-10">
@@ -153,8 +153,8 @@ const TabunganMobile = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5">
-                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
                   <Target size={24} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -163,8 +163,8 @@ const TabunganMobile = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5">
-                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5">
+                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
                   <TrendingUp size={24} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -183,7 +183,7 @@ const TabunganMobile = () => {
             </div>
 
             {savings.length === 0 ? (
-              <div className="py-20 text-center bg-gray-50/50 dark:bg-slate-900/50 rounded-[3rem] border-4 border-dashed border-gray-100 dark:border-slate-800">
+              <div className="py-20 text-center bg-gray-50/50 dark:bg-slate-900/50 rounded-xl border-4 border-dashed border-gray-100 dark:border-slate-800">
                  <Target className="mx-auto text-gray-200 dark:text-slate-800 mb-4" size={48} strokeWidth={2} />
                  <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Belum ada target impian</p>
                  <button onClick={openAddTargetModal} className="mt-6 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-widest underline underline-offset-4">MULAI SEKARANG</button>
@@ -192,10 +192,10 @@ const TabunganMobile = () => {
               savings.map((item) => {
                 const progress = (Number(item.current_amount) / Number(item.target_amount)) * 100;
                 return (
-                  <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-6 transition-all active:scale-[0.98] relative overflow-hidden">
+                  <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col gap-6 transition-all active:scale-[0.98] relative overflow-hidden">
                     <div className="flex items-start justify-between relative z-10">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-indigo-600 dark:bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20">
+                        <div className="w-14 h-14 bg-indigo-600 dark:bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20">
                           <Target size={24} strokeWidth={2.5} />
                         </div>
                         <div>
@@ -214,7 +214,7 @@ const TabunganMobile = () => {
                         {showActionId === item.id && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setShowActionId(null)} />
-                            <div className="absolute right-0 mt-3 w-36 bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-2xl border border-gray-50 dark:border-slate-800 z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 mt-3 w-36 bg-white dark:bg-slate-900 rounded-lg shadow-2xl border border-gray-50 dark:border-slate-800 z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
                               <button 
                                 onClick={() => openEditTargetModal(item)}
                                 className="w-full px-5 py-3 text-left text-[11px] font-black text-gray-600 dark:text-gray-400 flex items-center gap-3 uppercase tracking-widest"
@@ -248,7 +248,7 @@ const TabunganMobile = () => {
 
                     <button 
                       onClick={() => openDepositModal(item)}
-                      className="w-full bg-gray-50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 px-4 py-4.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:bg-indigo-600 active:text-white dark:active:bg-indigo-600 transition-all font-black shadow-sm"
+                      className="w-full bg-gray-50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 px-4 py-6 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:bg-indigo-600 active:text-white dark:active:bg-indigo-600 transition-all font-black shadow-sm"
                     >
                       <span>Tambah Tabungan</span> <ChevronRight size={16} strokeWidth={3} />
                     </button>
@@ -264,8 +264,8 @@ const TabunganMobile = () => {
       )}
       
       {/* Tip Card Mobile */}
-      <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 rounded-[3rem] border border-indigo-100 dark:border-slate-800 flex items-start gap-5 shadow-sm">
-         <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 shrink-0 transform rotate-6">
+      <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 rounded-xl border border-indigo-100 dark:border-slate-800 flex items-start gap-5 shadow-sm">
+         <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-indigo-600 dark:text-indigo-400 shrink-0 transform rotate-6">
             <TrendingUp size={28} strokeWidth={2.5} />
          </div>
          <div className="pt-1">
@@ -278,14 +278,14 @@ const TabunganMobile = () => {
       {showTargetModal && (
         <div className="fixed inset-0 z-[300] flex items-end justify-center">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowTargetModal(false)} />
-          <div className="relative bg-white dark:bg-slate-900 w-full rounded-t-[3rem] p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
+          <div className="relative bg-white dark:bg-slate-900 w-full rounded-t-xl p-8 pb-12 space-y-8 animate-in slide-in-from-bottom duration-500">
             <div className="w-12 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full mx-auto -mt-2 mb-2" />
             <div className="flex items-center justify-between">
                <div>
                   <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">{editingId ? 'Edit Impian' : 'Impian Baru'}</h2>
                   <p className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Gantungkan mimpimu di sini</p>
                </div>
-              <button onClick={() => setShowTargetModal(false)} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-all font-black">
+              <button onClick={() => setShowTargetModal(false)} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-all font-black">
                 <X size={24} strokeWidth={3} />
               </button>
             </div>
@@ -297,7 +297,7 @@ const TabunganMobile = () => {
                   type="text" required
                   value={targetForm.name}
                   onChange={(e) => setTargetForm({...targetForm, name: e.target.value})}
-                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                  className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700"
                   placeholder="Misal: Beli Laptop Baru"
                 />
               </div>
@@ -309,7 +309,7 @@ const TabunganMobile = () => {
                     type="number" required min="1"
                     value={targetForm.target_amount}
                     onChange={(e) => setTargetForm({...targetForm, target_amount: e.target.value})}
-                    className="w-full pl-16 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-xl font-black text-indigo-600 dark:text-indigo-400 placeholder:text-gray-200 dark:placeholder:text-gray-800"
+                    className="w-full pl-16 pr-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-xl font-black text-indigo-600 dark:text-indigo-400 placeholder:text-gray-200 dark:placeholder:text-gray-800"
                     placeholder="0"
                   />
                 </div>
@@ -321,7 +321,7 @@ const TabunganMobile = () => {
                     type="number" min="0"
                     value={targetForm.current_amount}
                     onChange={(e) => setTargetForm({...targetForm, current_amount: e.target.value})}
-                    className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-[1.5rem] text-sm font-bold text-gray-700 dark:text-gray-200"
+                    className="w-full px-6 py-5 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm font-bold text-gray-700 dark:text-gray-200"
                     placeholder="0"
                   />
                   <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold italic ml-2">⚠️ OTOMATIS TERCATAT SEBAGAI PENGELUARAN.</p>
@@ -329,7 +329,7 @@ const TabunganMobile = () => {
               )}
               <button 
                 disabled={submitting}
-                className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full py-5 bg-indigo-600 text-white rounded-lg font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="animate-spin" size={20} /> : (
                    <>
@@ -346,7 +346,7 @@ const TabunganMobile = () => {
       {showDepositModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowDepositModal(false)} />
-          <div className="relative bg-white dark:bg-slate-900 w-full rounded-[3rem] p-10 space-y-8 animate-in zoom-in-95 duration-300 shadow-2xl">
+          <div className="relative bg-white dark:bg-slate-900 w-full rounded-xl p-10 space-y-8 animate-in zoom-in-95 duration-300 shadow-2xl">
             <div className="text-center">
               <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.3em] mb-2 font-black">Tambah Setoran</p>
               <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">{selectedSaving?.name}</h2>
@@ -359,12 +359,12 @@ const TabunganMobile = () => {
                   type="number" required min="1" autoFocus
                   value={depositForm.amount}
                   onChange={(e) => setDepositForm({...depositForm, amount: e.target.value})}
-                  className="w-full pl-16 pr-6 py-7 bg-gray-50 dark:bg-slate-800 border-none rounded-[2rem] text-3xl font-black text-center text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-50 dark:ring-indigo-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800"
+                  className="w-full pl-16 pr-6 py-7 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-3xl font-black text-center text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-50 dark:ring-indigo-500/10 placeholder:text-gray-200 dark:placeholder:text-gray-800"
                   placeholder="0"
                 />
               </div>
               
-              <div className="flex items-start gap-4 bg-amber-50 dark:bg-amber-500/5 p-5 rounded-[2rem] border border-amber-100 dark:border-amber-500/10">
+              <div className="flex items-start gap-4 bg-amber-50 dark:bg-amber-500/5 p-5 rounded-lg border border-amber-100 dark:border-amber-500/10">
                 <AlertCircle className="text-amber-600 dark:text-amber-500 shrink-0" size={20} strokeWidth={3} />
                 <p className="text-[9px] text-amber-900 dark:text-amber-200 font-bold leading-relaxed uppercase tracking-tighter">
                   SALDO UTAMA AKAN OTOMATIS BERKURANG SESUAI JUMLAH SETORAN INI.
@@ -372,10 +372,10 @@ const TabunganMobile = () => {
               </div>
 
               <div className="flex gap-4">
-                <button type="button" onClick={() => setShowDepositModal(false)} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest">BATAL</button>
+                <button type="button" onClick={() => setShowDepositModal(false)} className="flex-1 py-5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 rounded-lg font-black text-[10px] uppercase tracking-widest">BATAL</button>
                 <button 
                   disabled={submitting}
-                  className="flex-2 px-6 py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-2 px-6 py-5 bg-indigo-600 text-white rounded-lg font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {submitting ? <Loader2 className="animate-spin" size={18} /> : (
                      <>
