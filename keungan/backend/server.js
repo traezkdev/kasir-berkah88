@@ -52,12 +52,12 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         const [result] = await pool.query(
             "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
             [name, email, hashedPassword]
         );
-        
+
         res.status(201).json({ message: "User berhasil didaftarkan", userId: result.insertId });
     } catch (error) {
         res.status(500).json({ message: "Gagal mendaftar", error: error.message });
@@ -69,16 +69,16 @@ app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
-        
+
         if (rows.length === 0) return res.status(404).json({ message: "User tidak ditemukan" });
-        
+
         const user = rows[0];
         const isMatch = await bcrypt.compare(password, user.password);
-        
+
         if (!isMatch) return res.status(401).json({ message: "Password salah" });
-        
+
         const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        
+
         // Seeding kategori default jika user belum punya kategori
         const [existingCats] = await pool.query("SELECT id FROM categories WHERE user_id = ? LIMIT 1", [user.id]);
         if (existingCats.length === 0) {
@@ -92,12 +92,12 @@ app.post('/api/auth/login', async (req, res) => {
             }
         }
 
-        res.json({ 
-            token, 
-            user: { 
-                id: user.id, 
-                name: user.name, 
-                email: user.email, 
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
                 avatar: user.avatar,
                 phone: user.phone,
                 notif_transaksi: user.notif_transaksi,
@@ -105,7 +105,7 @@ app.post('/api/auth/login', async (req, res) => {
                 notif_budget: user.notif_budget,
                 currency: user.currency,
                 language: user.language
-            } 
+            }
         });
     } catch (error) {
         res.status(500).json({ message: "Gagal login", error: error.message });
@@ -150,7 +150,7 @@ app.put('/api/auth/password', authMiddleware, async (req, res) => {
 
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         await pool.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, req.user.id]);
-        
+
         res.json({ message: "Password berhasil diubah" });
     } catch (error) {
         res.status(500).json({ message: "Gagal mengubah password", error: error.message });
@@ -207,7 +207,7 @@ app.get('/api/transactions', authMiddleware, async (req, res) => {
     try {
         // Hanya ambil data milik user yang sedang login
         const [rows] = await pool.query(
-            "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, id DESC", 
+            "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, id DESC",
             [req.user.id]
         );
         res.json(rows);
@@ -227,7 +227,7 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
         if (type === 'expense') {
             const [income] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income'", [userId]);
             const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense'", [userId]);
-            
+
             const currentBalance = (income[0].total || 0) - (expense[0].total || 0);
             if (Number(amount) > currentBalance) {
                 return res.status(400).json({ message: `Saldo Anda tidak cukup! Sisa saldo saat ini: Rp ${currentBalance.toLocaleString('id-ID')}` });
@@ -244,10 +244,10 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
         const [userSet] = await pool.query("SELECT notif_transaksi FROM users WHERE id = ?", [userId]);
         if (userSet[0]?.notif_transaksi) {
             const title = type === 'income' ? "Pemasukan Baru 💰" : "Pengeluaran Baru 💸";
-            const amountStr = new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR'}).format(amount);
+            const amountStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
             await createNotification(userId, title, `${category}: ${amountStr} ${note ? `(${note})` : ''}`, type === 'income' ? 'success' : 'info');
         }
-        
+
         // Auto-update budget jika transaksi expense
         if (type === 'expense') {
             await recalculateBudgetUsed(userId, category);
@@ -257,7 +257,7 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
             if (budgetRows.length > 0) {
                 const b = budgetRows[0];
                 const percentage = (b.used_amount / b.limit_amount) * 100;
-                
+
                 const [userSettings] = await pool.query("SELECT notif_budget FROM users WHERE id = ?", [userId]);
                 if (userSettings[0]?.notif_budget) {
                     if (percentage >= 100) {
@@ -295,7 +295,7 @@ app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
         if (type === 'expense') {
             const [income] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income'", [userId]);
             const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense'", [userId]);
-            
+
             // Saldo sebelum transaksi ini dihitung
             const currentTotalExpenseExcludingThis = (expense[0].total || 0) - (oldTransaction.type === 'expense' ? oldTransaction.amount : 0);
             const currentBalance = (income[0].total || 0) - currentTotalExpenseExcludingThis;
@@ -469,7 +469,7 @@ app.patch('/api/bills/:id/status', authMiddleware, async (req, res) => {
 
         const paidAmount = status === 'paid' ? bill.amount : 0;
         await pool.query("UPDATE bills SET status = ?, paid_amount = ? WHERE id = ? AND user_id = ?", [status, paidAmount, req.params.id, req.user.id]);
-        
+
         const [updated] = await pool.query("SELECT * FROM bills WHERE id = ?", [req.params.id]);
         res.json(updated[0]);
     } catch (error) {
@@ -603,12 +603,12 @@ app.post('/api/savings', authMiddleware, async (req, res) => {
     try {
         const { name, target_amount, current_amount } = req.body;
         if (!name || !target_amount) return res.status(400).json({ message: "Nama dan target tabungan wajib diisi" });
-        
+
         const [result] = await pool.query(
             "INSERT INTO savings (user_id, name, target_amount, current_amount) VALUES (?, ?, ?, ?)",
             [req.user.id, name, target_amount, current_amount || 0]
         );
-        
+
         // Jika saldo awal tabungan > 0, catat sebagai pengeluaran di transaksi
         if (current_amount > 0) {
             await pool.query(
@@ -690,22 +690,22 @@ app.delete('/api/savings/:id', authMiddleware, async (req, res) => {
 app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        
+
         // 1. Basic Stats
         const [income] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income'", [userId]);
         const [expense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND category != 'Tabungan'", [userId]);
         const [debt] = await pool.query("SELECT SUM(amount) as total FROM debts WHERE user_id = ? AND status = 'utang'", [userId]);
-        
+
         // 2. Monthly Stats
         const [monthlyIncome] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'income' AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())", [userId]);
         const [monthlyExpense] = await pool.query("SELECT SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())", [userId]);
-        
+
         // 3. Recent Transactions
         const [recentTransactions] = await pool.query("SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 5", [userId]);
-        
+
         // 4. Budgets
         const [budgets] = await pool.query("SELECT * FROM budgets WHERE user_id = ?", [userId]);
-        
+
         // 5. Savings
         const [savings] = await pool.query("SELECT * FROM savings WHERE user_id = ?", [userId]);
 
@@ -720,10 +720,10 @@ app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
             GROUP BY date
             ORDER BY date ASC
         `, [userId]);
-        
+
         const totalIncome = income[0].total || 0;
         const totalExpense = expense[0].total || 0;
-        
+
         res.json({
             totalBalance: totalIncome - totalExpense,
             monthlyIncome: monthlyIncome[0].total || 0,
@@ -743,7 +743,7 @@ app.get('/api/reports', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const { month, year, type } = req.query; // type can be 'monthly' or 'weekly'
-        
+
         const targetMonth = month || new Date().getMonth() + 1;
         const targetYear = year || new Date().getFullYear();
 
@@ -800,7 +800,7 @@ app.get('/api/reports', authMiddleware, async (req, res) => {
             GROUP BY category
             ORDER BY value DESC
         `, [userId, targetMonth, targetYear]);
-        
+
         const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#06B6D4'];
         const formattedCategoryData = categories.map((cat, index) => ({
             name: cat.name,
@@ -849,8 +849,8 @@ app.get('/api/notifications', authMiddleware, async (req, res) => {
 
         for (const bill of upcomingBills) {
             const title = "Tagihan Mendatang";
-            const message = `Tagihan "${bill.name}" senilai ${new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR'}).format(bill.amount)} akan jatuh tempo pada ${new Date(bill.due_date).toLocaleDateString('id-ID')}.`;
-            
+            const message = `Tagihan "${bill.name}" senilai ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(bill.amount)} akan jatuh tempo pada ${new Date(bill.due_date).toLocaleDateString('id-ID')}.`;
+
             // Cek apakah notifikasi serupa sudah ada hari ini (biar gak spam)
             const [existing] = await pool.query(
                 "SELECT id FROM notifications WHERE user_id = ? AND title = ? AND message LIKE ? AND DATE(created_at) = CURDATE()",

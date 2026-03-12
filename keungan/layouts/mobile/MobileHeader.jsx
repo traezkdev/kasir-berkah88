@@ -21,15 +21,35 @@ import NotificationPopover from '../../components/NotificationPopover';
 const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'transaksi', label: 'Transaksi', icon: Receipt },
-    { id: 'utang', label: 'Utang', icon: HandCoins },
-    { id: 'tagihan', label: 'Tagihan', icon: CreditCard },
-    { id: 'budget', label: 'Budget', icon: PieChart },
-    { id: 'tabungan', label: 'Tabungan', icon: Target },
-    { id: 'laporan', label: 'Laporan', icon: FileText },
-    { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
+  const menuGroups = [
+    {
+      title: 'Utama',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'laporan', label: 'Laporan', icon: FileText },
+      ]
+    },
+    {
+      title: 'Transaksi & Keuangan',
+      items: [
+        { id: 'transaksi', label: 'Transaksi', icon: Receipt },
+        { id: 'utang', label: 'Utang', icon: HandCoins },
+        { id: 'tagihan', label: 'Tagihan', icon: CreditCard },
+      ]
+    },
+    {
+      title: 'Perencanaan',
+      items: [
+        { id: 'budget', label: 'Budget', icon: PieChart },
+        { id: 'tabungan', label: 'Tabungan', icon: Target },
+      ]
+    },
+    {
+      title: 'Sistem',
+      items: [
+        { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
+      ]
+    }
   ];
 
   const handleMenuClick = (id) => {
@@ -106,7 +126,7 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
 
               <div className="p-6 flex items-center gap-4 bg-gray-50 mx-4 mt-6 rounded-[1.5rem] border border-gray-100">
                 <img 
-                  src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=4F46E5&color=fff`} 
+                   src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=4F46E5&color=fff`} 
                   alt="Profile" 
                   className="w-12 h-12 rounded-2xl shadow-sm border-2 border-white"
                 />
@@ -116,21 +136,27 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout }) => {
                 </div>
               </div>
 
-              <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto">
-                <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Main Menu</p>
-                {menuItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleMenuClick(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-200 group ${
-                      activePage === item.id 
-                        ? 'bg-indigo-50 text-indigo-600 font-bold' 
-                        : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <item.icon size={20} className={activePage === item.id ? 'text-indigo-600' : 'text-gray-400'} />
-                    <span className="text-sm">{item.label}</span>
-                  </button>
+              <nav className="flex-1 px-4 py-8 space-y-8 overflow-y-auto">
+                {menuGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{group.title}</p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleMenuClick(item.id)}
+                          className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-200 group ${
+                            activePage === item.id 
+                              ? 'bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-100' 
+                              : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <item.icon size={20} className={activePage === item.id ? 'text-white' : 'text-gray-400'} />
+                          <span className="text-sm">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </nav>
 
