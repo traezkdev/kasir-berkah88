@@ -112,14 +112,14 @@ const Utang = () => {
   };
 
   const DebtCard = ({ debt, colorScheme }) => (
-    <div className="p-6 border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-100 dark:hover:border-slate-700 transition-all group relative overflow-hidden">
+    <div className="p-4 border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-100 dark:hover:border-slate-700 transition-all group relative overflow-hidden">
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex-1 pr-4">
           <p className="font-black text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase text-[10px] tracking-[0.2em] mb-1">{debt.name}</p>
           {debt.note && <p className="text-xs text-gray-400 dark:text-gray-500 font-medium leading-relaxed">{debt.note}</p>}
         </div>
         <div className="flex items-center gap-3">
-          <p className={`font-black text-base tracking-tight ${colorScheme === 'red' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+          <p className={`font-black text-sm tracking-tight ${colorScheme === 'red' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
             {formatCurrency(debt.amount)}
           </p>
           <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -147,14 +147,14 @@ const Utang = () => {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Manajemen Utang</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Pantau utangmu dan piutang orang lain ke kamu.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Manajemen Utang</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1 text-sm">Pantau utangmu dan piutang orang lain ke kamu.</p>
         </div>
-        <button onClick={() => openAddModal('utang')} className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
-          <Plus size={20} strokeWidth={3} />
+        <button onClick={() => openAddModal('utang')} className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
+          <Plus size={18} strokeWidth={3} />
           <span>Tambah Catatan</span>
         </button>
       </div>
@@ -167,13 +167,13 @@ const Utang = () => {
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-rose-50 dark:bg-rose-500/10 p-8 rounded-xl border border-rose-100 dark:border-rose-500/20 shadow-sm transition-all hover:shadow-md">
-          <p className="text-[10px] font-black text-rose-400 dark:text-rose-500 uppercase tracking-[0.3em] mb-3 leading-none px-1">Total Utang Saya 📉</p>
-          <p className="text-4xl font-black text-rose-600 tracking-tight">{formatCurrency(utangList.reduce((a, b) => a + Number(b.amount), 0))}</p>
+        <div className="bg-rose-50 dark:bg-rose-500/10 p-5 rounded-xl border border-rose-100 dark:border-rose-500/20 shadow-sm transition-all hover:shadow-md">
+          <p className="text-[10px] font-black text-rose-400 dark:text-rose-500 uppercase tracking-[0.3em] mb-2 leading-none px-1">Total Utang Saya 📉</p>
+          <p className="text-2xl font-black text-rose-600 tracking-tight">{formatCurrency(utangList.reduce((a, b) => a + Number(b.amount), 0))}</p>
         </div>
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 p-8 rounded-xl border border-emerald-100 dark:border-emerald-500/20 shadow-sm transition-all hover:shadow-md">
-          <p className="text-[10px] font-black text-emerald-400 dark:text-emerald-500 uppercase tracking-[0.3em] mb-3 leading-none px-1">Total Piutang Saya 📈</p>
-          <p className="text-4xl font-black text-emerald-600 tracking-tight">{formatCurrency(piutangList.reduce((a, b) => a + Number(b.amount), 0))}</p>
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 p-5 rounded-xl border border-emerald-100 dark:border-emerald-500/20 shadow-sm transition-all hover:shadow-md">
+          <p className="text-[10px] font-black text-emerald-400 dark:text-emerald-500 uppercase tracking-[0.3em] mb-2 leading-none px-1">Total Piutang Saya 📈</p>
+          <p className="text-2xl font-black text-emerald-600 tracking-tight">{formatCurrency(piutangList.reduce((a, b) => a + Number(b.amount), 0))}</p>
         </div>
       </div>
 
@@ -185,12 +185,12 @@ const Utang = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Utang Saya */}
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg shadow-sm"><HandCoins size={24} strokeWidth={2.5} /></div>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg shadow-sm"><HandCoins size={20} strokeWidth={2.5} /></div>
                 <div>
-                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Utang Saya</h3>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Utang Saya</h3>
                     <p className="text-[9px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-widest mt-1">Harus Segera Dilunasi</p>
                 </div>
               </div>
@@ -210,12 +210,12 @@ const Utang = () => {
           </div>
 
           {/* Piutang */}
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm"><HandCoins size={24} strokeWidth={2.5} /></div>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm"><HandCoins size={20} strokeWidth={2.5} /></div>
                 <div>
-                   <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Piutang</h3>
+                   <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Piutang</h3>
                    <p className="text-[9px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest mt-1">Uang Yang Akan Kembali</p>
                 </div>
               </div>

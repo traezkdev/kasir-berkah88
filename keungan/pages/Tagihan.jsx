@@ -162,14 +162,14 @@ const Tagihan = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Manajemen Tagihan</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Pantau dan kelola semua tagihan rutinmu.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Manajemen Tagihan</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1 text-sm">Pantau dan kelola semua tagihan rutinmu.</p>
         </div>
-        <button onClick={openAddModal} className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
-          <Plus size={20} strokeWidth={3} /> <span>Tambah Tagihan</span>
+        <button onClick={openAddModal} className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
+          <Plus size={18} strokeWidth={3} /> <span>Tambah Tagihan</span>
         </button>
       </div>
 
@@ -181,25 +181,25 @@ const Tagihan = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6 transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
-          <div className="p-5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm"><CreditCard size={28} strokeWidth={2.5} /></div>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
+          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm"><CreditCard size={22} strokeWidth={2.5} /></div>
           <div>
             <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1 leading-none">Terbayar ✨</p>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(paidTotal)}</p>
+            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(paidTotal)}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6 transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
-          <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg shadow-sm"><AlertCircle size={28} strokeWidth={2.5} /></div>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
+          <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg shadow-sm"><AlertCircle size={22} strokeWidth={2.5} /></div>
           <div>
             <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1 leading-none">Sisa Tagihan 📉</p>
-            <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{formatCurrency(unpaidTotal)}</p>
+            <p className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{formatCurrency(unpaidTotal)}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6 transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1 border-b-4 border-b-indigo-500">
-          <div className="p-5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-sm"><Coins size={28} strokeWidth={2.5} /></div>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1 border-b-4 border-b-indigo-500">
+          <div className="p-3.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-sm"><Coins size={22} strokeWidth={2.5} /></div>
           <div>
             <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1 leading-none">Total Tagihan 💰</p>
-            <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(unpaidTotal + paidTotal)}</p>
+            <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(unpaidTotal + paidTotal)}</p>
           </div>
         </div>
       </div>
@@ -207,9 +207,9 @@ const Tagihan = () => {
       {/* Search */}
       <div className="bg-white dark:bg-slate-900 p-5 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm">
         <div className="relative">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600" size={20} strokeWidth={3} />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600" size={18} strokeWidth={3} />
           <input type="text" placeholder="Cari nama tagihan..."
-            className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-black uppercase tracking-widest placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-700 dark:text-gray-200"
+            className="w-full pl-14 pr-6 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-black uppercase tracking-widest placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-700 dark:text-gray-200"
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
@@ -229,10 +229,10 @@ const Tagihan = () => {
             
             return (
               <div key={bill.id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-2xl dark:shadow-black/20 transition-all overflow-hidden group relative">
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-8 relative z-10">
-                    <div className={`p-4 rounded-lg shadow-sm transform group-active:scale-95 transition-transform ${bill.status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>
-                      <CreditCard size={28} strokeWidth={2.5} />
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-6 relative z-10">
+                    <div className={`p-3 rounded-lg shadow-sm transform group-active:scale-95 transition-transform ${bill.status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-50' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-rose-50'}`}>
+                      <CreditCard size={24} strokeWidth={2.5} />
                     </div>
                     <div className="flex flex-col items-end gap-3">
                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] ${bill.status === 'paid' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 animate-pulse'}`}>
@@ -250,7 +250,7 @@ const Tagihan = () => {
                   </div>
                   <div className="space-y-6 relative z-10">
                     <div>
-                      <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{bill.name}</h3>
+                      <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{bill.name}</h3>
                       <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest mt-1">🕒 JATUH TEMPO: {formatDate(bill.due_date)}</p>
                     </div>
 
@@ -259,7 +259,7 @@ const Tagihan = () => {
                         <span>PROGRESS: <span className="text-indigo-600 dark:text-indigo-400">{Math.round(percent)}%</span></span>
                         <span>{formatCurrency(paid)} / {formatCurrency(total)}</span>
                       </div>
-                      <div className="h-3 w-full bg-gray-50 dark:bg-slate-800/50 rounded-full overflow-hidden p-0.5 border border-gray-100 dark:border-slate-800 shadow-inner">
+                      <div className="h-2.5 w-full bg-gray-50 dark:bg-slate-800/50 rounded-full overflow-hidden p-0.5 border border-gray-100 dark:border-slate-800 shadow-inner">
                         <div 
                           className={`h-full rounded-full transition-all duration-[1500ms] cubic-bezier(0.34, 1.56, 0.64, 1) shadow-sm ${bill.status === 'paid' ? 'bg-emerald-500' : 'bg-indigo-600'}`}
                           style={{ width: `${percent}%` }}
@@ -272,15 +272,15 @@ const Tagihan = () => {
                         <button
                           onClick={() => openPayModal(bill)}
                           className="flex-1 px-6 py-4 bg-gray-50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white dark:active:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-sm">
-                          <Coins size={16} strokeWidth={3} /> Cicil
+                          <Coins size={14} strokeWidth={3} /> Cicil
                         </button>
                       )}
                       <button
                         onClick={() => toggleStatus(bill)}
                         disabled={togglingId === bill.id}
-                        className={`px-6 py-4 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${bill.status === 'unpaid' ? 'flex-1 bg-indigo-600 text-white shadow-indigo-900/20 hover:bg-indigo-700' : 'w-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 shadow-none'}`}>
-                        {togglingId === bill.id ? <Loader2 size={16} className="animate-spin" /> : (bill.status === 'unpaid' ? (
-                           <>BAYAR LUNAS <CheckCircle2 size={16} strokeWidth={3} /></>
+                        className={`px-5 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${bill.status === 'unpaid' ? 'flex-1 bg-indigo-600 text-white shadow-indigo-900/20 hover:bg-indigo-700' : 'w-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 shadow-none'}`}>
+                        {togglingId === bill.id ? <Loader2 size={14} className="animate-spin" /> : (bill.status === 'unpaid' ? (
+                           <>BAYAR LUNAS <CheckCircle2 size={14} strokeWidth={3} /></>
                         ) : 'BATALKAN LUNAS')}
                       </button>
                     </div>

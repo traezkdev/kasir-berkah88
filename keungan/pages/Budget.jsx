@@ -145,14 +145,14 @@ const Budget = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Anggaran Saya</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Kendalikan pengeluaranmu dengan limit anggaran.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Anggaran Saya</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1 text-sm">Kendalikan pengeluaranmu dengan limit anggaran.</p>
         </div>
-        <button onClick={openAddModal} className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-          <Plus size={20} strokeWidth={3} /> <span>Buat Budget</span>
+        <button onClick={openAddModal} className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+          <Plus size={18} strokeWidth={3} /> <span>Buat Budget</span>
         </button>
       </div>
 
@@ -163,32 +163,32 @@ const Budget = () => {
       )}
 
       {/* Hero Stats */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-10 text-white shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden transition-all">
-        <div className="absolute top-0 right-0 p-8 opacity-10 transform rotate-12"><PieChart size={180} /></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
-          <div className="space-y-2">
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-6 text-white shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 relative overflow-hidden transition-all">
+        <div className="absolute top-0 right-0 p-6 opacity-10 transform rotate-12"><PieChart size={140} /></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+          <div className="space-y-1">
             <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em]">Total Limit</p>
-            <p className="text-4xl font-black tracking-tight">{formatCurrency(totalLimit)}</p>
+            <p className="text-2xl font-black tracking-tight">{formatCurrency(totalLimit)}</p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em]">Terpakai</p>
-            <p className="text-4xl font-black tracking-tight">{formatCurrency(totalUsed)}</p>
+            <p className="text-2xl font-black tracking-tight">{formatCurrency(totalUsed)}</p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em]">Sisa Budget</p>
-            <p className="text-4xl font-black tracking-tight text-emerald-300">{formatCurrency(totalLimit - totalUsed)}</p>
+            <p className="text-2xl font-black tracking-tight text-emerald-300">{formatCurrency(totalLimit - totalUsed)}</p>
           </div>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm transition-colors overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm transition-colors overflow-hidden">
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600 transition-colors group-focus-within:text-indigo-500" size={20} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600 transition-colors group-focus-within:text-indigo-500" size={18} />
           <input 
             type="text" 
             placeholder="Cari kategori budget..."
-            className="w-full pl-12 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 transition-all shadow-inner"
+            className="w-full pl-12 pr-6 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-700 transition-all shadow-inner"
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)} 
           />
@@ -202,7 +202,7 @@ const Budget = () => {
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Menyusun Data Budget...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredBudgets.map((budget) => {
             const used = Number(budget.used_amount);
             const limit = Number(budget.limit_amount);
@@ -210,33 +210,33 @@ const Budget = () => {
             const remaining = limit - used;
 
             return (
-              <div key={budget.id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm p-8 hover:shadow-xl dark:shadow-black/20 transition-all duration-300 group relative overflow-hidden transform hover:-translate-y-1">
-                <div className="flex justify-between items-start mb-8 relative z-10">
-                  <div className={`p-4 rounded-lg shadow-sm transition-transform group-hover:scale-110 ${percent >= 90 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
-                    <PieChart size={24} strokeWidth={2.5} />
+              <div key={budget.id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm p-6 hover:shadow-xl dark:shadow-black/20 transition-all duration-300 group relative overflow-hidden transform hover:-translate-y-1">
+                <div className="flex justify-between items-start mb-6 relative z-10">
+                  <div className={`p-3 rounded-lg shadow-sm transition-transform group-hover:scale-110 ${percent >= 90 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
+                    <PieChart size={22} strokeWidth={2.5} />
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => openEditModal(budget)} 
-                      className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-slate-700" 
+                      className="p-2 text-gray-400 dark:text-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-slate-700" 
                       title="Edit Budget"
                     >
-                      <Edit2 size={16} />
+                      <Edit2 size={14} />
                     </button>
                     <button 
                       onClick={() => handleDelete(budget.id)} 
                       disabled={deletingId === budget.id}
-                      className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-slate-700" 
+                      className="p-2 text-gray-400 dark:text-gray-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-slate-700" 
                       title="Hapus Budget"
                     >
-                      {deletingId === budget.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      {deletingId === budget.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-8 relative z-10">
+                <div className="space-y-6 relative z-10">
                   <div>
-                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">{budget.category}</h3>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">{budget.category}</h3>
                     <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
                       <span className="text-gray-400 dark:text-gray-500">Terpakai: <span className="text-gray-900 dark:text-gray-200">{formatCurrency(used)}</span></span>
                       <span className="text-gray-900 dark:text-gray-200">Limit: {formatCurrency(limit)}</span>
@@ -244,7 +244,7 @@ const Budget = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <div className="h-4 w-full bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-gray-100 dark:border-slate-700 shadow-inner">
+                    <div className="h-3 w-full bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-gray-100 dark:border-slate-700 shadow-inner">
                       <div 
                         className={`h-full rounded-full transition-all duration-[1500ms] cubic-bezier(0.34, 1.56, 0.64, 1) ${percent >= 90 ? 'bg-rose-500 shadow-lg shadow-rose-200 dark:shadow-rose-900/20' : 'bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20'}`}
                         style={{ width: `${percent}%` }}
@@ -261,13 +261,13 @@ const Budget = () => {
                   <div className="pt-2">
                     <button
                       onClick={() => openInputModal(budget)}
-                      className={`w-full flex items-center justify-center gap-3 py-4 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all transform active:scale-95 shadow-xl ${
+                      className={`w-full flex items-center justify-center gap-3 py-3 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all transform active:scale-95 shadow-xl ${
                         percent >= 90
                           ? 'bg-rose-600 text-white shadow-rose-900/10 hover:bg-rose-700'
                           : 'bg-indigo-600 text-white shadow-indigo-900/10 hover:bg-indigo-700'
                       }`}
                     >
-                      <Coins size={16} strokeWidth={3} /> Input Pengeluaran
+                      <Coins size={14} strokeWidth={3} /> Input Pengeluaran
                     </button>
                   </div>
                 </div>

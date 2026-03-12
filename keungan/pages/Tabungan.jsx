@@ -116,17 +116,17 @@ const Tabungan = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Target Tabungan</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Wujudkan impianmu dengan menabung secara konsisten.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Target Tabungan</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1 text-sm">Wujudkan impianmu dengan menabung secara konsisten.</p>
         </div>
         <button 
           onClick={openAddTargetModal}
-          className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+          className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
         >
-          <Plus size={20} strokeWidth={3} />
+          <Plus size={18} strokeWidth={3} />
           <span>Tambah Target Baru</span>
         </button>
       </div>
@@ -139,58 +139,58 @@ const Tabungan = () => {
       ) : (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-xl shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 text-white flex items-center gap-4 transform transition-transform hover:-translate-y-1">
-              <div className="p-4 bg-white/20 rounded-lg backdrop-blur-sm shadow-sm">
-                <Wallet size={24} strokeWidth={2.5} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-5 rounded-xl shadow-2xl shadow-indigo-100 dark:shadow-indigo-900/40 text-white flex items-center gap-4 transform transition-transform hover:-translate-y-1">
+              <div className="p-3.5 bg-white/20 rounded-lg backdrop-blur-sm shadow-sm">
+                <Wallet size={22} strokeWidth={2.5} />
               </div>
               <div>
                 <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Total Tabungan</p>
-                <p className="text-2xl font-black tracking-tight">{formatCurrency(totalCurrent)}</p>
+                <p className="text-xl font-black tracking-tight">{formatCurrency(totalCurrent)}</p>
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transform transition-transform hover:-translate-y-1">
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm">
-                <Target size={24} strokeWidth={2.5} />
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transform transition-transform hover:-translate-y-1">
+              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm">
+                <Target size={22} strokeWidth={2.5} />
               </div>
               <div>
                 <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Target Kumulatif</p>
-                <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalTarget)}</p>
+                <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalTarget)}</p>
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transform transition-transform hover:-translate-y-1">
-              <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg shadow-sm">
-                <TrendingUp size={24} strokeWidth={2.5} />
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transform transition-transform hover:-translate-y-1">
+              <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg shadow-sm">
+                <TrendingUp size={22} strokeWidth={2.5} />
               </div>
               <div>
                 <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Sisa Kekurangan</p>
-                <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalTarget - totalCurrent)}</p>
+                <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalTarget - totalCurrent)}</p>
               </div>
             </div>
           </div>
 
           {/* Savings Goal Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-10">
             {savings.map((item) => {
               const progress = (Number(item.current_amount) / Number(item.target_amount)) * 100;
               return (
-                <div key={item.id} className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl dark:shadow-black/20 transition-all duration-300 group relative overflow-hidden transform hover:-translate-y-1">
-                  <div className="flex justify-between items-start mb-10 relative z-10">
-                    <div className="flex items-center gap-5">
-                      <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-lg flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 transform group-hover:rotate-12 shadow-sm">
-                        <Target size={28} strokeWidth={2.5} />
+                <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl dark:shadow-black/20 transition-all duration-300 group relative overflow-hidden transform hover:-translate-y-1">
+                  <div className="flex justify-between items-start mb-8 relative z-10">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-gray-50 dark:bg-slate-800 rounded-lg flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 transform group-hover:rotate-12 shadow-sm">
+                        <Target size={24} strokeWidth={2.5} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{item.name}</h3>
+                        <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">{item.name}</h3>
                         <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Update Progress Terakhir</p>
                       </div>
                     </div>
                     <div className="relative">
                       <button 
                         onClick={() => setShowActionId(showActionId === item.id ? null : item.id)}
-                        className="text-gray-300 dark:text-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800"
+                        className="text-gray-300 dark:text-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800"
                       >
-                        <MoreVertical size={24} strokeWidth={3} />
+                        <MoreVertical size={20} strokeWidth={3} />
                       </button>
                       
                       {showActionId === item.id && (
@@ -215,20 +215,20 @@ const Tabungan = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-8 relative z-10">
+                  <div className="space-y-6 relative z-10">
                     <div className="flex justify-between items-end">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Terkumpul</p>
-                        <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">{formatCurrency(item.current_amount)}</p>
+                        <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">{formatCurrency(item.current_amount)}</p>
                       </div>
-                      <div className="text-right space-y-2">
+                      <div className="text-right space-y-1">
                         <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Target Akhir</p>
-                        <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(item.target_amount)}</p>
+                        <p className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(item.target_amount)}</p>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="h-5 w-full bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-1 border border-gray-100 dark:border-slate-800 shadow-inner">
+                    <div className="space-y-3">
+                      <div className="h-4 w-full bg-gray-50 dark:bg-slate-800 rounded-full overflow-hidden p-1 border border-gray-100 dark:border-slate-800 shadow-inner">
                         <div 
                           className="h-full bg-indigo-600 rounded-full transition-all duration-[2000ms] cubic-bezier(0.34, 1.56, 0.64, 1) shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20"
                           style={{ width: `${Math.min(progress, 100)}%` }}
@@ -245,10 +245,10 @@ const Tabungan = () => {
                     <div className="pt-4">
                        <button 
                         onClick={() => openDepositModal(item)}
-                        className="w-full py-5 bg-gray-50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg hover:bg-slate-900 dark:hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-3 group/btn shadow-sm"
+                        className="w-full py-3.5 bg-gray-50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg hover:bg-slate-900 dark:hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-3 group/btn shadow-sm"
                        >
                          <span>Tambah Tabungan</span>
-                         <ArrowRight size={18} strokeWidth={3} className="group-hover/btn:translate-x-1 transition-transform" />
+                         <ArrowRight size={16} strokeWidth={3} className="group-hover/btn:translate-x-1 transition-transform" />
                        </button>
                     </div>
                   </div>
@@ -262,12 +262,12 @@ const Tabungan = () => {
             {/* Create New Placeholder */}
             <div 
               onClick={openAddTargetModal}
-              className="bg-gray-50/30 dark:bg-slate-800/20 border-4 border-dashed border-gray-100 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center p-12 group hover:border-indigo-300 dark:hover:border-indigo-500/30 transition-all cursor-pointer min-h-[400px] transform hover:scale-[1.01]"
+              className="bg-gray-50/30 dark:bg-slate-800/20 border-4 border-dashed border-gray-100 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center p-8 group hover:border-indigo-300 dark:hover:border-indigo-500/30 transition-all cursor-pointer min-h-[320px] transform hover:scale-[1.01]"
             >
-               <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-lg shadow-xl flex items-center justify-center text-gray-200 dark:text-slate-800 group-hover:text-indigo-500 group-hover:scale-110 transition-all duration-500">
-                 <Plus size={48} strokeWidth={3} />
+               <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-lg shadow-xl flex items-center justify-center text-gray-200 dark:text-slate-800 group-hover:text-indigo-500 group-hover:scale-110 transition-all duration-500">
+                 <Plus size={32} strokeWidth={3} />
                </div>
-               <p className="text-gray-400 dark:text-gray-600 font-black uppercase tracking-[0.3em] text-[10px] mt-8 group-hover:text-indigo-500 transition-colors">Buat Target Baru</p>
+               <p className="text-gray-400 dark:text-gray-600 font-black uppercase tracking-[0.3em] text-[10px] mt-6 group-hover:text-indigo-500 transition-colors">Buat Target Baru</p>
             </div>
           </div>
         </>

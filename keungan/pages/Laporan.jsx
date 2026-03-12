@@ -104,18 +104,18 @@ const Laporan = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Laporan Keuangan</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Analisis mendalam tentang aliran kas keuanganmu.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Laporan Keuangan</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1 text-sm">Analisis mendalam tentang aliran kas keuanganmu.</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
           <div className="flex bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm transition-colors">
              <select 
                value={selectedMonth} 
                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-               className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 border-none bg-transparent focus:ring-0 cursor-pointer appearance-none pr-10"
+               className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 border-none bg-transparent focus:ring-0 cursor-pointer appearance-none pr-8"
              >
                {Array.from({length: 12}, (_, i) => (
                  <option key={i+1} value={i+1}>
@@ -127,7 +127,7 @@ const Laporan = () => {
              <select 
                value={selectedYear} 
                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-               className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 bg-transparent focus:ring-0 cursor-pointer appearance-none pr-10"
+               className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 bg-transparent focus:ring-0 cursor-pointer appearance-none pr-8"
              >
                {[2024, 2025, 2026].map(y => (
                  <option key={y} value={y}>{y}</option>
@@ -136,7 +136,7 @@ const Laporan = () => {
           </div>
           <button 
             onClick={handleExportPDF}
-            className="flex-1 md:flex-none bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
+            className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-3 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
           >
             <Download size={18} strokeWidth={3} />
             <span>EXPORT PDF</span>
@@ -152,63 +152,63 @@ const Laporan = () => {
       )}
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 leading-none px-1">Total Pemasukan 📈</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 leading-none px-1">Total Pemasukan 📈</p>
           <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
             <ArrowUpRight size={20} strokeWidth={3} />
-            <span className="text-2xl font-black tracking-tight">{formatCurrency(summary.totalIncome)}</span>
+            <span className="text-xl font-black tracking-tight">{formatCurrency(summary.totalIncome)}</span>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 leading-none px-1">Total Pengeluaran 📉</p>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 leading-none px-1">Total Pengeluaran 📉</p>
           <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
             <ArrowDownRight size={20} strokeWidth={3} />
-            <span className="text-2xl font-black tracking-tight">{formatCurrency(summary.totalExpense)}</span>
+            <span className="text-xl font-black tracking-tight">{formatCurrency(summary.totalExpense)}</span>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1 border-b-4 border-b-indigo-500">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 leading-none px-1">Sisa Saldo 💰</p>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1 border-b-4 border-b-indigo-500">
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 leading-none px-1">Sisa Saldo 💰</p>
           <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400">
             <BarChart3 size={20} strokeWidth={3} />
-            <span className="text-2xl font-black tracking-tight">{formatCurrency(summary.balance)}</span>
+            <span className="text-xl font-black tracking-tight">{formatCurrency(summary.balance)}</span>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 leading-none px-1">Efisiensi Hemat ✨</p>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl dark:shadow-black/20 transform hover:-translate-y-1">
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 leading-none px-1">Efisiensi Hemat ✨</p>
           <div className="flex items-center gap-3 text-amber-500">
             <TrendingUp size={20} strokeWidth={3} />
-            <span className="text-2xl font-black tracking-tight">{summary.savingsPercentage}%</span>
+            <span className="text-xl font-black tracking-tight">{summary.savingsPercentage}%</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-10 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
             <div>
-               <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+               <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">
                  Tren {reportType === 'monthly' ? 'Bulanan' : 'Mingguan'}
                </h3>
                <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-1">Pergerakan arus kas anda</p>
             </div>
-            <div className="flex bg-gray-50 dark:bg-slate-800 p-1.5 rounded-[1.5rem] shadow-inner">
+            <div className="flex bg-gray-50 dark:bg-slate-800 p-1 rounded-[1.5rem] shadow-inner">
                <button 
                  onClick={() => setReportType('monthly')}
-                 className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-[1.1rem] transition-all ${reportType === 'monthly' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-md transform scale-105' : 'text-gray-400 dark:text-gray-600 hover:text-gray-600'}`}
+                 className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-[1.1rem] transition-all ${reportType === 'monthly' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-md' : 'text-gray-400 dark:text-gray-600 hover:text-gray-600'}`}
                >
                  BULANAN
                </button>
                <button 
                  onClick={() => setReportType('weekly')}
-                 className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-[1.1rem] transition-all ${reportType === 'weekly' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-md transform scale-105' : 'text-gray-400 dark:text-gray-600 hover:text-gray-600'}`}
+                 className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-[1.1rem] transition-all ${reportType === 'weekly' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-md' : 'text-gray-400 dark:text-gray-600 hover:text-gray-600'}`}
                >
                  MINGGUAN
                </button>
             </div>
           </div>
-          <div className="h-[400px]">
+          <div className="h-[320px]">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
@@ -237,21 +237,21 @@ const Laporan = () => {
         </div>
 
         {/* Category Distribution */}
-        <div className="bg-white dark:bg-slate-900 p-10 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm text-center transform transition-transform hover:scale-[1.01]">
-          <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">Distribusi</h3>
-          <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-10">Alokasi Pengeluaran</p>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm text-center transform transition-transform hover:scale-[1.01]">
+          <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Distribusi</h3>
+          <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-6">Alokasi Pengeluaran</p>
           
           {categoryData.length > 0 ? (
             <>
-              <div className="h-[280px] relative mb-10">
+              <div className="h-[220px] relative mb-6">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={categoryData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={75}
-                      outerRadius={105}
+                      innerRadius={60}
+                      outerRadius={85}
                       paddingAngle={10}
                       dataKey="value"
                       animationDuration={1500}
@@ -264,7 +264,7 @@ const Laporan = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-4xl font-black text-gray-900 dark:text-white">100</span>
+                  <span className="text-3xl font-black text-gray-900 dark:text-white">100</span>
                   <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">%</span>
                 </div>
               </div>
@@ -294,9 +294,9 @@ const Laporan = () => {
 
       {/* Top Transactions in Report */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-all hover:shadow-xl dark:shadow-black/20">
-        <div className="p-10 border-b border-gray-50 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="p-6 border-b border-gray-50 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
            <div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Transaksi Terbesar</h3>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Transaksi Terbesar</h3>
               <p className="text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-widest mt-1">Periode {new Date(0, selectedMonth-1).toLocaleString('id-ID', {month: 'long'})} {selectedYear}</p>
            </div>
            <button className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline underline-offset-4">LIHAT SELURUHNYA</button>
@@ -305,23 +305,23 @@ const Laporan = () => {
           <table className="w-full text-left">
             <thead className="bg-gray-50/50 dark:bg-slate-800/50">
               <tr>
-                <th className="px-10 py-6 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Kategori</th>
-                <th className="px-10 py-6 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Catatan (Note)</th>
-                <th className="px-10 py-6 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Tanggal</th>
-                <th className="px-10 py-6 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em] text-right">Nominal</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Kategori</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Catatan (Note)</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Tanggal</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em] text-right">Nominal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
               {topTransactions.length > 0 ? topTransactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group">
-                  <td className="px-10 py-7">
+                  <td className="px-6 py-4">
                     <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">{tx.category}</span>
                   </td>
-                  <td className="px-10 py-7 text-xs font-bold text-gray-500 dark:text-gray-500 uppercase tracking-tight">{tx.note || '-'}</td>
-                  <td className="px-10 py-7 text-xs font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">
+                  <td className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-500 uppercase tracking-tight">{tx.note || '-'}</td>
+                  <td className="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">
                     {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>
-                  <td className={`px-10 py-7 text-right font-black text-sm tracking-tight ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  <td className={`px-6 py-4 text-right font-black text-sm tracking-tight ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </td>
                 </tr>

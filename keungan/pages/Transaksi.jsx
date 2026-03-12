@@ -167,15 +167,15 @@ const Transaksi = () => {
   const categoryOptions = form.type === 'income' ? categories.income : categories.expense;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Riwayat Transaksi</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Kelola semua pemasukan dan pengeluaranmu di sini.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Riwayat Transaksi</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1 text-sm">Kelola semua pemasukan dan pengeluaranmu di sini.</p>
         </div>
-        <button onClick={openAddModal} className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-          <Plus size={20} strokeWidth={3} />
+        <button onClick={openAddModal} className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+          <Plus size={18} strokeWidth={3} />
           <span>Tambah Transaksi</span>
         </button>
       </div>
@@ -190,20 +190,20 @@ const Transaksi = () => {
 
       {/* Low Balance Alert */}
       {totalBalance < 50000 && !loading && (
-        <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 p-8 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+        <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 p-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200 dark:bg-amber-500/10 rounded-full blur-3xl opacity-20 -mr-16 -mt-16" />
           <div className="flex items-center gap-5 relative z-10">
-            <div className="p-4 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg shadow-sm">
-              <AlertCircle size={28} strokeWidth={2.5} />
+            <div className="p-3 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg shadow-sm">
+              <AlertCircle size={24} strokeWidth={2.5} />
             </div>
             <div>
-              <h3 className="text-base font-black text-amber-900 dark:text-amber-100 uppercase tracking-tight">Saldo kamu hampir habis nih!</h3>
-              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium mt-0.5">Segera tambahkan pemasukan agar catatan keuanganmu tetap lancar.</p>
+              <h3 className="text-sm font-black text-amber-900 dark:text-amber-100 uppercase tracking-tight">Saldo kamu hampir habis nih!</h3>
+              <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-0.5">Segera tambahkan pemasukan agar catatan keuanganmu tetap lancar.</p>
             </div>
           </div>
           <div className="text-center md:text-right relative z-10">
             <p className="text-[10px] font-black text-amber-400 dark:text-amber-600 uppercase tracking-[0.3em]">Sisa Saldo</p>
-            <p className="text-2xl font-black text-amber-700 dark:text-amber-300 tracking-tight mt-1">{formatCurrency(totalBalance)}</p>
+            <p className="text-xl font-black text-amber-700 dark:text-amber-300 tracking-tight mt-1">{formatCurrency(totalBalance)}</p>
           </div>
         </div>
       )}
@@ -211,39 +211,39 @@ const Transaksi = () => {
       {/* Info Cards Desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Total Saldo Card */}
-        <div className="lg:col-span-1 bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 rounded-xl text-white shadow-2xl shadow-indigo-200 dark:shadow-indigo-900/40 relative overflow-hidden flex flex-col justify-center transform transition-transform hover:-translate-y-1">
+        <div className="lg:col-span-1 bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-xl text-white shadow-2xl shadow-indigo-200 dark:shadow-indigo-900/40 relative overflow-hidden flex flex-col justify-center transform transition-transform hover:-translate-y-1">
           <div className="absolute -right-8 -bottom-8 opacity-20 transform rotate-12">
-            <Plus size={180} strokeWidth={1} />
+            <Plus size={140} strokeWidth={1} />
           </div>
           <div className="relative z-10">
             <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Saldo (Neto)</p>
-            <p className="text-4xl font-black tracking-tight">
+            <p className="text-2xl font-black tracking-tight">
               {formatCurrency(totalBalance)}
             </p>
           </div>
         </div>
 
         {/* Income Card */}
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6 group hover:border-emerald-100 dark:hover:border-emerald-500/30 transition-all duration-300">
-          <div className="p-5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
-            <ArrowUpRight size={28} strokeWidth={3} />
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 group hover:border-emerald-100 dark:hover:border-emerald-500/30 transition-all duration-300">
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
+            <ArrowUpRight size={24} strokeWidth={3} />
           </div>
           <div>
-            <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Masuk</p>
-            <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+            <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Masuk</p>
+            <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
               {formatCurrency(transactions.filter(tx => tx.type === 'income').reduce((acc, tx) => acc + Number(tx.amount), 0))}
             </p>
           </div>
         </div>
 
         {/* Expense Card */}
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6 group hover:border-rose-100 dark:hover:border-rose-500/30 transition-all duration-300">
-          <div className="p-5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
-            <ArrowDownRight size={28} strokeWidth={3} />
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-5 group hover:border-rose-100 dark:hover:border-rose-500/30 transition-all duration-300">
+          <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
+            <ArrowDownRight size={24} strokeWidth={3} />
           </div>
           <div>
-            <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Pengeluaran</p>
-            <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+            <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Pengeluaran</p>
+            <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
               {formatCurrency(transactions.filter(tx => tx.type === 'expense').reduce((acc, tx) => acc + Number(tx.amount), 0))}
             </p>
           </div>
@@ -258,7 +258,7 @@ const Transaksi = () => {
             <input
               type="text"
               placeholder="Cari kategori atau catatan..."
-              className="w-full pl-12 pr-6 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all"
+              className="w-full pl-12 pr-6 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -282,9 +282,9 @@ const Transaksi = () => {
         </div>
         <button
           onClick={() => downloadTransaksiPDF(filteredTransactions)}
-          className="flex items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 rounded-lg font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+          className="flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 rounded-lg font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
         >
-          <Download size={18} />
+          <Download size={16} />
           <span>Laporan PDF</span>
         </button>
       </div>
@@ -301,39 +301,39 @@ const Transaksi = () => {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Tanggal</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Kategori</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Catatan</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right">Jumlah</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center">Aksi</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Tanggal</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Kategori</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Catatan</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right">Jumlah</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                 {filteredTransactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-all group">
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-3.5">
                       <span className="text-xs font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">{formatDateDisplay(tx.date)}</span>
                     </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-lg transition-transform group-hover:scale-110 ${tx.type === 'income'
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-lg transition-transform group-hover:scale-110 ${tx.type === 'income'
                             ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
                           }`}>
-                          {tx.type === 'income' ? <ArrowUpRight size={16} strokeWidth={3} /> : <ArrowDownRight size={16} strokeWidth={3} />}
+                          {tx.type === 'income' ? <ArrowUpRight size={14} strokeWidth={3} /> : <ArrowDownRight size={14} strokeWidth={3} />}
                         </div>
                         <span className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{tx.category}</span>
                       </div>
                     </td>
-                    <td className="px-8 py-6 max-w-xs">
+                    <td className="px-6 py-3.5 max-w-xs">
                       <p className="text-xs font-bold text-gray-500 dark:text-gray-400 truncate uppercase tracking-widest">{tx.note || '-'}</p>
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="px-6 py-3.5 text-right">
                       <span className={`text-sm font-black tracking-tight ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
                         {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                       </span>
                     </td>
-                    <td className="px-8 py-6 text-center">
+                    <td className="px-6 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-3">
                         <button
                           onClick={() => openEditModal(tx)}
