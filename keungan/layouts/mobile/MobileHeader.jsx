@@ -12,7 +12,8 @@ import {
   Target, 
   FileText, 
   Settings,
-  LogOut
+  LogOut,
+  Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -49,6 +50,12 @@ const MobileHeader = ({ user, activePage, setActivePage, onLogout, onUpdateUser 
       title: 'Sistem',
       items: [
         { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
+      ]
+    },
+    {
+      title: 'Informasi',
+      items: [
+        { id: 'credits', label: 'Credits', icon: Heart },
       ]
     }
   ];

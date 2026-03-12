@@ -10,6 +10,7 @@ import Budget from './pages/Budget';
 import Tabungan from './pages/Tabungan';
 import Laporan from './pages/Laporan';
 import Pengaturan from './pages/Pengaturan';
+import Credits from './pages/Credits';
 
 // Auth Pages
 import Login from './pages/Auth/Login';
@@ -96,6 +97,7 @@ const App = () => {
         case 'tabungan': return <TabunganMobile user={user} />;
         case 'laporan': return <LaporanMobile user={user} />;
         case 'pengaturan': return <PengaturanMobile user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
+        case 'credits': return <Credits />;
         default: return <DashboardMobile user={user} setActivePage={setActivePage} />;
       }
     }
@@ -109,6 +111,7 @@ const App = () => {
       case 'tabungan': return <Tabungan user={user} />;
       case 'laporan': return <Laporan user={user} />;
       case 'pengaturan': return <Pengaturan user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
+      case 'credits': return <Credits />;
       default: return <Dashboard user={user} setActivePage={setActivePage} />;
     }
   };

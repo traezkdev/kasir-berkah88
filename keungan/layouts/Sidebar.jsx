@@ -8,7 +8,8 @@ import {
   Target, 
   FileText, 
   Settings, 
-  LogOut 
+  LogOut,
+  Heart 
 } from 'lucide-react';
 
 const Sidebar = ({ activePage, setActivePage, onLogout }) => {
@@ -39,6 +40,12 @@ const Sidebar = ({ activePage, setActivePage, onLogout }) => {
       title: 'Sistem',
       items: [
         { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
+      ]
+    },
+    {
+      title: 'Informasi',
+      items: [
+        { id: 'credits', label: 'Credits', icon: Heart },
       ]
     }
   ];
