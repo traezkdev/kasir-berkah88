@@ -16,6 +16,23 @@ app.use(express.json());
 // Inisialisasi Database
 initDB();
 
+// Helper: Hitung ulang used_amount budget berdasarkan total transaksi expense pada kategori tersebut
+const recalculateBudgetUsed = async (userId, category) => {
+    try {
+        const [result] = await pool.query(
+            "SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND category = ?",
+            [userId, category]
+        );
+        const total = result[0].total || 0;
+        await pool.query(
+            "UPDATE budgets SET used_amount = ? WHERE user_id = ? AND category = ?",
+            [total, userId, category]
+        );
+    } catch (err) {
+        console.error('Gagal recalculate budget:', err.message);
+    }
+};
+
 // --- AUTH ROUTES ---
 
 // Register
@@ -121,7 +138,7 @@ app.get('/api/transactions', authMiddleware, async (req, res) => {
     try {
         // Hanya ambil data milik user yang sedang login
         const [rows] = await pool.query(
-            "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC", 
+            "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, id DESC", 
             [req.user.id]
         );
         res.json(rows);
@@ -138,6 +155,10 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
             [req.user.id, date, type, category, amount, note]
         );
         const [newRow] = await pool.query("SELECT * FROM transactions WHERE id = ?", [result.insertId]);
+        // Auto-update budget jika transaksi expense
+        if (type === 'expense') {
+            await recalculateBudgetUsed(req.user.id, category);
+        }
         res.status(201).json(newRow[0]);
     } catch (error) {
         res.status(500).json({ message: "Gagal mencatat transaksi", error: error.message });
@@ -148,14 +169,25 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
 app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { date, type, category, amount, note } = req.body;
-        const [check] = await pool.query("SELECT id FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        const [check] = await pool.query("SELECT * FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
         if (check.length === 0) return res.status(404).json({ message: "Transaksi tidak ditemukan" });
+
+        const oldTransaction = check[0];
 
         await pool.query(
             "UPDATE transactions SET date = ?, type = ?, category = ?, amount = ?, note = ? WHERE id = ? AND user_id = ?",
             [date, type, category, amount, note, req.params.id, req.user.id]
         );
         const [updated] = await pool.query("SELECT * FROM transactions WHERE id = ?", [req.params.id]);
+
+        // Auto-update budget: recalculate kategori lama dan/atau baru
+        const categoriesToRecalculate = new Set();
+        if (oldTransaction.type === 'expense') categoriesToRecalculate.add(oldTransaction.category);
+        if (type === 'expense') categoriesToRecalculate.add(category);
+        for (const cat of categoriesToRecalculate) {
+            await recalculateBudgetUsed(req.user.id, cat);
+        }
+
         res.json(updated[0]);
     } catch (error) {
         res.status(500).json({ message: "Gagal mengupdate transaksi", error: error.message });
@@ -165,10 +197,17 @@ app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
 // DELETE Transaksi
 app.delete('/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
-        const [check] = await pool.query("SELECT id FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+        const [check] = await pool.query("SELECT * FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
         if (check.length === 0) return res.status(404).json({ message: "Transaksi tidak ditemukan" });
 
+        const oldTransaction = check[0];
         await pool.query("DELETE FROM transactions WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+
+        // Auto-update budget jika transaksi expense
+        if (oldTransaction.type === 'expense') {
+            await recalculateBudgetUsed(req.user.id, oldTransaction.category);
+        }
+
         res.json({ message: "Transaksi berhasil dihapus" });
     } catch (error) {
         res.status(500).json({ message: "Gagal menghapus transaksi", error: error.message });

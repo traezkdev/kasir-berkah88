@@ -5,11 +5,11 @@ import api from '../services/api';
 const emptyForm = {
   category: '',
   limit_amount: '',
-  used_amount: '',
 };
 
 const Budget = () => {
   const [budgets, setBudgets] = useState([]);
+  const [expenseCategories, setExpenseCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +42,20 @@ const Budget = () => {
     }
   };
 
-  useEffect(() => { fetchBudgets(); }, []);
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get('/categories');
+      const expense = res.data.filter(c => c.type === 'expense').map(c => c.name);
+      setExpenseCategories(expense);
+    } catch {
+      setExpenseCategories(['Makan', 'Transport', 'Belanja', 'Tagihan', 'Hiburan']);
+    }
+  };
+
+  useEffect(() => {
+    fetchBudgets();
+    fetchCategories();
+  }, []);
 
   const filteredBudgets = budgets.filter(b =>
     b.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -59,7 +72,6 @@ const Budget = () => {
     setForm({
       category: budget.category,
       limit_amount: budget.limit_amount,
-      used_amount: budget.used_amount,
     });
     setShowModal(true);
   };
@@ -73,7 +85,6 @@ const Budget = () => {
       const payload = {
         category: form.category,
         limit_amount: Number(form.limit_amount),
-        used_amount: Number(form.used_amount) || 0,
       };
       if (editingId) {
         const res = await api.put(`/budgets/${editingId}`, payload);
@@ -259,40 +270,30 @@ const Budget = () => {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nama Kategori</label>
-                <input
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Kategori Pengeluaran</label>
+                <select
                   required
-                  type="text"
                   value={form.category}
                   onChange={e => setForm({ ...form, category: e.target.value })}
-                  placeholder="Makan, Transport, Hiburan, dll."
+                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="" disabled>-- Pilih Kategori --</option>
+                  {expenseCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Limit (Rp)</label>
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  value={form.limit_amount}
+                  onChange={e => setForm({ ...form, limit_amount: e.target.value })}
+                  placeholder="0"
                   className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Limit (Rp)</label>
-                  <input
-                    required
-                    type="number"
-                    min="1"
-                    value={form.limit_amount}
-                    onChange={e => setForm({ ...form, limit_amount: e.target.value })}
-                    placeholder="0"
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Terpakai (Rp)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.used_amount}
-                    onChange={e => setForm({ ...form, used_amount: e.target.value })}
-                    placeholder="0"
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100"
-                  />
-                </div>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={closeModal} className="flex-1 py-3.5 bg-gray-50 text-gray-600 rounded-2xl font-bold">Batal</button>
