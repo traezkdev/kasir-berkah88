@@ -68,13 +68,15 @@ export const OrderNotificationProvider = ({ children }) => {
         loadPreference();
     }, []);
 
-    const loadSound = async (soundId = selectedSoundId) => {
+    const loadSound = useCallback(async (soundId = selectedSoundId) => {
         if (Platform.OS === 'web') return;
 
         try {
             // Unload previous sound if exists
             if (soundRef.current) {
-                await soundRef.current.unloadAsync();
+                const oldSound = soundRef.current;
+                soundRef.current = null;
+                await oldSound.unloadAsync().catch(() => {});
             }
 
             const soundConfig = NOTIFICATION_SOUNDS.find(s => s.id === soundId) || NOTIFICATION_SOUNDS[0];
@@ -82,11 +84,13 @@ export const OrderNotificationProvider = ({ children }) => {
 
             if (isMounted.current) {
                 soundRef.current = sound;
+            } else {
+                await sound.unloadAsync().catch(() => {});
             }
         } catch (error) {
             console.warn('Failed to load notification sound:', error);
         }
-    };
+    }, [selectedSoundId]);
 
     const changeNotificationSound = async (soundId) => {
         setSelectedSoundId(soundId);
@@ -102,7 +106,7 @@ export const OrderNotificationProvider = ({ children }) => {
         }
     };
 
-    const playNotificationSound = async () => {
+    const playNotificationSound = useCallback(async () => {
         if (Platform.OS === 'web') return;
 
         if (!soundRef.current) {
@@ -111,13 +115,19 @@ export const OrderNotificationProvider = ({ children }) => {
 
         try {
             if (soundRef.current) {
-                await soundRef.current.replayAsync();
+                const status = await soundRef.current.getStatusAsync();
+                if (status.isLoaded) {
+                    await soundRef.current.replayAsync();
+                } else {
+                    await loadSound();
+                    if (soundRef.current) await soundRef.current.replayAsync();
+                }
             }
         } catch (error) {
             console.warn('Error playing sound:', error);
             await loadSound();
         }
-    };
+    }, [loadSound]);
 
     const sendLocalNotification = async (title, body, data = {}) => {
         if (Platform.OS === 'web' || !Notifications || !Notifications.scheduleNotificationAsync) return;
@@ -335,20 +345,28 @@ export const OrderNotificationProvider = ({ children }) => {
                 }
             });
 
-            return () => {
+                return () => {
                 foregroundSubscription.remove();
                 responseSubscription.remove();
                 tokenSubscription.remove();
+                isMounted.current = false;
+                if (soundRef.current) {
+                    const s = soundRef.current;
+                    soundRef.current = null;
+                    s.unloadAsync().catch(() => {});
+                }
             };
         }
 
         return () => {
             isMounted.current = false;
             if (soundRef.current) {
-                soundRef.current.unloadAsync().catch(() => { });
+                const s = soundRef.current;
+                soundRef.current = null;
+                s.unloadAsync().catch(() => {});
             }
         };
-    }, [user]);
+    }, [user, loadSound]);
 
     useEffect(() => {
         if (user) {

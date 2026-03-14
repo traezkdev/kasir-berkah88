@@ -144,7 +144,8 @@ const ExpenseManagement = ({ navigation }) => {
         amount: '',
         category: 'Operasional',
         notes: '',
-        date: today
+        date: today,
+        account_name: 'lapak_deposit'
     });
 
     const [categories, setCategories] = useState(['Bahan Baku & Supplies', 'Listrik & Air', 'Pembelian Stok', 'Peralatan', 'Perawatan & Perbaikan', 'Transportasi', 'Promosi & Marketing', 'Operasional Lainnya', 'Lain-lain', 'Gaji']);
@@ -328,7 +329,8 @@ const ExpenseManagement = ({ navigation }) => {
             amount: '',
             category: 'Operasional',
             notes: '',
-            date: getLocalDateString()
+            date: getLocalDateString(),
+            account_name: 'lapak_deposit'
         });
         setShowModal(true);
     };
@@ -347,7 +349,8 @@ const ExpenseManagement = ({ navigation }) => {
             amount: item.amount.toString(),
             category: item.category,
             notes: item.notes || '',
-            date: item.date.split(' ')[0]
+            date: item.date.split(' ')[0],
+            account_name: item.account_id === 2 ? 'owner_deposit' : 'lapak_deposit' // assuming 1 is lapak (Uang Lapak), 2 is owner (Saldo Deposit)
         });
         setShowModal(true);
     };
@@ -541,8 +544,8 @@ const ExpenseManagement = ({ navigation }) => {
                                 setLocalFilters(filters);
                                 setShowFilterModal(true);
                             }}>
-                                <Filter size={16} color={filters.startDate || filters.endDate || filters.category ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterBtnMiniText, (!!filters.startDate || !!filters.endDate || !!filters.category) && { color: '#1E40AF' }]}>Filter</Text>
+                                <Filter size={16} color={(!!filters.startDate || !!filters.endDate || !!filters.category) ? "#BFDBFE" : "#FFFFFF"} />
+                                <Text style={[styles.filterBtnMiniText, (!!filters.startDate || !!filters.endDate || !!filters.category) && { color: '#BFDBFE' }]}>Filter</Text>
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.summaryAmountPremium}>{formatCurrency(totalAmount)}</Text>
@@ -563,7 +566,7 @@ const ExpenseManagement = ({ navigation }) => {
                             <View style={styles.activeFilterBadge}>
                                 <Text style={styles.activeFilterText}>Kategori: {filters.category}</Text>
                                 <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, category: '' }))}>
-                                    <X size={12} color="#1E40AF" />
+                                    <X size={12} color="#FFFFFF" />
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -718,6 +721,41 @@ const ExpenseManagement = ({ navigation }) => {
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>Tanggal *</Text>
                         {renderDateInput(formData.date, (val) => setFormData({ ...formData, date: val }), showDatePicker, setShowDatePicker)}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Sumber Dana *</Text>
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.quickFilterBtn,
+                                    formData.account_name === 'lapak_deposit' && { backgroundColor: '#1E40AF', borderColor: '#1E40AF' },
+                                    isEditing && { opacity: 0.7 }
+                                ]}
+                                disabled={isEditing}
+                                onPress={() => setFormData({ ...formData, account_name: 'lapak_deposit' })}
+                            >
+                                <Text style={[
+                                    styles.quickFilterText,
+                                    formData.account_name === 'lapak_deposit' && { color: '#FFFFFF' }
+                                ]}>💰 Uang Lapak</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.quickFilterBtn,
+                                    formData.account_name === 'owner_deposit' && { backgroundColor: '#1E40AF', borderColor: '#1E40AF' },
+                                    isEditing && { opacity: 0.7 }
+                                ]}
+                                disabled={isEditing}
+                                onPress={() => setFormData({ ...formData, account_name: 'owner_deposit' })}
+                            >
+                                <Text style={[
+                                    styles.quickFilterText,
+                                    formData.account_name === 'owner_deposit' && { color: '#FFFFFF' }
+                                ]}>🏦 Saldo Deposit</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {isEditing && <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 4, fontStyle: 'italic' }}>Sumber dana tidak dapat diubah saat edit</Text>}
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -944,11 +982,16 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     summaryCardPremium: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#1E40AF',
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: '#1E3A8A',
+        elevation: 10,
+        shadowColor: '#1E40AF',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
     },
     summaryHeader: {
         flexDirection: 'row',
@@ -959,8 +1002,8 @@ const styles = StyleSheet.create({
     summaryTag: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#94A3B8',
-        backgroundColor: '#F1F5F9',
+        color: '#1E40AF',
+        backgroundColor: '#E1F5FE',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 6,
@@ -969,7 +1012,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
@@ -977,18 +1020,18 @@ const styles = StyleSheet.create({
     filterBtnMiniText: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: '#64748B',
+        color: '#FFFFFF',
     },
     summaryAmountPremium: {
         fontSize: 28,
         fontWeight: '900',
-        color: '#1E293B',
+        color: '#FFFFFF',
         marginBottom: 15,
     },
     summaryFooter: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
         padding: 12,
         borderRadius: 16,
     },
@@ -998,25 +1041,25 @@ const styles = StyleSheet.create({
     summaryLabelText: {
         fontSize: 10,
         fontWeight: 'bold',
-        color: '#94A3B8',
+        color: '#BFDBFE',
         textTransform: 'uppercase',
     },
     summaryValueText: {
         fontSize: 13,
         fontWeight: '900',
-        color: '#1E293B',
+        color: '#FFFFFF',
         marginTop: 2,
     },
     summaryDivider: {
         width: 1,
         height: 20,
-        backgroundColor: '#CBD5E1',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         marginHorizontal: 15,
     },
     activeFilterBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1E40AF15',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         alignSelf: 'flex-start',
         marginTop: 12,
         paddingHorizontal: 10,
@@ -1027,7 +1070,7 @@ const styles = StyleSheet.create({
     activeFilterText: {
         fontSize: 11,
         fontWeight: 'bold',
-        color: '#1E40AF',
+        color: '#FFFFFF',
     },
     listHeaderSection: {
         flexDirection: 'row',

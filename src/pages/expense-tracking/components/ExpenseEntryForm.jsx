@@ -8,7 +8,8 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole, isInsideModal = f
     category: '',
     description: '',
     amount: '',
-    notes: ''
+    notes: '',
+    account_name: 'lapak_deposit'
   });
 
   const [errors, setErrors] = useState({});
@@ -103,6 +104,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole, isInsideModal = f
       category: formData.category,
       date: formatInTimeZone(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss'),
       notes: formData.notes.trim(),
+      account_name: formData.account_name
     };
 
     onAddExpense(expenseData);
@@ -113,7 +115,8 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole, isInsideModal = f
       description: '',
       amount: '',
       notes: '',
-      date: ''
+      date: '',
+      account_name: 'lapak_deposit'
     });
     setErrors({});
   };
@@ -180,6 +183,18 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole, isInsideModal = f
               required
             />
             {errors.amount && <p className="mt-1 text-[10px] font-bold text-rose-500 px-1">{errors.amount}</p>}
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Sumber Dana</label>
+            <select
+              value={formData.account_name}
+              onChange={(e) => handleInputChange('account_name', e.target.value)}
+              className="w-full px-4 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium transition-all dark:text-white"
+            >
+              <option value="lapak_deposit">💰 Uang Lapak</option>
+              <option value="owner_deposit">🏦 Saldo Deposit</option>
+            </select>
           </div>
 
           <div className="md:col-span-2">

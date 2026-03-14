@@ -331,11 +331,10 @@ const LapakDeposit = ({ headerTitle }) => {
                     />
                 )}
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-4 md:py-6" : ""}>
-                    <div className="mb-6 mt-4 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                        <div className="hidden lg:block">
-                            <div className="hidden md:block">
-                                <BreadcrumbNavigation />
-                            </div>
+                    {/* Desktop Header Content */}
+                    <div className="hidden lg:flex mb-8 justify-between items-end gap-6">
+                        <div>
+                            <BreadcrumbNavigation />
                             <div className="mt-4">
                                 <h1 className="text-2xl lg:text-4xl font-black text-gray-800 dark:text-white uppercase tracking-tighter">{pageTitle}</h1>
                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
@@ -345,13 +344,13 @@ const LapakDeposit = ({ headerTitle }) => {
                             </div>
                         </div>
 
-                        {/* Premium Mode Toggle */}
-                        <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 flex items-center gap-1 self-start md:self-auto">
+                        {/* Mode Toggle for Desktop */}
+                        <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 flex items-center gap-1 h-fit">
                             <button
                                 onClick={() => setMode('lapak')}
                                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${mode === 'lapak'
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 active:scale-95'
-                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                                     }`}
                             >
                                 <Icon name="Store" size={14} strokeWidth={3} />
@@ -360,8 +359,8 @@ const LapakDeposit = ({ headerTitle }) => {
                             <button
                                 onClick={() => setMode('owner')}
                                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${mode === 'owner'
-                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 active:scale-95'
-                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                                     }`}
                             >
                                 <Icon name="User" size={14} strokeWidth={3} />
@@ -371,6 +370,31 @@ const LapakDeposit = ({ headerTitle }) => {
                     </div>
 
                     <div className="!-mt-20 lg:!mt-0 relative z-30">
+                        {/* Mode Toggle for Mobile - Visible on mobile only */}
+                        <div className="lg:hidden mb-6 flex justify-start">
+                            <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 flex items-center gap-1 w-full sm:w-auto">
+                                <button
+                                    onClick={() => setMode('lapak')}
+                                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${mode === 'lapak'
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                        : 'text-gray-400'
+                                        }`}
+                                >
+                                    <Icon name="Store" size={14} strokeWidth={3} />
+                                    <span>Tunai</span>
+                                </button>
+                                <button
+                                    onClick={() => setMode('owner')}
+                                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${mode === 'owner'
+                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                        : 'text-gray-400'
+                                        }`}
+                                >
+                                    <Icon name="User" size={14} strokeWidth={3} />
+                                    <span>Transfer</span>
+                                </button>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                             <MetricsCard
                                 title={mode === 'lapak' ? "Uang Tunai" : "Uang Transfer"}

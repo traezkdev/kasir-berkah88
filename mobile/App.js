@@ -96,6 +96,25 @@ export default function App() {
     }
     */
 
+    // Inisialisasi Audio Mode secara global untuk mencegah error threading expo-av
+    const setupAudio = async () => {
+      try {
+        const { Audio } = require('expo-av');
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        console.log('[App] Audio system initialized');
+      } catch (err) {
+        console.log('[App] Audio setup warning:', err.message);
+      }
+    };
+
+    setupAudio();
+
     // Sembunyikan splash screen setelah 1 detik
     const timer = setTimeout(async () => {
       await SplashScreen.hideAsync();

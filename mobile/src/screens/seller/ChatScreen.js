@@ -107,7 +107,11 @@ const VoiceNotePlayer = memo(({ audioUrl, isMine }) => {
     };
 
     useEffect(() => {
-        return () => { sound?.unloadAsync(); };
+        return () => {
+            if (sound) {
+                sound.unloadAsync().catch(() => {});
+            }
+        };
     }, [sound]);
 
     return (

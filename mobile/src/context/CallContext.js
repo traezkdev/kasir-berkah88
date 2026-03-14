@@ -69,7 +69,7 @@ export const CallProvider = ({ children }) => {
         outgoing: 'https://assets.mixkit.co/active_storage/sfx/1360/1360-preview.mp3'  // Ringback tone
     };
 
-    const playSound = async (type) => {
+    const playSound = useCallback(async (type) => {
         try {
             await stopSound();
             const { sound } = await Audio.Sound.createAsync(
@@ -80,19 +80,25 @@ export const CallProvider = ({ children }) => {
         } catch (error) {
             console.log('[WebRTC] Error playing sound:', error);
         }
-    };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const stopSound = async () => {
+    const stopSound = useCallback(async () => {
         if (ringtoneSoundRef.current) {
             try {
-                await ringtoneSoundRef.current.stopAsync();
-                await ringtoneSoundRef.current.unloadAsync();
+                // Gunakan variable lokal untuk menghindari race condition
+                const soundToUnload = ringtoneSoundRef.current;
                 ringtoneSoundRef.current = null;
+
+                const status = await soundToUnload.getStatusAsync();
+                if (status.isLoaded) {
+                    await soundToUnload.stopAsync().catch(() => {});
+                    await soundToUnload.unloadAsync().catch(() => {});
+                }
             } catch (error) {
                 console.log('[WebRTC] Error stopping sound:', error);
             }
         }
-    };
+    }, []);
 
     // Helper wrapper to update both state and ref
     const updateCallStatus = (status) => {
@@ -330,6 +336,7 @@ export const CallProvider = ({ children }) => {
         });
 
         return () => {
+            stopSound(); // Ensure sound is stopped when component unmounts
             socket.off('incoming_call', handleIncomingCall);
             socket.off('webrtc_signal', handleWebRTCSignal);
             socket.off('call_accepted', handleCallAccepted);
@@ -341,7 +348,7 @@ export const CallProvider = ({ children }) => {
             });
             socket.off('call_handled');
         };
-    }, [socket]); // Hanya bergantung pada socket, tidak re-run saat status berubah
+    }, [socket, stopSound]); // Hanya bergantung pada socket, tidak re-run saat status berubah
 
     const createPeerConnection = (targetId, customIceServers = null) => {
         if (!WebRTC) return null;

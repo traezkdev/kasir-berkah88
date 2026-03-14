@@ -12,7 +12,8 @@ import {
     StatusBar,
     RefreshControl,
     Dimensions,
-    ScrollView
+    ScrollView,
+    Animated
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
@@ -120,6 +121,7 @@ const LapakDeposit = ({ navigation }) => {
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [transactionToEdit, setTransactionToEdit] = useState(null);
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyLapak, setHistoryLapak] = useState([]);
@@ -132,6 +134,9 @@ const LapakDeposit = ({ navigation }) => {
     });
     const [showHistoryStartDate, setShowHistoryStartDate] = useState(false);
     const [showHistoryEndDate, setShowHistoryEndDate] = useState(false);
+
+    const [mode, setMode] = useState('lapak'); // 'lapak' or 'owner'
+    const currentAccountName = mode === 'lapak' ? 'lapak_deposit' : 'owner_deposit';
 
     // Filter & Search States
     const [searchInput, setSearchInput] = useState('');
@@ -159,6 +164,11 @@ const LapakDeposit = ({ navigation }) => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
+    // Scroll Animation States
+    const searchBarAnim = useRef(new Animated.Value(1)).current; // 1 = visible, 0 = hidden
+    const lastScrollY = useRef(0);
+    const scrollOffset = useRef(0);
 
     // Memoized Currency Formatter to avoid creating object on every call
     const currencyFormatter = useMemo(() => new Intl.NumberFormat('id-ID', {
@@ -192,7 +202,7 @@ const LapakDeposit = ({ navigation }) => {
             if (filters.endDate) params.append('endDate', filters.endDate);
             if (debouncedSearch) params.append('search', debouncedSearch);
 
-            const response = await apiService.get(`/api/accounts/lapak_deposit?${params.toString()}`, { signal });
+            const response = await apiService.get(`/api/accounts/${currentAccountName}?${params.toString()}`, { signal });
             if (response.data && response.data.message === 'success') {
                 setLapakAccount(response.data.data);
                 setHasError(false);
@@ -207,7 +217,7 @@ const LapakDeposit = ({ navigation }) => {
             setRefreshing(false);
             setIsFilteringLoading(false);
         }
-    }, [filters, debouncedSearch, showToast]);
+    }, [filters, debouncedSearch, showToast, currentAccountName]);
 
     // Initial load, filter change, or socket refresh trigger
     useEffect(() => {
@@ -223,7 +233,7 @@ const LapakDeposit = ({ navigation }) => {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [filters, debouncedSearch, fetchLapakAccountData, refreshTrigger]);
+    }, [filters, mode, debouncedSearch, fetchLapakAccountData, refreshTrigger]);
 
     // Search Debounce
     useEffect(() => {
@@ -235,6 +245,32 @@ const LapakDeposit = ({ navigation }) => {
         setRefreshing(true);
         fetchLapakAccountData();
     }, [fetchLapakAccountData]);
+
+    const handleScroll = (event) => {
+        const currentOffset = event.nativeEvent.contentOffset.y;
+        const direction = currentOffset > scrollOffset.current ? 'down' : 'up';
+        const diff = Math.abs(currentOffset - scrollOffset.current);
+
+        // Responsive sensitivity
+        if (diff > 5) {
+            if (direction === 'down' && currentOffset > 10) {
+                // Hide search bar faster
+                Animated.timing(searchBarAnim, {
+                    toValue: 0,
+                    duration: 150,
+                    useNativeDriver: false,
+                }).start();
+            } else if (direction === 'up' || currentOffset <= 5) {
+                // Show search bar faster
+                Animated.timing(searchBarAnim, {
+                    toValue: 1,
+                    duration: 150,
+                    useNativeDriver: false,
+                }).start();
+            }
+            scrollOffset.current = currentOffset;
+        }
+    };
 
     const handleApplyFilter = useCallback(() => {
         setFilters(localFilters);
@@ -261,7 +297,7 @@ const LapakDeposit = ({ navigation }) => {
             params.append('endDate', historyFilters.endDate);
             // Tambahkan limit/offset jika backend mendukung, jika tidak kita proses semua untuk periode tersebut
 
-            const response = await apiService.get(`/api/accounts/lapak_deposit?${params.toString()}`);
+            const response = await apiService.get(`/api/accounts/${currentAccountName}?${params.toString()}`);
             if (response.data && response.data.message === 'success') {
                 const transactions = response.data.data.transactions || [];
                 const currentAccountBalance = Number(response.data.data.account?.balance || 0);
@@ -406,7 +442,7 @@ const LapakDeposit = ({ navigation }) => {
             const localDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
             await apiService.post('/api/accounts/deposit', {
-                account_name: 'lapak_deposit',
+                account_name: currentAccountName,
                 amount: parseFloat(formData.amount),
                 description: formData.description,
                 created_at: localDateTime
@@ -444,7 +480,7 @@ const LapakDeposit = ({ navigation }) => {
             const localDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
             await apiService.post('/api/accounts/expense', {
-                account_name: 'lapak_deposit',
+                account_name: currentAccountName,
                 amount: parseFloat(formData.amount),
                 description: formData.description,
                 created_at: localDateTime
@@ -573,9 +609,39 @@ const LapakDeposit = ({ navigation }) => {
                                                     : 'DIFILTER')))}
                                 </Text>
                             </View>
-                            <Text style={styles.balanceLabel}>Saldo Lapak</Text>
+                            <Text style={styles.balanceLabel}>{mode === 'lapak' ? 'Saldo Tunai Lapak' : 'Saldo Transfer Deposit'}</Text>
                             <Text style={styles.balanceAmount}>{formatCurrency(lapakAccount?.account?.balance || 0)}</Text>
                         </View>
+                    </View>
+
+                    {/* Mode Toggle UI for Mobile */}
+                    <View style={styles.modeToggleContainer}>
+                        <TouchableOpacity
+                            onPress={() => setMode('lapak')}
+                            style={[
+                                styles.modeToggleBtn,
+                                mode === 'lapak' && styles.modeToggleBtnActiveLapak
+                            ]}
+                        >
+                            <Inbox size={14} color={mode === 'lapak' ? '#1E40AF' : '#64748B'} />
+                            <Text style={[
+                                styles.modeToggleText,
+                                mode === 'lapak' && styles.modeToggleTextActiveLapak
+                            ]}>Tunai</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setMode('owner')}
+                            style={[
+                                styles.modeToggleBtn,
+                                mode === 'owner' && styles.modeToggleBtnActiveOwner
+                            ]}
+                        >
+                            <ArrowRight size={14} color={mode === 'owner' ? '#7E22CE' : '#64748B'} />
+                            <Text style={[
+                                styles.modeToggleText,
+                                mode === 'owner' && styles.modeToggleTextActiveOwner
+                            ]}>Transfer</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Stats Summary Row */}
@@ -612,7 +678,27 @@ const LapakDeposit = ({ navigation }) => {
 
             {/* List & Search */}
             <View style={styles.contentWrapper}>
-                <View style={styles.searchAndFilter}>
+                <Animated.View style={[
+                    styles.searchAndFilter,
+                    {
+                        height: searchBarAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 60] // Adjust 60 to your search bar height
+                        }),
+                        opacity: searchBarAnim,
+                        marginBottom: searchBarAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 20]
+                        }),
+                        overflow: 'hidden',
+                        transform: [{
+                            translateY: searchBarAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [-20, 0]
+                            })
+                        }]
+                    }
+                ]}>
                     <View style={styles.searchBox}>
                         <Search size={18} color="#94A3B8" />
                         <TextInput
@@ -632,7 +718,7 @@ const LapakDeposit = ({ navigation }) => {
                     >
                         <Filter size={20} color={(filters.startDate || filters.endDate || filters.type !== 'all') ? "#FFFFFF" : "#64748B"} />
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
                 {loading && !lapakAccount ? (
                     <View style={styles.centerPadding}>
@@ -653,6 +739,8 @@ const LapakDeposit = ({ navigation }) => {
                         keyExtractor={item => item.id.toString()}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
                         refreshControl={
                             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
                         }
@@ -988,7 +1076,7 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: '#1E40AF',
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
-        paddingBottom: 170,
+        paddingBottom: 200,
         paddingHorizontal: 20,
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
@@ -1027,7 +1115,7 @@ const styles = StyleSheet.create({
     },
     balanceCard: {
         position: 'absolute',
-        bottom: -115,
+        bottom: -130,
         left: 20,
         right: 20,
         backgroundColor: '#FFFFFF',
@@ -1155,7 +1243,7 @@ const styles = StyleSheet.create({
     },
     contentWrapper: {
         flex: 1,
-        paddingTop: 130,
+        paddingTop: 145,
         paddingHorizontal: 20,
     },
     searchAndFilter: {
@@ -1514,6 +1602,52 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 10,
+    },
+    // Mode Toggle Styles
+    modeToggleContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#F1F5F9',
+        padding: 4,
+        borderRadius: 16,
+        marginBottom: 16,
+    },
+    modeToggleBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 10,
+        borderRadius: 12,
+        backgroundColor: 'transparent',
+    },
+    modeToggleBtnActiveLapak: {
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#1E40AF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    modeToggleBtnActiveOwner: {
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#7E22CE',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    modeToggleText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#64748B',
+        textTransform: 'uppercase',
+    },
+    modeToggleTextActiveLapak: {
+        color: '#1E40AF',
+    },
+    modeToggleTextActiveOwner: {
+        color: '#7E22CE',
     }
 });
 
