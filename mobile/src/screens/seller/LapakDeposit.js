@@ -12,7 +12,8 @@ import {
     StatusBar,
     RefreshControl,
     Dimensions,
-    ScrollView
+    ScrollView,
+    Animated
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
@@ -164,6 +165,11 @@ const LapakDeposit = ({ navigation }) => {
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
+    // Scroll Animation States
+    const searchBarAnim = useRef(new Animated.Value(1)).current; // 1 = visible, 0 = hidden
+    const lastScrollY = useRef(0);
+    const scrollOffset = useRef(0);
+
     // Memoized Currency Formatter to avoid creating object on every call
     const currencyFormatter = useMemo(() => new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -239,6 +245,32 @@ const LapakDeposit = ({ navigation }) => {
         setRefreshing(true);
         fetchLapakAccountData();
     }, [fetchLapakAccountData]);
+
+    const handleScroll = (event) => {
+        const currentOffset = event.nativeEvent.contentOffset.y;
+        const direction = currentOffset > scrollOffset.current ? 'down' : 'up';
+        const diff = Math.abs(currentOffset - scrollOffset.current);
+
+        // Responsive sensitivity
+        if (diff > 5) {
+            if (direction === 'down' && currentOffset > 10) {
+                // Hide search bar faster
+                Animated.timing(searchBarAnim, {
+                    toValue: 0,
+                    duration: 150,
+                    useNativeDriver: false,
+                }).start();
+            } else if (direction === 'up' || currentOffset <= 5) {
+                // Show search bar faster
+                Animated.timing(searchBarAnim, {
+                    toValue: 1,
+                    duration: 150,
+                    useNativeDriver: false,
+                }).start();
+            }
+            scrollOffset.current = currentOffset;
+        }
+    };
 
     const handleApplyFilter = useCallback(() => {
         setFilters(localFilters);
@@ -646,7 +678,27 @@ const LapakDeposit = ({ navigation }) => {
 
             {/* List & Search */}
             <View style={styles.contentWrapper}>
-                <View style={styles.searchAndFilter}>
+                <Animated.View style={[
+                    styles.searchAndFilter,
+                    {
+                        height: searchBarAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 60] // Adjust 60 to your search bar height
+                        }),
+                        opacity: searchBarAnim,
+                        marginBottom: searchBarAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 20]
+                        }),
+                        overflow: 'hidden',
+                        transform: [{
+                            translateY: searchBarAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [-20, 0]
+                            })
+                        }]
+                    }
+                ]}>
                     <View style={styles.searchBox}>
                         <Search size={18} color="#94A3B8" />
                         <TextInput
@@ -666,7 +718,7 @@ const LapakDeposit = ({ navigation }) => {
                     >
                         <Filter size={20} color={(filters.startDate || filters.endDate || filters.type !== 'all') ? "#FFFFFF" : "#64748B"} />
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
                 {loading && !lapakAccount ? (
                     <View style={styles.centerPadding}>
@@ -687,6 +739,8 @@ const LapakDeposit = ({ navigation }) => {
                         keyExtractor={item => item.id.toString()}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
                         refreshControl={
                             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
                         }
