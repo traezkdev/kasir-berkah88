@@ -13,6 +13,7 @@ import AppIcon from '../../components/AppIcon';
 import RestaurantSettingsModal from './components/RestaurantSettingsModal';
 import DataSyncModal from './DataSyncModal';
 import ExpenseCategorySettings from './ExpenseCategorySettings';
+import BannerSettings from './BannerSettings';
 
 import SocialShareSettings from './SocialShareSettings';
 import CategorySettings from './CategorySettings';
@@ -762,6 +763,7 @@ const Settings = () => {
             <SettingsCard icon="Store" title="Identitas Toko" description="Nama, slogan, dan kontak resmi" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Image" title="Logo & Branding" description="Ganti logo, judul aplikasi, dan SEO" onClick={() => setActiveModal('brandingSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
+            <SettingsCard icon="GalleryHorizontal" title="Banner Slideshow" description="Kelola slide gambar dashboard mobile" onClick={() => setActiveModal('bannerSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
             <SettingsCard
               icon="Sunrise"
@@ -1459,8 +1461,12 @@ const Settings = () => {
         </form>
       </SettingsModal>
 
-      <SettingsModal title="Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
-        <SocialShareSettings onClose={handleModalClose} />
+      <SettingsModal title="Pilih Tema" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose} size="lg">
+        {/* Konten Tema - diasumsikan sudah ada di modal lain atau dirender langsung */}
+      </SettingsModal>
+
+      <SettingsModal title="Kelola Banner" isOpen={activeModal === 'bannerSettings'} onClose={handleModalClose} size="3xl">
+        <BannerSettings onClose={handleModalClose} />
       </SettingsModal>
 
       <SettingsModal title="Kategori Menu" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose}>
