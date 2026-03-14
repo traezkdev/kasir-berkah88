@@ -2945,8 +2945,8 @@ app.get('/api/app-settings', async (req, res) => {
     }
 });
 
-// Update app settings (admin only)
-app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload.single('og_image'), async (req, res) => {
+// Update app settings (admin/owner only)
+app.post('/api/app-settings', authenticateToken, authorizeRoles('admin', 'owner'), upload.single('og_image'), async (req, res) => {
     try {
         const { og_title, og_description } = req.body;
         const og_image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
