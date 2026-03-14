@@ -119,6 +119,29 @@ const Settings = () => {
       </div>
     </div>
   );
+  
+  // Custom Section Header (Premium Categorization)
+  const SettingsSection = ({ title, description, icon, children }) => (
+    <div className="space-y-6 pt-4 first:pt-0">
+      <div className="flex flex-col gap-1 px-1">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <AppIcon name={icon} size={18} />
+          </div>
+          <h2 className="text-xs font-black text-text-primary uppercase tracking-[0.2em]">
+            {title}
+          </h2>
+        </div>
+        <p className="text-[10px] text-text-secondary font-bold uppercase tracking-widest opacity-40 ml-11">
+          {description}
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+        {children}
+      </div>
+    </div>
+  );
+
   // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
@@ -757,51 +780,85 @@ const Settings = () => {
             </p>
           </div>
 
-          {/* Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch optimize-scroll">
-            {/* Store Configuration Section */}
-            <SettingsCard icon="Store" title="Identitas Toko" description="Nama, slogan, dan kontak resmi" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
-            <SettingsCard icon="Image" title="Logo & Branding" description="Ganti logo, judul aplikasi, dan SEO" onClick={() => setActiveModal('brandingSettings')} disabled={!isAdmin} />
-            <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
-            <SettingsCard icon="GalleryHorizontal" title="Banner Slideshow" description="Kelola slide gambar dashboard mobile" onClick={() => setActiveModal('bannerSettings')} disabled={!isAdmin} />
-            <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
-            <SettingsCard
-              icon="Sunrise"
-              title="Motivasi Harian"
-              description={dailyWelcomeEnabled ? "Pesan penyemangat akan muncul setiap pagi" : "Pesan penyemangat telah dimatikan"}
-              badge={
-                <div className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter ${dailyWelcomeEnabled ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                  {dailyWelcomeEnabled ? 'Aktif' : 'Nonaktif'}
-                </div>
-              }
-              onClick={() => {
-                setNewDailyWelcomeEnabled(dailyWelcomeEnabled);
-                setActiveModal('dailyWelcome');
-              }}
-            />
+          {/* Settings Grid - Categorized */}
+          <div className="space-y-12 optimize-scroll animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            
+            {/* Section 1: Identitas & Bisnis */}
+            <SettingsSection 
+              title="Identitas & Bisnis" 
+              description="Informasi dasar toko dan modal operasional"
+              icon="Store"
+            >
+              <SettingsCard icon="Store" title="Identitas Toko" description="Nama, slogan, dan kontak resmi" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
+              <SettingsCard icon="Image" title="Logo & Branding" description="Ganti logo, judul aplikasi, dan SEO" onClick={() => setActiveModal('brandingSettings')} disabled={!isAdmin} />
+              <SettingsCard icon="PiggyBank" title="Modal Awal" description="Atur saldo awal kas operasional" onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
+              <SettingsCard icon="Share2" title="Media Sosial" description="Atur link berbagi ke media sosial" onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
+            </SettingsSection>
 
-            {/* General Settings */}
-            <SettingsCard icon="FileText" title="PPN & Struk" description="Atur rate PPN dan versi struk" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
-            <SettingsCard icon="LayoutList" title="Kategori Menu" description="Kelola kategori produk makanan/minuman" onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
-            <SettingsCard icon="Wallet" title="Kategori Biaya" description="Kelola kategori pengeluaran operasional" onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
+            {/* Section 2: Preferensi Tampilan */}
+            <SettingsSection 
+              title="Preferensi Tampilan" 
+              description="Personalisasi gaya dan antar muka aplikasi"
+              icon="Palette"
+            >
+              <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
+              <SettingsCard icon="GalleryHorizontal" title="Banner Slideshow" description="Kelola slide gambar dashboard mobile" onClick={() => setActiveModal('bannerSettings')} disabled={!isAdmin} />
+              <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
+              <SettingsCard icon="Monitor" title="UI Login & Daftar" description="Pilih tampilan halaman autentikasi" onClick={() => setActiveModal('authUiSelection')} disabled={!isAdmin} />
+              <SettingsCard
+                icon="Sunrise"
+                title="Motivasi Harian"
+                description={dailyWelcomeEnabled ? "Pesan penyemangat akan muncul setiap pagi" : "Pesan penyemangat telah dimatikan"}
+                badge={
+                  <div className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter ${dailyWelcomeEnabled ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    {dailyWelcomeEnabled ? 'Aktif' : 'Nonaktif'}
+                  </div>
+                }
+                onClick={() => {
+                  setNewDailyWelcomeEnabled(dailyWelcomeEnabled);
+                  setActiveModal('dailyWelcome');
+                }}
+              />
+            </SettingsSection>
 
-            {/* Security & Data */}
-            <SettingsCard icon="Users" title="Manajemen Pengguna" description="Kelola akun admin dan kasir" onClick={() => setActiveModal('userManagement')} disabled={!isAdmin} />
-            <SettingsCard icon="Contact" title="Data Karyawan" description="Kelola profil dan jabatan karyawan" onClick={() => setActiveModal('employeeManagement')} disabled={!isAdmin} />
-            <SettingsCard icon="Lock" title="Sandi Master" description="Otoritas tindakan konfirmasi data" onClick={() => setActiveModal('masterPassword')} disabled={!isAdmin} />
-            <SettingsCard icon="Monitor" title="UI Login & Daftar" description="Pilih tampilan halaman autentikasi" onClick={() => setActiveModal('authUiSelection')} disabled={!isAdmin} />
-            <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
-            <SettingsCard icon="UserPlus" title="Registrasi User" description="Izinkan pendaftaran pengguna baru" onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
+            {/* Section 3: Pengaturan Operasional */}
+            <SettingsSection 
+              title="Pengaturan Operasional" 
+              description="Konfigurasi struk, kategori, dan laporan"
+              icon="ClipboardList"
+            >
+              <SettingsCard icon="FileText" title="PPN & Struk" description="Atur rate PPN dan versi struk" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
+              <SettingsCard icon="LayoutList" title="Kategori Menu" description="Kelola kategori produk makanan/minuman" onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
+              <SettingsCard icon="Wallet" title="Kategori Biaya" description="Kelola kategori pengeluaran operasional" onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
+              <SettingsCard icon="FileText" title="Template PDF Audit" description="Kustomisasi teks laporan audit PDF" onClick={() => setIsAuditPdfTemplateModalOpen(true)} disabled={!isAdmin} />
+            </SettingsSection>
 
-            {/* Advanced & Social */}
-            <SettingsCard icon="PiggyBank" title="Modal Awal" description="Atur saldo awal kas operasional" onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
-            <SettingsCard icon="Share2" title="Media Sosial" description="Atur link berbagi ke media sosial" onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
-            <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Sinkronkan data lokal ke cloud" onClick={() => setActiveModal('dataSync')} disabled={!isAdmin} />
-            <SettingsCard icon="BookOpen" title="Tutup Buku" description="Arsip data periode ini sekarang" onClick={() => setActiveModal('closeBook')} disabled={!isAdmin} />
-            <SettingsCard icon="Archive" title="Arsip Data" description="Lihat riwayat data yang diarsip" onClick={() => navigate('/admin/archive')} disabled={!isAdmin} />
-            <SettingsCard icon="Trash2" title="Bersihkan Data" description="Hapus semua riwayat (Hati-hati!)" onClick={() => setActiveModal('clearAllData')} disabled={!isAdmin} />
-            <SettingsCard icon="FileText" title="Template PDF Audit" description="Kustomisasi teks laporan audit PDF" onClick={() => setIsAuditPdfTemplateModalOpen(true)} disabled={!isAdmin} />
+            {/* Section 4: Pengguna & Karyawan */}
+            <SettingsSection 
+              title="Pengguna & Karyawan" 
+              description="Manajemen akses akun dan database SDM"
+              icon="Users"
+            >
+              <SettingsCard icon="Users" title="Manajemen Pengguna" description="Kelola akun admin dan kasir" onClick={() => setActiveModal('userManagement')} disabled={!isAdmin} />
+              <SettingsCard icon="Contact" title="Data Karyawan" description="Kelola profil dan jabatan karyawan" onClick={() => setActiveModal('employeeManagement')} disabled={!isAdmin} />
+              <SettingsCard icon="UserPlus" title="Registrasi User" description="Izinkan pendaftaran pengguna baru" onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
+            </SettingsSection>
+
+            {/* Section 5: Data & Keamanan */}
+            <SettingsSection 
+              title="Data & Keamanan" 
+              description="Pusat kendali database, arsip, dan privasi"
+              icon="ShieldCheck"
+            >
+              <SettingsCard icon="Lock" title="Sandi Master" description="Otoritas tindakan konfirmasi data" onClick={() => setActiveModal('masterPassword')} disabled={!isAdmin} />
+              <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
+              <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Sinkronkan data lokal ke cloud" onClick={() => setActiveModal('dataSync')} disabled={!isAdmin} />
+              <SettingsCard icon="Archive" title="Arsip Data" description="Lihat riwayat data yang diarsip" onClick={() => navigate('/admin/archive')} disabled={!isAdmin} />
+              <SettingsCard icon="BookOpen" title="Tutup Buku" description="Arsip data periode ini sekarang" onClick={() => setActiveModal('closeBook')} disabled={!isAdmin} />
+              <SettingsCard icon="Trash2" title="Bersihkan Data" description="Hapus semua riwayat (Hati-hati!)" onClick={() => setActiveModal('clearAllData')} disabled={!isAdmin} />
+            </SettingsSection>
           </div>
+
         </div>
       </main>
 
@@ -1461,9 +1518,7 @@ const Settings = () => {
         </form>
       </SettingsModal>
 
-      <SettingsModal title="Pilih Tema" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose} size="lg">
-        {/* Konten Tema - diasumsikan sudah ada di modal lain atau dirender langsung */}
-      </SettingsModal>
+
 
       <SettingsModal title="Kelola Banner" isOpen={activeModal === 'bannerSettings'} onClose={handleModalClose} size="3xl">
         <BannerSettings onClose={handleModalClose} />
