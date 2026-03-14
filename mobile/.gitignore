@@ -39,3 +39,15 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Build caches & locks (Penting agar tidak EBUSY)
+.gradle/
+build/
+android/.gradle/
+android/app/build/
+ios/build/
+
+# Allow google-services.json (Agar masuk ke EAS)
+!google-services.json
+!android/app/google-services.json
+
