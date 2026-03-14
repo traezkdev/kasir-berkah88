@@ -1474,6 +1474,22 @@ const setupDatabase = async () => {
       console.log('Added user_id column and foreign key to expenses table.');
     }
 
+    // Check and add account_id column to expenses
+    const [expenseAccountIdCol] = await connection.query("SHOW COLUMNS FROM expenses LIKE 'account_id'");
+    if (expenseAccountIdCol.length === 0) {
+      await connection.query("ALTER TABLE expenses ADD COLUMN account_id INT NULL");
+      await connection.query("ALTER TABLE expenses ADD FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL");
+      console.log('Added account_id column to expenses table.');
+    }
+
+    // Check and add expense_id column to account_transactions
+    const [atExpenseIdCol] = await connection.query("SHOW COLUMNS FROM account_transactions LIKE 'expense_id'");
+    if (atExpenseIdCol.length === 0) {
+      await connection.query("ALTER TABLE account_transactions ADD COLUMN expense_id INT NULL");
+      await connection.query("ALTER TABLE account_transactions ADD FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE");
+      console.log('Added expense_id column to account_transactions table.');
+    }
+
 
 
     // --- Logika Pembuatan Admin Default ---

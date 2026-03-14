@@ -4172,74 +4172,118 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'ka
 
 // Add a new expense
 app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
+    let connection;
     try {
-        const { name, amount, category, date, notes } = req.body;
+        const { name, amount, category, date, notes, account_name = 'lapak_deposit' } = req.body;
         if (!name || !amount || !date) {
             return res.status(400).json({ "error": "Missing required fields: name, amount, date" });
         }
-        const sql = 'INSERT INTO expenses (name, amount, category, date, notes, user_id) VALUES (?,?,?,?,?,?)';
-        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
-        const params = [name, parseFloat(amount) || 0, category, cleanDate, notes, req.user.userId];
-        const [result] = await db.query(sql, params);
 
-        // --- NEW: Sync Expense to Account Balance (Default to Tunai/Lapak) ---
-        try {
-            const [accRows] = await db.query("SELECT id FROM accounts WHERE name = 'lapak_deposit'");
-            if (accRows.length > 0) {
-                const accountId = accRows[0].id;
-                const amountToDeduct = parseFloat(amount) || 0;
+        connection = await db.getConnection();
+        await connection.beginTransaction();
 
-                // 1. Update Account Balance
-                await db.query(
-                    "UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    [amountToDeduct, accountId]
-                );
-
-                // 2. Record in account_transactions
-                await db.query(
-                    'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-                    [accountId, 'expense', amountToDeduct, `Pengeluaran: ${name}`, req.user.userId, cleanDate || new Date()]
-                );
-
-                console.log(`[SYNC-EXPENSE] Expense ${result.insertId} synced to lapak_deposit (-${amountToDeduct})`);
-            }
-        } catch (syncError) {
-            console.error(`[SYNC-EXPENSE] Failed to sync expense to account:`, syncError);
+        // 1. Get account ID
+        const [accRows] = await connection.query("SELECT id, balance FROM accounts WHERE name = ?", [account_name]);
+        if (accRows.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ "error": `Account '${account_name}' not found.` });
         }
-        // --- End Sync ---
+        const accountId = accRows[0].id;
+        const amountToDeduct = parseFloat(amount) || 0;
 
-        await logActivity(req.user.userId, 'Tambah Pengeluaran', 'expense', result.insertId, `Pengeluaran baru: ${name} sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`);
+        // 2. Insert into expenses table
+        const sql = 'INSERT INTO expenses (name, amount, category, date, notes, user_id, account_id) VALUES (?,?,?,?,?,?,?)';
+        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+        const params = [name, amountToDeduct, category, cleanDate, notes, req.user.userId, accountId];
+        const [result] = await connection.query(sql, params);
+        const expenseId = result.insertId;
+
+        // 3. Update Account Balance
+        await connection.query(
+            "UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            [amountToDeduct, accountId]
+        );
+
+        // 4. Record in account_transactions
+        await connection.query(
+            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at, expense_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [accountId, 'expense', amountToDeduct, `Pengeluaran: ${name}`, req.user.userId, cleanDate || new Date(), expenseId]
+        );
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Tambah Pengeluaran', 'expense', expenseId, `Pengeluaran baru: ${name} sebesar Rp ${amountToDeduct.toLocaleString('id-ID')}`);
+
+        console.log(`[SYNC-EXPENSE] Expense ${expenseId} synced to ${account_name} (-${amountToDeduct})`);
 
         res.json({
             "message": "success",
-            "data": { id: result.insertId, ...req.body },
+            "data": { id: expenseId, ...req.body },
         });
     } catch (err) {
+        if (connection) await connection.rollback();
+        console.error('Error adding expense:', err);
         res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
 // Update an expense
 app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
+    let connection;
     try {
+        const { id } = req.params;
         const { name, amount, category, date, notes } = req.body;
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Get existing expense
+        const [oldRows] = await connection.query("SELECT * FROM expenses WHERE id = ?", [id]);
+        if (oldRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ "error": "Expense not found" });
+        }
+        const oldExpense = oldRows[0];
+        const oldAmount = parseFloat(oldExpense.amount);
+        const accountId = oldExpense.account_id;
+
+        const newAmount = amount !== undefined ? parseFloat(amount) : oldAmount;
+        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+
+        // 2. Update expenses table
         const sql = `UPDATE expenses set 
            name = COALESCE(?, name), 
-           amount = COALESCE(?, amount), 
+           amount = ?, 
            category = COALESCE(?, category), 
            date = COALESCE(?, date), 
            notes = COALESCE(?, notes) 
            WHERE id = ?`;
+        const params = [name, newAmount, category, cleanDate, notes, id];
+        const [result] = await connection.query(sql, params);
 
-        // Clean date for MySQL (e.g. 2024-02-14T10:00:00.000Z or 2024-02-14 10:00:00+07:00 -> 2024-02-14 10:00:00)
-        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+        // 3. Sync with Account Balance & Transactions
+        if (accountId) {
+            const diffAmount = newAmount - oldAmount;
+            if (diffAmount !== 0) {
+                // Adjust balance (deduct the difference)
+                // If newAmount > oldAmount, diff is positive, balance decreases more
+                // If newAmount < oldAmount, diff is negative, balance increases (refund)
+                await connection.query(
+                    "UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [diffAmount, accountId]
+                );
+            }
 
-        const params = [name, amount ? parseFloat(amount) : null, category, cleanDate, notes, req.params.id];
-        const [result] = await db.query(sql, params);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ "error": "Expense not found" });
+            // Update linked account transaction
+            await connection.query(
+                "UPDATE account_transactions SET amount = ?, description = COALESCE(?, description), created_at = COALESCE(?, created_at) WHERE expense_id = ?",
+                [newAmount, name ? `Pengeluaran: ${name}` : null, cleanDate, id]
+            );
         }
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Update Pengeluaran', 'expense', id, `Pengeluaran ID ${id} diupdate: ${name || oldExpense.name} sebesar Rp ${newAmount.toLocaleString('id-ID')}`);
 
         res.json({
             "message": "success",
@@ -4247,7 +4291,11 @@ app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner',
             "changes": result.affectedRows
         });
     } catch (err) {
+        if (connection) await connection.rollback();
+        console.error('Error updating expense:', err);
         res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
@@ -4281,18 +4329,49 @@ app.delete("/api/expenses/all", authenticateToken, authorizeRoles('admin'), asyn
 
 // Delete an expense
 app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
+    let connection;
     try {
-        const sql = 'DELETE FROM expenses WHERE id = ?';
-        const [result] = await db.query(sql, [req.params.id]);
-        if (result.affectedRows === 0) {
+        const { id } = req.params;
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Get existing expense
+        const [oldRows] = await connection.query("SELECT * FROM expenses WHERE id = ?", [id]);
+        if (oldRows.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ "error": "Expense not found" });
         }
+        const oldExpense = oldRows[0];
+        const oldAmount = parseFloat(oldExpense.amount);
+        const accountId = oldExpense.account_id;
 
-        await logActivity(req.user.userId, 'Hapus Pengeluaran', 'expense', req.params.id, `Pengeluaran ID ${req.params.id} dihapus`);
+        // 2. Refund balance
+        if (accountId) {
+            await connection.query(
+                "UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                [oldAmount, accountId]
+            );
+            // Note: account_transactions with expense_id will be deleted automatically 
+            // because of ON DELETE CASCADE on the foreign key (if it was added correctly).
+            // To be safe, let's also delete it explicitly if cascade is not certain.
+            await connection.query("DELETE FROM account_transactions WHERE expense_id = ?", [id]);
+        }
+
+        // 3. Delete expense
+        const sql = 'DELETE FROM expenses WHERE id = ?';
+        const [result] = await connection.query(sql, [id]);
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Hapus Pengeluaran', 'expense', id, `Pengeluaran ID ${id} dihapus, saldo sebesar Rp ${oldAmount.toLocaleString('id-ID')} dikembalikan`);
 
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
+        if (connection) await connection.rollback();
+        console.error('Error deleting expense:', err);
         res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
