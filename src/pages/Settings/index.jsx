@@ -1532,6 +1532,10 @@ const Settings = () => {
         <ExpenseCategorySettings onClose={handleModalClose} />
       </SettingsModal>
 
+      <SettingsModal title="Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
+        <SocialShareSettings onClose={handleModalClose} />
+      </SettingsModal>
+
       <RestaurantSettingsModal isOpen={activeModal === 'restaurantSettings'} onClose={handleModalClose} onSave={handleSaveRestaurantSettings} initialSettings={restaurantSettings} />
 
       <SettingsModal title="Mode Aplikasi" isOpen={activeModal === 'appMode'} onClose={handleModalClose}>
