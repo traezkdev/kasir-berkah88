@@ -151,6 +151,19 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createSellerBannersTable = `
+      CREATE TABLE IF NOT EXISTS seller_banners (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        subtitle TEXT,
+        image_url VARCHAR(255),
+        link_url VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+
     const createPromosTable = `
       CREATE TABLE IF NOT EXISTS promos (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -188,6 +201,8 @@ const setupDatabase = async () => {
     console.log('notes table is ready.');
     await connection.query(createBannersTable);
     console.log('banners table is ready.');
+    await connection.query(createSellerBannersTable);
+    console.log('seller_banners table is ready.');
     await connection.query(createPromosTable);
     console.log('promos table is ready.');
     await connection.query(createInformationTable);

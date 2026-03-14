@@ -13,7 +13,8 @@ import {
     Easing,
     StatusBar,
     AppState,
-    Image
+    Image,
+    Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -63,6 +64,8 @@ const SellerDashboard = ({ navigation }) => {
         totalItems: 0,
         categories: 0
     });
+    const [banners, setBanners] = useState([]);
+    const [activeSlide, setActiveSlide] = useState(0);
     const [isOpen, setIsOpen] = useState(true);
     const [pendingOrders, setPendingOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -78,6 +81,8 @@ const SellerDashboard = ({ navigation }) => {
     // Modal State
     const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedBanner, setSelectedBanner] = useState(null);
+    const [showBannerModal, setShowBannerModal] = useState(false);
 
     // Animation for unread badge
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -133,6 +138,10 @@ const SellerDashboard = ({ navigation }) => {
             setDashboardWatermarkEnabled(allSettingsRes.data.data?.dashboard_watermark_enabled !== '0');
             setDashboardWatermarkUrl(allSettingsRes.data.data?.dashboard_watermark_url || '');
             setLogoUrl(allSettingsRes.data.data?.logo_url || '');
+            
+            // Fetch Internal Seller Banners (Notifications)
+            const activeBannersRes = await apiService.get('/api/seller-banners');
+            setBanners(activeBannersRes.data.data || []);
         } catch (error) {
             console.error('Error fetching seller data:', error);
         } finally {
@@ -188,6 +197,96 @@ const SellerDashboard = ({ navigation }) => {
     const handleReject = useCallback((orderId) => {
         handleUpdateStatus(orderId, 'rejected');
     }, [handleUpdateStatus]);
+
+    const handleOpenLink = async (url) => {
+        if (!url) return;
+        try {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                showToast('Tidak bisa membuka link ini', 'error');
+            }
+        } catch (error) {
+            showToast('Gagal membuka link', 'error');
+        }
+    };
+
+    const renderBannerSlider = () => {
+        if (banners.length === 0) return null;
+
+        const BannerContent = (
+            <View style={styles.bannerContainer}>
+                <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={(e) => {
+                        const slide = Math.round(e.nativeEvent.contentOffset.x / (width - 40));
+                        if (activeSlide !== slide) setActiveSlide(slide);
+                    }}
+                    scrollEventThrottle={16}
+                    style={styles.bannerScrollView}
+                >
+                    {banners.map((banner, index) => (
+                        <TouchableOpacity 
+                            key={banner.id} 
+                            activeOpacity={0.9}
+                            style={[
+                                styles.bannerSlide, 
+                                { width: width - 40 }
+                            ]}
+                            onPress={() => {
+                                setSelectedBanner(banner);
+                                setShowBannerModal(true);
+                            }}
+                        >
+                            <Image
+                                source={{ uri: `${API_URL}${banner.image_url}` }}
+                                style={styles.bannerImage}
+                                resizeMode="cover"
+                            />
+                            {(banner.title || banner.subtitle) && (
+                                <View style={styles.bannerOverlay}>
+                                    <Text numberOfLines={1} style={styles.bannerTitle}>{banner.title}</Text>
+                                    <Text numberOfLines={2} style={styles.bannerSubtitle}>{banner.subtitle}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+                {banners.length > 1 && (
+                    <View style={styles.paginationDots}>
+                        {banners.map((_, index) => (
+                            <View
+                                key={index}
+                                style={[
+                                    styles.dot,
+                                    activeSlide === index ? styles.activeDot : styles.inactiveDot
+                                ]}
+                            />
+                        ))}
+                    </View>
+                )}
+            </View>
+        );
+
+        return (
+            <View style={[styles.sectionWrapper, { marginTop: 25, marginBottom: 10 }]}>
+                 <View style={[styles.section, { overflow: 'hidden' }]}>
+                    {dashboardWatermarkEnabled && dashboardWatermarkUrl ? (
+                        <ImageBackground
+                            source={{ uri: `${API_URL}${dashboardWatermarkUrl}` }}
+                            style={{ width: '100%', height: '100%' }}
+                            imageStyle={{ opacity: 0.1, resizeMode: 'cover' }}
+                        >
+                            {BannerContent}
+                        </ImageBackground>
+                    ) : BannerContent}
+                 </View>
+            </View>
+        );
+    };
 
     if (loading && !refreshing) {
         return (
@@ -412,6 +511,10 @@ const SellerDashboard = ({ navigation }) => {
                         </View>
                     </View>
                 </View>
+
+                {/* Seller Notification Slider (Separate from Customer Promos) */}
+                {renderBannerSlider()}
+
                 {/* Pending Orders */}
                 <View style={[styles.sectionWrapper, { marginTop: 25 }]}>
                     <View style={styles.section}>
@@ -452,6 +555,61 @@ const SellerDashboard = ({ navigation }) => {
                     onClose={() => setShowDetailModal(false)}
                     order={selectedOrderForDetail}
                 />
+            )}
+
+            {/* Banner Detail Modal */}
+            {selectedBanner && (
+                <View 
+                    style={[
+                        StyleSheet.absoluteFill, 
+                        { 
+                            backgroundColor: 'rgba(0,0,0,0.7)', 
+                            zIndex: 9999, 
+                            display: showBannerModal ? 'flex' : 'none',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            padding: 20
+                        }
+                    ]}
+                >
+                    <View style={styles.bannerDetailCard}>
+                        <View style={styles.bannerDetailImageContainer}>
+                            <Image
+                                source={{ uri: `${API_URL}${selectedBanner.image_url}` }}
+                                style={styles.bannerDetailImage}
+                                resizeMode="cover"
+                            />
+                            <TouchableOpacity 
+                                style={styles.closeBannerBtn}
+                                onPress={() => setShowBannerModal(false)}
+                            >
+                                <XCircle size={30} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.bannerDetailContent}>
+                            <Text style={styles.bannerDetailTitle}>{selectedBanner.title}</Text>
+                            <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+                                <Text style={styles.bannerDetailSubtitle}>{selectedBanner.subtitle}</Text>
+                            </ScrollView>
+                            
+                            {selectedBanner.link_url && (
+                                <TouchableOpacity 
+                                    style={styles.bannerLinkBtn}
+                                    onPress={() => handleOpenLink(selectedBanner.link_url)}
+                                >
+                                    <Text style={styles.bannerLinkText}>Lihat Selengkapnya</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity 
+                                style={styles.bannerActionBtn}
+                                onPress={() => setShowBannerModal(false)}
+                            >
+                                <Text style={styles.bannerActionText}>Tutup</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
             )}
         </View>
     );
@@ -762,6 +920,146 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#64748B',
         textAlign: 'center',
+    },
+    // Banner Styles
+    bannerContainer: {
+        borderRadius: 15,
+        overflow: 'hidden',
+        backgroundColor: 'transparent',
+        height: 170,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bannerScrollView: {
+        borderRadius: 15,
+        width: '100%',
+    },
+    bannerSlide: {
+        height: 170,
+        borderRadius: 15,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bannerImage: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#F1F5F9',
+        borderRadius: 15,
+    },
+    bannerOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)', // Sleek dark midnight overlay
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+    },
+    bannerTitle: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '700',
+        letterSpacing: 0.3,
+    },
+    bannerSubtitle: {
+        color: '#CBD5E1',
+        fontSize: 11,
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    paginationDots: {
+        flexDirection: 'row',
+        position: 'absolute',
+        bottom: 10,
+        alignSelf: 'center',
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        marginHorizontal: 3,
+    },
+    activeDot: {
+        backgroundColor: '#FFFFFF',
+        width: 15,
+    },
+    inactiveDot: {
+        backgroundColor: 'rgba(255,255,255,0.5)',
+    },
+    // Banner Detail Modal Styles
+    bannerDetailCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        overflow: 'hidden',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+    },
+    bannerDetailImageContainer: {
+        width: '100%',
+        height: 220,
+        position: 'relative',
+    },
+    bannerDetailImage: {
+        width: '100%',
+        height: '100%',
+    },
+    closeBannerBtn: {
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        zIndex: 10,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderRadius: 20,
+    },
+    bannerDetailContent: {
+        padding: 24,
+    },
+    bannerDetailTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 10,
+        letterSpacing: -0.5,
+    },
+    bannerDetailSubtitle: {
+        fontSize: 15,
+        lineHeight: 22,
+        color: '#64748B',
+        fontWeight: '500',
+    },
+    bannerActionBtn: {
+        backgroundColor: '#1E40AF',
+        paddingVertical: 14,
+        borderRadius: 14,
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    bannerActionText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        fontSize: 14,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    bannerLinkBtn: {
+        backgroundColor: '#EFF6FF',
+        paddingVertical: 14,
+        borderRadius: 14,
+        alignItems: 'center',
+        marginTop: 20,
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    bannerLinkText: {
+        color: '#1E40AF',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
     orderCard: {
         backgroundColor: '#FFFFFF',

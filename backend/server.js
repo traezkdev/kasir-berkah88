@@ -2019,6 +2019,9 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual', '
         }
 
         const { title, subtitle, color_class, icon_name, link_url, is_active, show_text } = bannerData;
+        
+        // Handle boolean parsing from potentially string values (from FormData)
+        const parseBool = (val) => val === true || val === 'true' || val === 1 || val === '1';
 
         // Validasi field wajib
         if (!title) {
@@ -2026,8 +2029,8 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual', '
         }
 
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
-        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
-        const final_show_text = show_text !== undefined ? (show_text ? 1 : 0) : 1;
+        const final_is_active = is_active !== undefined ? (parseBool(is_active) ? 1 : 0) : 1;
+        const final_show_text = show_text !== undefined ? (parseBool(show_text) ? 1 : 0) : 1;
 
         const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, is_active, show_text) VALUES (?,?,?,?,?,?,?,?)';
         const [result] = await db.query(sql, [title, subtitle || '', image_url, color_class, icon_name, link_url || '', final_is_active, final_show_text]);
@@ -2227,7 +2230,6 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 
             try {
                 bannerData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
             } catch (err) {
-                console.error("Gagal parse req.body.data in PUT:", err);
                 bannerData = req.body;
             }
         } else {
@@ -2235,13 +2237,9 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 
         }
 
         const { title, subtitle, color_class, icon_name, link_url, is_active, show_text, remove_image } = bannerData;
-        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
-        const final_show_text = show_text !== undefined ? (show_text ? 1 : 0) : 1;
+        const parseBool = (val) => val === true || val === 'true' || val === 1 || val === '1';
 
         // Fetch current banner to handle image cleanup
-        const [currentBanner] = await db.query('SELECT image_url FROM banners WHERE id = ?', [id]);
-
-        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?, show_text = ?';
         let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active, final_show_text];
 
         if (req.file) {
@@ -2298,6 +2296,97 @@ app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penju
         res.json({ "message": "success" });
     } catch (err) {
         console.error("Error deleting banner:", err);
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// --- Seller Banners Endpoints (Internal Notifications) ---
+
+// Get all active seller banners for mobile
+app.get("/api/seller-banners", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM seller_banners WHERE is_active = TRUE ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ "message": "success", "data": rows });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Get all seller banners (for management)
+app.get("/api/seller-banners/all", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM seller_banners ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ "message": "success", "data": rows });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Add a new seller banner
+app.post("/api/seller-banners", authenticateToken, authorizeRoles('admin', 'owner'), upload.single('image'), async (req, res) => {
+    try {
+        const { title, subtitle, link_url, is_active } = req.body;
+        
+        if (!title) {
+            return res.status(400).json({ "error": "Judul (title) wajib diisi" });
+        }
+
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+        const final_is_active = is_active !== undefined ? (is_active === 'true' || is_active === true || is_active === 1 ? 1 : 0) : 1;
+
+        const sql = 'INSERT INTO seller_banners (title, subtitle, image_url, link_url, is_active) VALUES (?,?,?,?,?)';
+        const [result] = await db.query(sql, [title, subtitle || '', image_url, link_url || '', final_is_active]);
+        
+        await logActivity(req.user.userId, 'Tambah Banner Seller', 'seller_banner', result.insertId, `Banner Seller "${title}" ditambahkan`);
+        res.json({ "message": "success", "id": result.insertId });
+    } catch (err) {
+        console.error("Error adding seller banner:", err);
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Update a seller banner
+app.put("/api/seller-banners/:id", authenticateToken, authorizeRoles('admin', 'owner'), upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, subtitle, link_url, is_active } = req.body;
+
+        const [current] = await db.query('SELECT image_url FROM seller_banners WHERE id = ?', [id]);
+        if (current.length === 0) return res.status(404).json({ error: "Banner tidak ditemukan" });
+
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : current[0].image_url;
+        const final_is_active = is_active !== undefined ? (is_active === 'true' || is_active === true || is_active === 1 ? 1 : 0) : 1;
+
+        const sql = 'UPDATE seller_banners SET title = ?, subtitle = ?, image_url = ?, link_url = ?, is_active = ? WHERE id = ?';
+        await db.query(sql, [title, subtitle || '', image_url, link_url || '', final_is_active, id]);
+        
+        await logActivity(req.user.userId, 'Update Banner Seller', 'seller_banner', id, `Banner Seller ID ${id} diperbarui`);
+        res.json({ "message": "success" });
+    } catch (err) {
+        console.error("Error updating seller banner:", err);
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Delete a seller banner
+app.delete("/api/seller-banners/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Cleanup image
+        const [rows] = await db.query('SELECT image_url FROM seller_banners WHERE id = ?', [id]);
+        if (rows.length > 0 && rows[0].image_url) {
+            const imagePath = path.join(__dirname, rows[0].image_url);
+            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+        }
+
+        await db.query('DELETE FROM seller_banners WHERE id = ?', [id]);
+        await logActivity(req.user.userId, 'Hapus Banner Seller', 'seller_banner', id, `Banner Seller ID ${id} dihapus`);
+        res.json({ "message": "success" });
+    } catch (err) {
+        console.error("Error deleting seller banner:", err);
         res.status(400).json({ "error": err.message });
     }
 });
