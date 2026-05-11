@@ -218,7 +218,7 @@ const sendNewsBroadcastEmail = async (info, customers) => {
                 apiUrl = 'http://localhost:4000';
             } else {
                 // Gunakan default yang ada di mobile/src/api/apiService.js sebagai fallback terakhir
-                apiUrl = 'https://api.inviteshare.my.id';
+                apiUrl = 'https://api.kberkah88.my.id';
             }
         }
 

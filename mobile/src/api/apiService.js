@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Gunakan alamat IP komputer Anda jika mengetes di HP asli (Expo Go)
 // Contoh: http://192.168.1.5:4000
 const localUrl = process.env.EXPO_PUBLIC_API_URL_LOCAL || 'http://localhost:4000';
-const prodUrl = process.env.EXPO_PUBLIC_API_URL_PROD || 'https://api.inviteshare.my.id';
+const prodUrl = process.env.EXPO_PUBLIC_API_URL_PROD || 'https://api.kberkah88.my.id';
 
 // === PILIH URL API DI SINI ===
 export const API_URL = __DEV__ ? localUrl : prodUrl; // Auto (Lokal saat dev, Prod saat build)

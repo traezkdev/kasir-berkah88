@@ -49,7 +49,7 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // Increase limit to 10MB
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.inviteshare\.my\.id\/api\/.*/i,
+            urlPattern: /^https:\/\/api\.kberkah88\.my\.id\/api\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
@@ -86,7 +86,7 @@ export default defineConfig({
     allowedHosts: ['.amazonaws.com', '.builtwithrocket.new'],
     proxy: {
       '/api': {
-        target: 'https://api.inviteshare.my.id',
+        target: 'https://api.kberkah88.my.id',
         changeOrigin: true,
       },
     },
