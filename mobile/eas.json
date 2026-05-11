@@ -1,6 +1,6 @@
 {
     "cli": {
-        "appVersionSource": "remote"
+        "appVersionSource": "local"
     },
     "build": {
         "development": {
@@ -13,7 +13,6 @@
         },
         "preview": {
             "distribution": "internal",
-            "runtimeVersion": "1.6.1",
             "android": {
                 "buildType": "apk"
             },
