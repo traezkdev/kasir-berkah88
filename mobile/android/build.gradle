@@ -1,0 +1,67 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  ext {
+    kotlinVersion = "2.1.20"
+    compileSdkVersion = 35
+    targetSdkVersion = 35
+    minSdkVersion = 24
+    buildToolsVersion = "35.0.0"
+    ndkVersion = "26.1.10909125"
+  }
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+        classpath 'com.google.gms:google-services:4.4.1'
+    classpath('com.android.tools.build:gradle:8.11.0')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+  }
+}
+
+allprojects {
+    subprojects {
+        afterEvaluate { project ->
+            if (project.hasProperty('android')) {
+                project.android {
+                    // Paksa compileSdkVersion dan targetSdkVersion ke 35 di SEMUA sub-library
+                    compileSdkVersion 35
+                    buildToolsVersion "35.0.0"
+                    
+                    defaultConfig {
+                        targetSdkVersion 35
+                    }
+
+                    // Perbaikan khusus untuk library lama yang tidak punya namespace
+                    if (project.name.contains('bluetooth-escpos-printer') || !project.android.namespace) {
+                      try {
+                        if (project.hasProperty('group') && project.group) {
+                          namespace = project.group
+                        } else {
+                          namespace = "com.printer.fix"
+                        }
+                      } catch (e) {
+                          namespace = "com.fix.fallback"
+                      }
+                    }
+
+                    // Pastikan kompatibilitas Java
+                    compileOptions {
+                        sourceCompatibility JavaVersion.VERSION_17
+                        targetCompatibility JavaVersion.VERSION_17
+                    }
+                }
+            }
+        }
+    }
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"

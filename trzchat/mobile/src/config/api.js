@@ -2,7 +2,7 @@ const FORCE_PROD = true; // Ubah ke true untuk paksa pakai API produksi saat deb
 
 const BASE_URL = (__DEV__ && !FORCE_PROD)
     ? 'http://192.168.1.4:5000'
-    : 'https://api2.inviteshare.my.id';
+    : 'https://api2.kberkah88.my.id';
 
 export const API_URL = `${BASE_URL}/api`;
 export const SOCKET_URL = BASE_URL;

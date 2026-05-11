@@ -1,6 +1,6 @@
 (function () {
     // Configuration
-    const API_URL = 'https://chat.inviteshare.my.id/chat';
+    const API_URL = 'https://chat.kberkah88.my.id/chat';
     const PRIMARY_COLOR = '#128EEA'; // Requested Color
 
     // Inject Styles

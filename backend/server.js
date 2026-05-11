@@ -4816,7 +4816,14 @@ app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res)
         }
 
         // Delete transaction record
-        await connection.query('DELETE FROM account_transactions WHERE id = ?', [id]);
+        if (transaction.expense_id) {
+            // Bugfix Auditor: Jika transaksi berasal dari pengeluaran, hapus data pengeluaran utama.
+            // Relasi ON DELETE CASCADE akan otomatis menghapus record di account_transactions ini.
+            await connection.query('DELETE FROM expenses WHERE id = ?', [transaction.expense_id]);
+        } else {
+            // Jika transaksi manual biasa
+            await connection.query('DELETE FROM account_transactions WHERE id = ?', [id]);
+        }
 
         await connection.commit();
         res.json({ message: "Transaction deleted successfully", data: { id } });
@@ -8798,6 +8805,14 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
             ? (physicalCashAtEnd === 0 ? 100 : 0)
             : Math.max(0, Math.min(100, (1 - Math.abs(gap) / expectedClosingBalance) * 100));
 
+        const [accountSyncRows] = await db.query(`
+            SELECT a.name, a.balance, 
+            (SELECT SUM(CASE WHEN at.type = 'deposit' THEN at.amount ELSE -at.amount END) 
+             FROM account_transactions at WHERE at.account_id = a.id) as trans_sum
+            FROM accounts a
+        `);
+        const isSynced = accountSyncRows.every(r => Math.abs(parseFloat(r.balance) - parseFloat(r.trans_sum || 0)) < 0.01);
+
         res.json({
             message: "success",
             data: {
@@ -8812,13 +8827,112 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                 auditEndDate: pEnd,
                 gap: parseFloat(gap.toFixed(2)),
                 accuracy: parseFloat(accuracy.toFixed(2)),
-                isAccurate: accuracy >= 99
+                isAccurate: accuracy >= 99,
+                isSynced: isSynced // Jika false, berarti ada error di database (seperti kasus 45rb kemarin)
             }
         });
 
     } catch (err) {
         console.error("Audit precision calculation error:", err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * NEW: Verify if account balances match the sum of their transactions (Audit Protection)
+ */
+app.get("/api/audit/verify-sync", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const [accounts] = await db.query("SELECT id, name, balance FROM accounts");
+        const results = [];
+
+        for (const acc of accounts) {
+            const [at] = await db.query(
+                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total FROM account_transactions WHERE account_id = ?",
+                [acc.id]
+            );
+            const sumTransactions = parseFloat(at[0].total || 0);
+            const currentBalance = parseFloat(acc.balance);
+            const diff = currentBalance - sumTransactions;
+
+            results.push({
+                accountId: acc.id,
+                accountName: acc.name,
+                currentBalance,
+                transactionSum: sumTransactions,
+                difference: parseFloat(diff.toFixed(2)),
+                isSynced: Math.abs(diff) < 0.01
+            });
+        }
+
+        const overallSynced = results.every(r => r.isSynced);
+
+        res.json({
+            message: overallSynced ? "All accounts are synced." : "Desync detected!",
+            isSynced: overallSynced,
+            data: results
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * NEW: Force synchronize account balance to match transaction history
+ */
+app.post("/api/audit/repair-sync", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    let connection;
+    try {
+        const { masterPassword } = req.body;
+
+        // 1. Verify Master Password
+        const [masterPwdRow] = await db.query("SELECT value FROM settings WHERE `key` = 'master_password'");
+        const storedMasterPassword = masterPwdRow.length > 0 ? masterPwdRow[0].value : '123456';
+        let isPasswordValid = false;
+        
+        const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+        if (isStoredPassHashed) {
+            isPasswordValid = await bcrypt.compare(masterPassword, storedMasterPassword);
+        } else {
+            isPasswordValid = (masterPassword === storedMasterPassword);
+        }
+
+        if (!isPasswordValid) {
+            return res.status(403).json({ error: "Master password salah!" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const [accounts] = await connection.query("SELECT id, name, balance FROM accounts");
+        const fixes = [];
+
+        for (const acc of accounts) {
+            const [at] = await connection.query(
+                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as total FROM account_transactions WHERE account_id = ?",
+                [acc.id]
+            );
+            const sumTransactions = parseFloat(at[0].total || 0);
+            
+            if (Math.abs(parseFloat(acc.balance) - sumTransactions) > 0.01) {
+                await connection.query("UPDATE accounts SET balance = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [sumTransactions, acc.id]);
+                fixes.push({ name: acc.name, from: acc.balance, to: sumTransactions });
+            }
+        }
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Repair Sync', 'system', 0, `Sinkronisasi saldo dilakukan untuk ${fixes.length} akun.`);
+
+        res.json({
+            message: "Sinkronisasi saldo berhasil!",
+            fixes
+        });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

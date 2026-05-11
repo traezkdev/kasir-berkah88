@@ -26,7 +26,7 @@ const DownloadApp = () => {
     // GANTI LINK DOWNLOAD DI BAWAH INI
     // CHANGE THE DOWNLOAD LINK BELOW
     // ==========================================
-    const downloadLink = "https://dl.inviteshare.my.id/kberkah88.apk";
+    const downloadLink = "https://dl.kberkah88.my.id/kberkah88.apk";
     // ==========================================
 
     const featureSectionRef = useRef(null);
