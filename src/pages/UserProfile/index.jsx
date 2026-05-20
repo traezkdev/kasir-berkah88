@@ -334,6 +334,10 @@ const UserProfile = ({ headerTitle }) => {
                         src={avatarSrc}
                         alt="Foto Profil"
                         className="w-full h-full rounded-full object-cover shadow-inner transition-transform duration-700 group-hover/avatar:scale-105"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/assets/images/no_image.png';
+                        }}
                       />
                       <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl border border-blue-400/50 whitespace-nowrap">
                         Verified Member

@@ -43,7 +43,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
       {/* Image Container */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <AppImage
-          src={item.image_url ? `${apiUrl}${item.image_url}` : './assets/images/no_image.png'}
+          src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
           alt={item.name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
