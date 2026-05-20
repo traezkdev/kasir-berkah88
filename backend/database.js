@@ -522,6 +522,40 @@ const setupDatabase = async () => {
 
     await connection.query(createSettingsTable);
 
+    // Migration to ensure 'key' column in settings table is unique
+    try {
+      const [columns] = await connection.query("SHOW COLUMNS FROM settings LIKE 'id'");
+      if (columns.length > 0) {
+        // Table has id column, we can safely delete duplicates using s1.id < s2.id
+        await connection.query(`
+          DELETE s1 FROM settings s1
+          INNER JOIN settings s2 
+          ON s1.\`key\` = s2.\`key\` 
+          AND s1.id < s2.id
+        `);
+        console.log('Cleaned up duplicate settings from settings table.');
+      }
+
+      // Check if a unique constraint on 'key' already exists
+      const [existingIndex] = await connection.query(`
+        SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'settings' AND INDEX_NAME = 'unique_key'
+      `);
+
+      if (existingIndex.length === 0) {
+        const [isUnique] = await connection.query(`
+          SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS 
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'settings' AND COLUMN_NAME = 'key' AND NON_UNIQUE = 0
+        `);
+        
+        if (isUnique.length === 0) {
+          await connection.query("ALTER TABLE settings ADD UNIQUE KEY unique_key (\`key\`)");
+          console.log('Successfully added unique constraint on settings.key.');
+        }
+      }
+    } catch (err) {
+      console.error('Error migrating settings unique constraint:', err.message);
+    }
 
     const insertDefaultSettings = `
       INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
