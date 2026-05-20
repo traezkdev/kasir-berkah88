@@ -253,7 +253,7 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
             {/* Info Card */}
             <div className="md:col-span-3 bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-lg p-4 shadow-lg flex items-center gap-6">
-              <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-white/20" />
+              <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-white/20" onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png'; }} />
               <div className="flex-grow">
                 <h3 className="text-xl font-bold mb-2">Informasi Akun</h3>
                 <div className="space-y-2 text-sm">

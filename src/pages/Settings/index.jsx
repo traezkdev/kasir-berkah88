@@ -1394,7 +1394,7 @@ const Settings = () => {
               <tbody>
                 {employees.map(emp => (
                   <tr key={emp.id} className="border-t border-border">
-                    <td className="px-2 py-1 flex items-center gap-3"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover" />{emp.name}</td>
+                    <td className="px-2 py-1 flex items-center gap-3"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png'; }} />{emp.name}</td>
                     <td className="px-2 py-1">{emp.position}</td>
                     <td className="p-3">{emp.phone}<br />{emp.email}</td>
                     <td className="p-3"><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button><Button variant="destructive" size="sm" onClick={() => confirmDeleteEmployee(emp.id)}>Hapus</Button></div></td>

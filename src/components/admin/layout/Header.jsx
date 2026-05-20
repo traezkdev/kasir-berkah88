@@ -69,7 +69,15 @@ const Header = ({ toggleSidebar }) => {
 
         <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           {user.avatar_url ? (
-            <img src={avatarSrc} alt="Profile" className="h-6 w-6 rounded-full object-cover" />
+            <img 
+              src={avatarSrc} 
+              alt="Profile" 
+              className="h-6 w-6 rounded-full object-cover" 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/assets/images/no_image.png';
+              }}
+            />
           ) : (
             <FaUserCircle className="h-6 w-6 text-gray-600 dark:text-gray-300" />
           )}

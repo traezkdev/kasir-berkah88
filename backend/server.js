@@ -446,7 +446,7 @@ const upload = multer({
     }
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
@@ -7199,31 +7199,45 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
     let connection;
     try {
         if (!req.file) {
+            console.error("[Database Restore] No file uploaded");
             return res.status(400).json({ error: "No backup file uploaded." });
         }
+
+        console.log(`[Database Restore] Starting restore from file: ${req.file.originalname}`);
 
         // Ensure we can read the file
         const backupContent = fs.readFileSync(req.file.path, 'utf8');
         const backupData = JSON.parse(backupContent);
 
         if (!backupData.data || typeof backupData.data !== 'object') {
+            console.error("[Database Restore] Invalid backup file format - no data object found");
             return res.status(400).json({ error: "Invalid backup file format." });
         }
 
         connection = await db.getConnection();
 
-        // Increase timeout for this connection if possible
+        // Increase timeout for this connection if possible to handle large restore operations
         await connection.query("SET SESSION wait_timeout = 600");
         await connection.query("SET SESSION interactive_timeout = 600");
 
         await connection.beginTransaction();
+        console.log("[Database Restore] Database transaction started");
 
-        // 1. Disable foreign key checks
+        // 1. Disable foreign key checks for this session
         await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+        console.log("[Database Restore] FOREIGN_KEY_CHECKS set to 0");
 
         // 2. Clear and Insert data for each table
-        for (const [tableName, rows] of Object.entries(backupData.data)) {
-            if (!Array.isArray(rows)) continue;
+        const tablesToRestore = Object.entries(backupData.data);
+        console.log(`[Database Restore] Found ${tablesToRestore.length} tables to restore`);
+
+        for (const [tableName, rows] of tablesToRestore) {
+            if (!Array.isArray(rows)) {
+                console.log(`[Database Restore] Skipping table ${tableName} as rows is not an array`);
+                continue;
+            }
+
+            console.log(`[Database Restore] Restoring table: ${tableName} (${rows.length} rows)`);
 
             // Clear table
             await connection.query(`DELETE FROM \`${tableName}\``);
@@ -7263,10 +7277,13 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
             }
         }
 
-        // 3. Re-enable foreign key checks
-        await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
+        // 3. Commit the transaction first while foreign key checks are still disabled to tolerate references inconsistency in backups
         await connection.commit();
+        console.log("[Database Restore] Database transaction committed successfully");
+
+        // 4. Re-enable foreign key checks after commit
+        await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+        console.log("[Database Restore] FOREIGN_KEY_CHECKS re-enabled to 1");
 
         // Cleanup the uploaded file
         if (fs.existsSync(req.file.path)) {
@@ -7274,17 +7291,26 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
         }
 
         await logActivity(req.user.userId, 'RUBAH DATABASE (RESTORE)', 'system', 'backup', 'Admin melakukan restore database dari file cadangan.');
+        console.log("[Database Restore] Database restore completed successfully!");
         res.json({ message: "Database restored successfully!" });
     } catch (err) {
         if (connection) {
             try {
                 await connection.rollback();
+                console.log("[Database Restore] Transaction rolled back due to error");
                 await connection.query("SET FOREIGN_KEY_CHECKS = 1");
             } catch (rollbackErr) {
-                console.error("Rollback error:", rollbackErr);
+                console.error("[Database Restore] Rollback error:", rollbackErr);
             }
         }
-        console.error("Error restoring database:", err);
+        console.error("[Database Restore] Error restoring database:", err);
+        
+        // Log to error.log
+        const errorLog = `\n--- DATABASE RESTORE ERROR ---\nTime: ${new Date().toISOString()}\nError: ${err.message}\nStack: ${err.stack}\n---------------------\n`;
+        try {
+            fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
+        } catch (e) { }
+
         if (req.file && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
         }
@@ -8646,6 +8672,12 @@ app.get("/api/popups/:id/stats", authenticateToken, authorizeRoles('admin', 'pen
 // Global error handler
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
+    
+    // If headers are already sent, delegate to the default Express error handler to avoid write-after-end crashes
+    if (res.headersSent) {
+        return next(err);
+    }
+    
     const status = err.status || 500;
     const message = err.message || 'Internal Server Error';
 
@@ -8653,6 +8685,25 @@ app.use((err, req, res, next) => {
         error: message,
         stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
     });
+});
+
+// Capture uncaught exceptions to prevent server crash in production
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL UNCAUGHT EXCEPTION:', err);
+    // Write to error.log
+    const errorLog = `\n--- UNCAUGHT EXCEPTION ---\nTime: ${new Date().toISOString()}\nError: ${err.message}\nStack: ${err.stack}\n---------------------\n`;
+    try {
+        fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
+    } catch (e) { }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('UNHANDLED REJECTION AT:', promise, 'REASON:', reason);
+    // Write to error.log
+    const errorLog = `\n--- UNHANDLED REJECTION ---\nTime: ${new Date().toISOString()}\nReason: ${reason?.message || reason}\nStack: ${reason?.stack}\n---------------------\n`;
+    try {
+        fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
+    } catch (e) { }
 });
 
 // Get accurate audit calculation for a specific period
