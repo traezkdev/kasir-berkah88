@@ -999,7 +999,7 @@ const setupDatabase = async () => {
       CREATE TABLE IF NOT EXISTS account_transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         account_id INT NOT NULL,
-        type ENUM('deposit', 'expense') NOT NULL,
+        type ENUM('deposit', 'expense', 'withdrawal') NOT NULL,
         amount DECIMAL(10, 2) NOT NULL,
         description TEXT,
         created_by_user_id INT NOT NULL,
@@ -1014,6 +1014,13 @@ const setupDatabase = async () => {
 
     await connection.query(createAccountTransactionsTable);
     console.log('account_transactions table is ready.');
+
+    // Migration to ensure type includes 'withdrawal'
+    const alterAccountTransactionsType = `
+      ALTER TABLE account_transactions MODIFY COLUMN type ENUM('deposit', 'expense', 'withdrawal') NOT NULL;
+    `;
+    await connection.query(alterAccountTransactionsType);
+    console.log('Modified type column in account_transactions table to include withdrawal.');
 
     // Insert default accounts if tables are empty
     const [lapakAccountRows] = await connection.query('SELECT id FROM accounts WHERE name = ?', ['lapak_deposit']);
