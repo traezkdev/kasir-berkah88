@@ -86,6 +86,14 @@ const AllFeatures = () => {
             color: 'warning',
             category: 'Produk'
         },
+        {
+            title: 'Laporan HPP',
+            description: 'Lihat laporan harga pokok penjualan',
+            icon: 'FileText',
+            route: '/hpp-report',
+            color: 'info',
+            category: 'Produk'
+        },
 
         // Keuangan & Laporan
         {
@@ -128,6 +136,7 @@ const AllFeatures = () => {
             color: 'success',
             category: 'Keuangan'
         },
+
         {
             title: 'Laporan Bisnis',
             description: 'Ringkasan performa harian, mingguan, dan bulanan',

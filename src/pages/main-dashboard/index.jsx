@@ -623,10 +623,10 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'secondary'
     },
     ...(['admin', 'owner'].includes(userRole) ? [{
-      title: isSendingSummary ? 'Mengirim...' : 'Kirim Laporan Harian',
-      description: 'Push summary harian ke OneSignal',
-      icon: 'Send',
-      action: () => handleSendDailySummary(),
+      title: 'L Hpp',
+      description: 'Lihat laporan harga pokok penjualan',
+      icon: 'FileText',
+      route: '/hpp-report',
       color: 'info'
     }] : []),
     {
@@ -1082,7 +1082,7 @@ const MainDashboard = ({ headerTitle }) => {
                   <Icon name={action.icon} size={24} />
                 </div>
                 <span className="text-[10px] font-bold text-gray-600 dark:text-slate-300 text-center leading-tight">
-                  {action.title.split(' ').length > 1 ? action.title.split(' ')[0] : action.title}
+                  {action.title === 'L Hpp' ? action.title : (action.title.split(' ').length > 1 ? action.title.split(' ')[0] : action.title)}
                 </span>
               </div>
             ))}
