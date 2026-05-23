@@ -51,6 +51,7 @@ const setupDatabase = async () => {
         category VARCHAR(255),
         image_url VARCHAR(255),
         hpp DECIMAL(10, 2) DEFAULT 0,
+        hpp_details JSON DEFAULT NULL,
         discount DECIMAL(10, 2) DEFAULT 0,
         is_featured BOOLEAN DEFAULT FALSE,
         description TEXT,
@@ -486,6 +487,7 @@ const setupDatabase = async () => {
     const columnsToEnsure = [
       { name: 'image_url', type: 'VARCHAR(255)' },
       { name: 'hpp', type: 'DECIMAL(10, 2) DEFAULT 0' },
+      { name: 'hpp_details', type: 'JSON DEFAULT NULL' },
       { name: 'discount', type: 'DECIMAL(10, 2) DEFAULT 0' },
       { name: 'is_featured', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'description', type: 'TEXT' },
@@ -999,7 +1001,7 @@ const setupDatabase = async () => {
       CREATE TABLE IF NOT EXISTS account_transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         account_id INT NOT NULL,
-        type ENUM('deposit', 'expense') NOT NULL,
+        type ENUM('deposit', 'expense', 'withdrawal') NOT NULL,
         amount DECIMAL(10, 2) NOT NULL,
         description TEXT,
         created_by_user_id INT NOT NULL,
@@ -1014,6 +1016,13 @@ const setupDatabase = async () => {
 
     await connection.query(createAccountTransactionsTable);
     console.log('account_transactions table is ready.');
+
+    // Migration to ensure type includes 'withdrawal'
+    const alterAccountTransactionsType = `
+      ALTER TABLE account_transactions MODIFY COLUMN type ENUM('deposit', 'expense', 'withdrawal') NOT NULL;
+    `;
+    await connection.query(alterAccountTransactionsType);
+    console.log('Modified type column in account_transactions table to include withdrawal.');
 
     // Insert default accounts if tables are empty
     const [lapakAccountRows] = await connection.query('SELECT id FROM accounts WHERE name = ?', ['lapak_deposit']);
@@ -2298,6 +2307,17 @@ const setupDatabase = async () => {
     } catch (err) {
       console.error('Error setting up closing sessions:', err);
     }
+
+    // === HPP INGREDIENTS: Master Bahan Dinamis ===
+    const createHppIngredientsTable = `
+      CREATE TABLE IF NOT EXISTS hpp_ingredients (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(191) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await connection.query(createHppIngredientsTable);
+    console.log('hpp_ingredients table is ready.');
 
     connection.release();
 

@@ -26,6 +26,7 @@ import CalculatorPage from './pages/Calculator';
 import EmployeeListPage from './pages/EmployeeList';
 import ReceiptPage from './pages/receipt';
 import Hpp from './pages/Hpp';
+import HppReport from './pages/HppReport';
 import OwnerDashboard from './pages/owner-dashboard/index.jsx';
 import LapakDeposit from './pages/LapakDeposit';
 import RawMaterialStockDashboard from './pages/RawMaterialStock';
@@ -202,6 +203,7 @@ const AppRoutes = () => {
         <Route path="/calculator" element={<ModeProtectedRoute modeRequired="full"><CalculatorPage /></ModeProtectedRoute>} />
         <Route path="/employee-list" element={<ModeProtectedRoute modeRequired="full"><EmployeeListPage /></ModeProtectedRoute>} />
         <Route path="/hpp" element={<ModeProtectedRoute modeRequired="full"><Hpp /></ModeProtectedRoute>} />
+        <Route path="/hpp-report" element={<ModeProtectedRoute modeRequired="full"><HppReport /></ModeProtectedRoute>} />
         <Route path="/order-confirmation" element={<ModeProtectedRoute modeRequired="full"><OrderConfirmationPage /></ModeProtectedRoute>} />
         <Route path="/transaksi" element={<ModeProtectedRoute modeRequired="full"><SalesTransactionProcessing /></ModeProtectedRoute>} />
         <Route path="/raw-material-stock" element={<ModeProtectedRoute modeRequired="full"><RawMaterialStockDashboard /></ModeProtectedRoute>} />

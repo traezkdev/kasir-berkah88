@@ -513,6 +513,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Perhitungan HPP
               </MenuItem>
               <MenuItem
+                to="/hpp-report"
+                icon={FaChartLine}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Laporan HPP & Laba
+              </MenuItem>
+              <MenuItem
                 to="/calculator"
                 icon={FaCalculator}
                 onClick={() => window.innerWidth < 1024 && toggleSidebar()}

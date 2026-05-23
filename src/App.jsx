@@ -7,7 +7,6 @@ import { Toaster } from 'react-hot-toast';
 import { useTheme } from './contexts/ThemeContext';
 import StickyDarkModeToggle from './components/ui/StickyDarkModeToggle';
 import StickyThemeSwitcher from './components/ui/StickyThemeSwitcher';
-import DailyWelcomeModal from './components/ui/DailyWelcomeModal';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import OfflineSyncManager from './components/OfflineSyncManager';
 import ChatWidget from './components/ui/ChatWidget';
@@ -151,7 +150,6 @@ function App() {
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
         <ScrollToTop />
         <Toaster position="bottom-center" reverseOrder={false} />
-        {!location.pathname.startsWith('/customer') && <DailyWelcomeModal />}
         <Routes />
         {!['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyThemeSwitcher />}
         {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}
