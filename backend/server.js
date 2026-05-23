@@ -1437,7 +1437,8 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
         // Parse the options string for each item
         const data = rows.map(row => ({
             ...row,
-            options: JSON.parse(row.options) // No need for ternary, COALESCE guarantees a string
+            options: JSON.parse(row.options), // No need for ternary, COALESCE guarantees a string
+            hpp_details: row.hpp_details ? (typeof row.hpp_details === 'string' ? JSON.parse(row.hpp_details) : row.hpp_details) : []
         }));
 
         res.json({
@@ -1606,13 +1607,15 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
         const params = [];
 
         // List of allowed fields to update
-        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured', 'description', 'is_hidden'];
+        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'hpp_details', 'discount', 'is_featured', 'description', 'is_hidden'];
 
         allowedFields.forEach(field => {
             if (itemData[field] !== undefined) {
                 // Special handling for boolean
                 if (field === 'is_featured' || field === 'is_hidden') {
                     updateFields[field] = (itemData[field] == 1 || itemData[field] == 'true') ? 1 : 0;
+                } else if (field === 'hpp_details') {
+                    updateFields[field] = typeof itemData[field] === 'string' ? itemData[field] : JSON.stringify(itemData[field]);
                 } else {
                     updateFields[field] = itemData[field];
                 }
@@ -3342,12 +3345,24 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         }
 
         let calculatedSubtotal = 0;
-        const itemsWithDetails = items.map(item => {
+        const itemsWithDetails = [];
+        for (const item of items) {
             const price = parseFloat(item.price) || 0;
             const quantity = parseInt(item.quantity) || 0;
             calculatedSubtotal += price * quantity;
-            return { ...item, price: price, quantity: quantity };
-        });
+            
+            // Ambil HPP dan hpp_details saat ini dari database (snapshot)
+            const [menuItemRows] = await connection.query('SELECT hpp, hpp_details FROM menu_items WHERE id = ?', [item.id]);
+            const hpp = menuItemRows.length > 0 ? parseFloat(menuItemRows[0].hpp || 0) : 0;
+            let hpp_details = [];
+            if (menuItemRows.length > 0 && menuItemRows[0].hpp_details) {
+                hpp_details = typeof menuItemRows[0].hpp_details === 'string'
+                    ? JSON.parse(menuItemRows[0].hpp_details)
+                    : menuItemRows[0].hpp_details;
+            }
+            
+            itemsWithDetails.push({ ...item, price: price, quantity: quantity, hpp: hpp, hpp_details: hpp_details });
+        }
 
         // Ensure manual_discount is treated as a number
         const manualDiscountVal = parseFloat(manual_discount || 0);
@@ -4991,7 +5006,7 @@ app.post("/api/orders", (req, res, next) => {
         const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
 
         for (const item of items) {
-            const [menuItemRows] = await db.query('SELECT id, name, price, discount, stock FROM menu_items WHERE id = ?', [item.id]);
+            const [menuItemRows] = await db.query('SELECT id, name, price, discount, stock, hpp, hpp_details FROM menu_items WHERE id = ?', [item.id]);
             if (menuItemRows.length === 0) {
                 return res.status(400).json({ error: `Menu item with ID ${item.id} not found.` });
             }
@@ -5030,11 +5045,21 @@ app.post("/api/orders", (req, res, next) => {
             const itemSubtotal = (priceAfterDiscount + optionsTotal) * item.quantity;
             calculatedTotal += itemSubtotal;
 
+            // Parse hpp_details snapshot
+            let hppDetails = [];
+            if (menuItem.hpp_details) {
+                hppDetails = typeof menuItem.hpp_details === 'string'
+                    ? JSON.parse(menuItem.hpp_details)
+                    : menuItem.hpp_details;
+            }
+
             orderItemsWithDetails.push({
                 id: menuItem.id,
                 name: menuItem.name,
                 price: itemPrice,
                 discount: itemDiscount,
+                hpp: parseFloat(menuItem.hpp || 0),
+                hpp_details: hppDetails,
                 quantity: item.quantity,
                 options: validOptions,
                 subtotal: itemSubtotal
@@ -9380,6 +9405,122 @@ app.delete("/api/archive/sessions/:id", authenticateToken, authorizeRoles('admin
         res.status(500).json({ error: err.message });
     } finally {
         if (connection) connection.release();
+    }
+});
+
+// --- HPP Report Endpoint ---
+app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilterOrders = "";
+        let dateFilterTrans = "";
+        const queryParams = [];
+
+        if (startDate && endDate) {
+            dateFilterOrders = " AND DATE(created_at) BETWEEN ? AND ?";
+            dateFilterTrans = " AND DATE(timestamp) BETWEEN ? AND ?";
+            queryParams.push(startDate, endDate);
+        } else if (startDate) {
+            dateFilterOrders = " AND DATE(created_at) >= ?";
+            dateFilterTrans = " AND DATE(timestamp) >= ?";
+            queryParams.push(startDate);
+        } else if (endDate) {
+            dateFilterOrders = " AND DATE(created_at) <= ?";
+            dateFilterTrans = " AND DATE(timestamp) <= ?";
+            queryParams.push(endDate);
+        }
+
+        // Fetch Completed Orders
+        const ordersSql = `SELECT items FROM orders WHERE status = 'completed' AND deleted_at IS NULL ${dateFilterOrders}`;
+        const [ordersRows] = await db.query(ordersSql, queryParams);
+
+        // Fetch POS Transactions (Assuming all in 'transactions' table are completed)
+        const transSql = `SELECT items FROM transactions WHERE deleted_at IS NULL ${dateFilterTrans}`;
+        const [transRows] = await db.query(transSql, queryParams);
+
+        let totalRevenue = 0;
+        let totalHpp = 0;
+        let netProfit = 0;
+        const itemBreakdown = {};
+
+        const processItems = (itemsJson) => {
+            if (!itemsJson) return;
+            let items = [];
+            try {
+                items = typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
+            } catch (e) { return; }
+
+            items.forEach(item => {
+                const qty = parseInt(item.quantity) || 0;
+                const hpp = parseFloat(item.hpp) || 0;
+                
+                // For subtotal, we use item.subtotal (from orders) or calculate it (from POS transactions)
+                let itemRevenue = parseFloat(item.subtotal) || 0;
+                if (!itemRevenue && item.price) {
+                     itemRevenue = parseFloat(item.price) * qty;
+                }
+
+                const itemTotalHpp = hpp * qty;
+                const itemProfit = itemRevenue - itemTotalHpp;
+
+                totalRevenue += itemRevenue;
+                totalHpp += itemTotalHpp;
+                netProfit += itemProfit;
+
+                if (!itemBreakdown[item.id]) {
+                    itemBreakdown[item.id] = {
+                        id: item.id,
+                        name: item.name || 'Unknown',
+                        quantitySold: 0,
+                        totalRevenue: 0,
+                        totalHpp: 0,
+                        netProfit: 0,
+                        components: {} // untuk breakdown detail komponen HPP
+                    };
+                }
+                itemBreakdown[item.id].quantitySold += qty;
+                itemBreakdown[item.id].totalRevenue += itemRevenue;
+                itemBreakdown[item.id].totalHpp += itemTotalHpp;
+                itemBreakdown[item.id].netProfit += itemProfit;
+
+                // Akumulasi komponen HPP per menu item
+                if (item.hpp_details && Array.isArray(item.hpp_details)) {
+                    item.hpp_details.forEach(comp => {
+                        const compName = comp.name || 'Lainnya';
+                        const compCost = parseFloat(comp.cost) || 0;
+                        if (!itemBreakdown[item.id].components[compName]) {
+                            itemBreakdown[item.id].components[compName] = 0;
+                        }
+                        itemBreakdown[item.id].components[compName] += compCost * qty;
+                    });
+                }
+            });
+        };
+
+        ordersRows.forEach(row => processItems(row.items));
+        transRows.forEach(row => processItems(row.items));
+
+        // Convert components object to array for easier frontend use
+        const breakdownArray = Object.values(itemBreakdown).sort((a, b) => b.quantitySold - a.quantitySold).map(item => ({
+            ...item,
+            components: Object.entries(item.components).map(([name, totalCost]) => ({ name, totalCost }))
+        }));
+
+        res.json({
+            message: "success",
+            data: {
+                summary: {
+                    totalRevenue,
+                    totalHpp,
+                    netProfit
+                },
+                breakdown: breakdownArray
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching HPP report:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 

@@ -51,6 +51,7 @@ const setupDatabase = async () => {
         category VARCHAR(255),
         image_url VARCHAR(255),
         hpp DECIMAL(10, 2) DEFAULT 0,
+        hpp_details JSON DEFAULT NULL,
         discount DECIMAL(10, 2) DEFAULT 0,
         is_featured BOOLEAN DEFAULT FALSE,
         description TEXT,
@@ -486,6 +487,7 @@ const setupDatabase = async () => {
     const columnsToEnsure = [
       { name: 'image_url', type: 'VARCHAR(255)' },
       { name: 'hpp', type: 'DECIMAL(10, 2) DEFAULT 0' },
+      { name: 'hpp_details', type: 'JSON DEFAULT NULL' },
       { name: 'discount', type: 'DECIMAL(10, 2) DEFAULT 0' },
       { name: 'is_featured', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'description', type: 'TEXT' },
