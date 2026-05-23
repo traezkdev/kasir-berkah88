@@ -13,6 +13,8 @@ const HppReport = ({ headerTitle = 'Laporan HPP & Laba' }) => {
   const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(today);
@@ -32,6 +34,7 @@ const HppReport = ({ headerTitle = 'Laporan HPP & Laba' }) => {
 
       if (result.message === 'success') {
         setReportData(result.data);
+        setCurrentPage(1); // Reset halaman saat memuat data baru
       } else {
         toast.error('Gagal memuat laporan HPP.');
       }
@@ -76,16 +79,22 @@ const HppReport = ({ headerTitle = 'Laporan HPP & Laba' }) => {
   };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && (
+        <NavigationHeader headerTitle={headerTitle || 'Laporan HPP & Laba'} />
+      )}
+      <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
+        <div className={theme === 'default' ? 'max-w-7xl mx-auto px-4 lg:px-6 space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
 
           {theme === 'default' && (
-            <BreadcrumbNavigation
-              items={[
-                { label: 'Dashboard', path: '/main-dashboard' },
-                { label: 'Laporan HPP & Laba', path: '/hpp-report' },
-              ]}
-            />
+            <div className="mb-4 hidden md:block pt-4">
+              <BreadcrumbNavigation
+                items={[
+                  { label: 'Dashboard', path: '/main-dashboard' },
+                  { label: 'Laporan HPP & Laba', path: '/hpp-report' },
+                ]}
+              />
+            </div>
           )}
 
           {/* Page Title */}
@@ -194,7 +203,7 @@ const HppReport = ({ headerTitle = 'Laporan HPP & Laba' }) => {
                 <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Rincian per Menu</h2>
                 <span className="ml-auto text-xs text-gray-400">Klik baris untuk melihat detail komponen HPP</span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto hidden md:block">
                 <table className="min-w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900/40">
                     <tr>
@@ -308,6 +317,214 @@ const HppReport = ({ headerTitle = 'Laporan HPP & Laba' }) => {
                   )}
                 </table>
               </div>
+
+              {/* Mobile Cards View */}
+              <div className="md:hidden p-4 space-y-4">
+                {reportData.breakdown.length === 0 ? (
+                  <div className="text-center py-10">
+                    <FaBoxOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm">Tidak ada data penjualan pada rentang tanggal ini.</p>
+                  </div>
+                ) : (
+                  reportData.breakdown.map((item) => {
+                    const isExpanded = !!expandedRows[item.id];
+                    const hasComponents = item.components && item.components.length > 0;
+                    return (
+                      <div key={item.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="pl-2">
+                            <h3 className="font-bold text-gray-900 dark:text-white text-base">{item.name}</h3>
+                            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 mt-1 border border-indigo-100">
+                              Terjual: {item.quantitySold} porsi
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-sm font-bold ${item.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                              {formatRupiah(item.netProfit)}
+                            </p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Laba</p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center text-sm border-t border-b border-gray-100 dark:border-gray-700 py-3 mb-3 bg-gray-50 dark:bg-gray-900/30 -mx-4 px-4">
+                          <div>
+                            <span className="text-gray-500 text-xs block mb-0.5">Penjualan</span>
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">{formatRupiah(item.totalRevenue)}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-gray-500 text-xs block mb-0.5">Total Modal</span>
+                            <span className="font-semibold text-orange-600 dark:text-orange-400">{formatRupiah(item.totalHpp)}</span>
+                          </div>
+                        </div>
+
+                        {hasComponents ? (
+                          <div>
+                            <button
+                              onClick={() => toggleRow(item.id)}
+                              className="w-full flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold py-1 bg-indigo-50/50 dark:bg-indigo-900/20 px-3 rounded"
+                            >
+                              <span>{isExpanded ? 'Tutup Detail Modal' : 'Lihat Detail Modal'}</span>
+                              {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
+                            </button>
+
+                            {isExpanded && (
+                              <div className="mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-md p-3 space-y-2">
+                                {item.components.map((comp, i) => (
+                                  <div key={i} className="flex justify-between text-xs border-b border-gray-100 dark:border-gray-700 pb-1.5 last:border-0 last:pb-0">
+                                    <span className="text-gray-600 dark:text-gray-400">{comp.name}</span>
+                                    <span className="font-semibold text-orange-600 dark:text-orange-400">{formatRupiah(comp.totalCost)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic text-center py-2 bg-gray-50 dark:bg-gray-800 rounded">Belum ada komponen HPP</p>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* Mobile Footer Total */}
+                {reportData.breakdown.length > 0 && (
+                  <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/40 dark:to-gray-800 border border-indigo-100 dark:border-indigo-800/60 rounded-xl p-4 mt-6 shadow-sm">
+                    <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      Total Keseluruhan
+                    </h3>
+                    <div className="space-y-2.5 text-sm">
+                      <div className="flex justify-between items-center bg-white dark:bg-gray-800 px-3 py-2 rounded border border-gray-100 dark:border-gray-700">
+                        <span className="text-gray-600 dark:text-gray-400 text-xs">Total Terjual</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{reportData.breakdown.reduce((s, i) => s + i.quantitySold, 0)} porsi</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-white dark:bg-gray-800 px-3 py-2 rounded border border-gray-100 dark:border-gray-700">
+                        <span className="text-gray-600 dark:text-gray-400 text-xs">Total Penjualan</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{formatRupiah(reportData.summary.totalRevenue)}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-white dark:bg-gray-800 px-3 py-2 rounded border border-gray-100 dark:border-gray-700">
+                        <span className="text-gray-600 dark:text-gray-400 text-xs">Total Modal</span>
+                        <span className="font-bold text-orange-600 dark:text-orange-400">{formatRupiah(reportData.summary.totalHpp)}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-indigo-100 dark:bg-indigo-900/60 px-3 py-2.5 rounded border border-indigo-200 dark:border-indigo-700 mt-2">
+                        <span className="font-bold text-indigo-900 dark:text-indigo-100">Total Laba</span>
+                        <span className={`font-black text-lg ${reportData.summary.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                          {formatRupiah(reportData.summary.netProfit)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Rekap Global per Bahan */}
+          {reportData && reportData.globalIngredients && reportData.globalIngredients.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center gap-2">
+                <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Rekap Total Pengeluaran per Bahan</h2>
+                <span className="ml-auto text-xs text-gray-400">Total belanja untuk setiap komponen bahan di semua menu</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900/40">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama Bahan</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Digunakan di Menu</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Modal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {reportData.globalIngredients
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((ing, i) => (
+                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                            {ing.name}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 hidden sm:table-cell max-w-xs truncate" title={ing.usedInMenus.join(', ')}>
+                            {ing.usedInMenus.join(', ')}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400 font-medium">
+                            {formatRupiah(ing.totalCost)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                  <tfoot className="bg-gray-50 dark:bg-gray-900/40 border-t-2 border-gray-200 dark:border-gray-600">
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-800 dark:text-white sm:col-span-2">Total Semua Bahan</td>
+                      <td className="px-4 py-3 hidden sm:table-cell"></td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-orange-600 dark:text-orange-400">
+                        {formatRupiah(reportData.globalIngredients.reduce((sum, ing) => sum + ing.totalCost, 0))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {reportData.globalIngredients.length > itemsPerPage && (
+                <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between sm:px-6">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <Button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Sebelumnya
+                    </Button>
+                    <Button
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(reportData.globalIngredients.length / itemsPerPage), p + 1))}
+                      disabled={currentPage === Math.ceil(reportData.globalIngredients.length / itemsPerPage)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Selanjutnya
+                    </Button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        Menampilkan <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> hingga <span className="font-medium">{Math.min(currentPage * itemsPerPage, reportData.globalIngredients.length)}</span> dari <span className="font-medium">{reportData.globalIngredients.length}</span> bahan
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Previous</span>
+                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Halaman {currentPage} dari {Math.ceil(reportData.globalIngredients.length / itemsPerPage)}
+                        </span>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(Math.ceil(reportData.globalIngredients.length / itemsPerPage), p + 1))}
+                          disabled={currentPage === Math.ceil(reportData.globalIngredients.length / itemsPerPage)}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Next</span>
+                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -318,7 +535,8 @@ const HppReport = ({ headerTitle = 'Laporan HPP & Laba' }) => {
             </div>
           )}
 
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

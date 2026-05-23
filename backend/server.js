@@ -9408,6 +9408,46 @@ app.delete("/api/archive/sessions/:id", authenticateToken, authorizeRoles('admin
     }
 });
 
+// --- HPP INGREDIENTS API ---
+app.get("/api/hpp-ingredients", authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM hpp_ingredients ORDER BY name ASC');
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        console.error("Error fetching hpp ingredients:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+app.post("/api/hpp-ingredients", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) {
+            return res.status(400).json({ message: "Nama bahan diperlukan" });
+        }
+        
+        const [result] = await db.query('INSERT INTO hpp_ingredients (name) VALUES (?)', [name]);
+        res.json({ message: "success", data: { id: result.insertId, name } });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ message: "Bahan dengan nama ini sudah ada" });
+        }
+        console.error("Error creating hpp ingredient:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+app.delete("/api/hpp-ingredients/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query('DELETE FROM hpp_ingredients WHERE id = ?', [id]);
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error deleting hpp ingredient:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // --- HPP Report Endpoint ---
 app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
@@ -9442,6 +9482,7 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
         let totalHpp = 0;
         let netProfit = 0;
         const itemBreakdown = {};
+        const globalIngredients = {};
 
         const processItems = (itemsJson) => {
             if (!itemsJson) return;
@@ -9488,10 +9529,26 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
                     item.hpp_details.forEach(comp => {
                         const compName = comp.name || 'Lainnya';
                         const compCost = parseFloat(comp.cost) || 0;
+                        const totalCompCost = compCost * qty;
+
+                        // Per menu
                         if (!itemBreakdown[item.id].components[compName]) {
                             itemBreakdown[item.id].components[compName] = 0;
                         }
-                        itemBreakdown[item.id].components[compName] += compCost * qty;
+                        itemBreakdown[item.id].components[compName] += totalCompCost;
+
+                        // Global (Lintas Menu)
+                        if (!globalIngredients[compName]) {
+                            globalIngredients[compName] = {
+                                name: compName,
+                                totalCost: 0,
+                                usedInMenus: new Set()
+                            };
+                        }
+                        globalIngredients[compName].totalCost += totalCompCost;
+                        if (qty > 0) {
+                            globalIngredients[compName].usedInMenus.add(item.name);
+                        }
                     });
                 }
             });
@@ -9506,6 +9563,14 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
             components: Object.entries(item.components).map(([name, totalCost]) => ({ name, totalCost }))
         }));
 
+        const globalIngredientsArray = Object.values(globalIngredients)
+            .sort((a, b) => b.totalCost - a.totalCost)
+            .map(ing => ({
+                name: ing.name,
+                totalCost: ing.totalCost,
+                usedInMenus: Array.from(ing.usedInMenus)
+            }));
+
         res.json({
             message: "success",
             data: {
@@ -9514,7 +9579,8 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
                     totalHpp,
                     netProfit
                 },
-                breakdown: breakdownArray
+                breakdown: breakdownArray,
+                globalIngredients: globalIngredientsArray
             }
         });
 

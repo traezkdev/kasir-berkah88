@@ -2308,6 +2308,17 @@ const setupDatabase = async () => {
       console.error('Error setting up closing sessions:', err);
     }
 
+    // === HPP INGREDIENTS: Master Bahan Dinamis ===
+    const createHppIngredientsTable = `
+      CREATE TABLE IF NOT EXISTS hpp_ingredients (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(191) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await connection.query(createHppIngredientsTable);
+    console.log('hpp_ingredients table is ready.');
+
     connection.release();
 
   } catch (error) {
