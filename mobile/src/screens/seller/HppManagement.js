@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import {
     StyleSheet,
     Text,
@@ -12,8 +12,10 @@ import {
     StatusBar,
     RefreshControl,
     Modal,
-    ScrollView
+    Dimensions,
 } from 'react-native';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 import {
     ChevronLeft,
     Search,
@@ -32,6 +34,126 @@ import apiService from '../../api/apiService';
 import { useToast } from '../../context/ToastContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+};
+
+const calcTotalFromComponents = (components) =>
+    components.reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
+
+const HppItem = memo(({ item, onEdit, onCancel, onComponentChange, onAddComponent, onRemoveComponent, onSave, onOpenPicker }) => {
+    const totalHpp = item.isEditing
+        ? calcTotalFromComponents(item.draftComponents)
+        : (item.hpp || 0);
+    const margin = item.price - totalHpp;
+    const marginPercent = item.price > 0 ? (margin / item.price) * 100 : 0;
+    const isProfit = margin >= 0;
+
+    return (
+        <View style={styles.card}>
+            <View style={styles.cardHeader}>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemCategory}>{item.category}</Text>
+                </View>
+                {!item.isEditing && (
+                    <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(item.id)}>
+                        <Edit2 size={16} color="#2563EB" />
+                        <Text style={styles.editBtnText}>Edit HPP</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <View style={styles.row}>
+                <View style={styles.col}>
+                    <Text style={styles.label}>Harga Jual</Text>
+                    <Text style={styles.value}>{formatCurrency(item.price)}</Text>
+                </View>
+                <View style={styles.col}>
+                    <Text style={styles.label}>Stok</Text>
+                    <Text style={styles.value}>{item.stock}</Text>
+                </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {item.isEditing ? (
+                <View style={styles.editSection}>
+                    <Text style={styles.editSectionTitle}>Komponen Biaya (HPP)</Text>
+                    {item.draftComponents.map((comp, index) => (
+                        <View key={index} style={styles.compRow}>
+                            <TouchableOpacity
+                                style={styles.pickerSelector}
+                                onPress={() => onOpenPicker(item.id, index)}
+                            >
+                                <Text style={[styles.pickerSelectorText, !comp.name && styles.pickerSelectorPlaceholder]}>
+                                    {comp.name || 'Pilih Bahan'}
+                                </Text>
+                                <ChevronLeft size={16} color="#64748B" style={{ transform: [{ rotate: '-90deg' }] }} />
+                            </TouchableOpacity>
+
+                            <TextInput
+                                style={styles.compCostInput}
+                                value={comp.cost ? comp.cost.toString() : ''}
+                                onChangeText={(val) => onComponentChange(item.id, index, 'cost', val)}
+                                keyboardType="numeric"
+                                placeholder="Biaya (Rp)"
+                            />
+
+                            <TouchableOpacity
+                                onPress={() => onRemoveComponent(item.id, index)}
+                                style={styles.removeCompBtn}
+                            >
+                                <Trash2 size={16} color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+
+                    <TouchableOpacity
+                        onPress={() => onAddComponent(item.id)}
+                        style={styles.addCompBtn}
+                    >
+                        <PlusCircle size={16} color="#2563EB" />
+                        <Text style={styles.addCompText}>Tambah Komponen</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.saveCancelRow}>
+                        <TouchableOpacity style={styles.saveActionBtn} onPress={() => onSave(item)}>
+                            <Save size={16} color="#FFF" />
+                            <Text style={styles.saveActionText}>Simpan HPP</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.cancelActionBtn} onPress={() => onCancel(item.id)}>
+                            <X size={16} color="#64748B" />
+                            <Text style={styles.cancelActionText}>Batal</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            ) : (
+                <View style={styles.detailsSection}>
+                    {Array.isArray(item.hpp_details) && item.hpp_details.length > 0 ? (
+                        <View style={styles.detailsGrid}>
+                            {item.hpp_details.map((comp, idx) => (
+                                <View key={idx} style={styles.detailChip}>
+                                    <Text style={styles.detailChipName}>{comp.name}</Text>
+                                    <Text style={styles.detailChipCost}>{formatCurrency(comp.cost)}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ) : (
+                        <Text style={styles.emptyDetailsText}>Belum ada rincian komponen HPP.</Text>
+                    )}
+                </View>
+            )}
+
+            <View style={[styles.marginBadge, isProfit ? styles.profitBg : styles.lossBg]}>
+                <Text style={[styles.marginText, isProfit ? styles.profitText : styles.lossText]}>
+                    Total HPP: {formatCurrency(totalHpp)}  |  Laba: {formatCurrency(margin)} ({marginPercent.toFixed(1)}%)
+                </Text>
+            </View>
+        </View>
+    );
+});
+
 const HppManagement = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { showToast } = useToast();
@@ -41,7 +163,7 @@ const HppManagement = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('all'); // all, profit, loss, low_stock
-    
+
     // Dropdown picker modal states
     const [pickerVisible, setPickerVisible] = useState(false);
     const [activeEditItemId, setActiveEditItemId] = useState(null);
@@ -133,7 +255,7 @@ const HppManagement = ({ navigation }) => {
         fetchIngredients();
     }, [fetchData]);
 
-    const handleEdit = (itemId) => {
+    const handleEdit = useCallback((itemId) => {
         setMenuItems(prev =>
             prev.map(item =>
                 item.id == itemId
@@ -147,17 +269,17 @@ const HppManagement = ({ navigation }) => {
                     : { ...item, isEditing: false }
             )
         );
-    };
+    }, []);
 
-    const handleCancel = (itemId) => {
+    const handleCancel = useCallback((itemId) => {
         setMenuItems(prev =>
             prev.map(item =>
                 item.id == itemId ? { ...item, isEditing: false } : item
             )
         );
-    };
+    }, []);
 
-    const handleComponentChange = (itemId, index, field, value) => {
+    const handleComponentChange = useCallback((itemId, index, field, value) => {
         setMenuItems(prev =>
             prev.map(item => {
                 if (item.id != itemId) return item;
@@ -167,9 +289,9 @@ const HppManagement = ({ navigation }) => {
                 return { ...item, draftComponents: newComps };
             })
         );
-    };
+    }, []);
 
-    const handleAddComponent = (itemId) => {
+    const handleAddComponent = useCallback((itemId) => {
         setMenuItems(prev =>
             prev.map(item =>
                 item.id == itemId
@@ -177,9 +299,9 @@ const HppManagement = ({ navigation }) => {
                     : item
             )
         );
-    };
+    }, []);
 
-    const handleRemoveComponent = (itemId, index) => {
+    const handleRemoveComponent = useCallback((itemId, index) => {
         setMenuItems(prev =>
             prev.map(item => {
                 if (item.id != itemId) return item;
@@ -187,13 +309,9 @@ const HppManagement = ({ navigation }) => {
                 return { ...item, draftComponents: newComps.length > 0 ? newComps : [{ name: '', cost: '' }] };
             })
         );
-    };
+    }, []);
 
-    const calcTotalFromComponents = (components) =>
-        components.reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
-
-    const handleSave = async (itemId) => {
-        const itemToSave = menuItems.find(item => item.id == itemId);
+    const handleSave = useCallback(async (itemToSave) => {
         if (!itemToSave) return;
 
         const validComponents = itemToSave.draftComponents.filter(c => c.name.trim() !== '');
@@ -211,11 +329,7 @@ const HppManagement = ({ navigation }) => {
             showToast('Gagal memperbarui HPP', 'error');
             console.error('Save HPP Error:', error);
         }
-    };
-
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
-    };
+    }, [fetchData, showToast]);
 
     const filteredItems = menuItems.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -245,131 +359,31 @@ const HppManagement = ({ navigation }) => {
         return acc + (hpp * item.stock);
     }, 0);
 
-    const openIngredientPicker = (itemId, index) => {
+    const openIngredientPicker = useCallback((itemId, index) => {
         setActiveEditItemId(itemId);
         setActiveComponentIndex(index);
         setPickerVisible(true);
-    };
+    }, []);
 
-    const selectIngredient = (name) => {
+    const selectIngredient = useCallback((name) => {
         if (activeEditItemId !== null && activeComponentIndex !== null) {
             handleComponentChange(activeEditItemId, activeComponentIndex, 'name', name);
         }
         setPickerVisible(false);
-    };
+    }, [activeEditItemId, activeComponentIndex, handleComponentChange]);
 
-    const renderItem = ({ item }) => {
-        const totalHpp = item.isEditing
-            ? calcTotalFromComponents(item.draftComponents)
-            : (item.hpp || 0);
-        const margin = item.price - totalHpp;
-        const marginPercent = item.price > 0 ? (margin / item.price) * 100 : 0;
-        const isProfit = margin >= 0;
-
-        return (
-            <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.itemCategory}>{item.category}</Text>
-                    </View>
-                    {!item.isEditing && (
-                        <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item.id)}>
-                            <Edit2 size={16} color="#2563EB" />
-                            <Text style={styles.editBtnText}>Edit HPP</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <View style={styles.row}>
-                    <View style={styles.col}>
-                        <Text style={styles.label}>Harga Jual</Text>
-                        <Text style={styles.value}>{formatCurrency(item.price)}</Text>
-                    </View>
-                    <View style={styles.col}>
-                        <Text style={styles.label}>Stok</Text>
-                        <Text style={styles.value}>{item.stock}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.divider} />
-
-                {item.isEditing ? (
-                    <View style={styles.editSection}>
-                        <Text style={styles.editSectionTitle}>Komponen Biaya (HPP)</Text>
-                        {item.draftComponents.map((comp, index) => (
-                            <View key={index} style={styles.compRow}>
-                                <TouchableOpacity
-                                    style={styles.pickerSelector}
-                                    onPress={() => openIngredientPicker(item.id, index)}
-                                >
-                                    <Text style={[styles.pickerSelectorText, !comp.name && styles.pickerSelectorPlaceholder]}>
-                                        {comp.name || 'Pilih Bahan'}
-                                    </Text>
-                                    <ChevronLeft size={16} color="#64748B" style={{ transform: [{ rotate: '-90deg' }] }} />
-                                </TouchableOpacity>
-
-                                <TextInput
-                                    style={styles.compCostInput}
-                                    value={comp.cost ? comp.cost.toString() : ''}
-                                    onChangeText={(val) => handleComponentChange(item.id, index, 'cost', val)}
-                                    keyboardType="numeric"
-                                    placeholder="Biaya (Rp)"
-                                />
-
-                                <TouchableOpacity
-                                    onPress={() => handleRemoveComponent(item.id, index)}
-                                    style={styles.removeCompBtn}
-                                >
-                                    <Trash2 size={16} color="#EF4444" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-
-                        <TouchableOpacity
-                            onPress={() => handleAddComponent(item.id)}
-                            style={styles.addCompBtn}
-                        >
-                            <PlusCircle size={16} color="#2563EB" />
-                            <Text style={styles.addCompText}>Tambah Komponen</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.saveCancelRow}>
-                            <TouchableOpacity style={styles.saveActionBtn} onPress={() => handleSave(item.id)}>
-                                <Save size={16} color="#FFF" />
-                                <Text style={styles.saveActionText}>Simpan HPP</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.cancelActionBtn} onPress={() => handleCancel(item.id)}>
-                                <X size={16} color="#64748B" />
-                                <Text style={styles.cancelActionText}>Batal</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ) : (
-                    <View style={styles.detailsSection}>
-                        {Array.isArray(item.hpp_details) && item.hpp_details.length > 0 ? (
-                            <View style={styles.detailsGrid}>
-                                {item.hpp_details.map((comp, idx) => (
-                                    <View key={idx} style={styles.detailChip}>
-                                        <Text style={styles.detailChipName}>{comp.name}</Text>
-                                        <Text style={styles.detailChipCost}>{formatCurrency(comp.cost)}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        ) : (
-                            <Text style={styles.emptyDetailsText}>Belum ada rincian komponen HPP.</Text>
-                        )}
-                    </View>
-                )}
-
-                <View style={[styles.marginBadge, isProfit ? styles.profitBg : styles.lossBg]}>
-                    <Text style={[styles.marginText, isProfit ? styles.profitText : styles.lossText]}>
-                        Total HPP: {formatCurrency(totalHpp)}  |  Laba: {formatCurrency(margin)} ({marginPercent.toFixed(1)}%)
-                    </Text>
-                </View>
-            </View>
-        );
-    };
+    const renderItem = useCallback(({ item }) => (
+        <HppItem
+            item={item}
+            onEdit={handleEdit}
+            onCancel={handleCancel}
+            onComponentChange={handleComponentChange}
+            onAddComponent={handleAddComponent}
+            onRemoveComponent={handleRemoveComponent}
+            onSave={handleSave}
+            onOpenPicker={openIngredientPicker}
+        />
+    ), [handleEdit, handleCancel, handleComponentChange, handleAddComponent, handleRemoveComponent, handleSave, openIngredientPicker]);
 
     return (
         <View style={styles.container}>
@@ -496,34 +510,39 @@ const HppManagement = ({ navigation }) => {
 
             {/* Custom Modal Picker for Ingredients Selection */}
             <Modal
-                transparent={true}
+                transparent={false}
                 visible={pickerVisible}
-                animationType="fade"
+                animationType="slide"
+                statusBarTranslucent
                 onRequestClose={() => setPickerVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Pilih Bahan Baku</Text>
-                            <TouchableOpacity onPress={() => setPickerVisible(false)}>
-                                <X size={20} color="#1E293B" />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.modalList}>
-                            {ingredients.map((ing) => (
-                                <TouchableOpacity
-                                    key={ing.id}
-                                    style={styles.modalItem}
-                                    onPress={() => selectIngredient(ing.name)}
-                                >
-                                    <Text style={styles.modalItemText}>{ing.name}</Text>
-                                </TouchableOpacity>
-                            ))}
-                            {ingredients.length === 0 && (
-                                <Text style={styles.modalEmpty}>Silakan tambah master bahan terlebih dahulu.</Text>
-                            )}
-                        </ScrollView>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Pilih Bahan Baku</Text>
+                        <TouchableOpacity onPress={() => setPickerVisible(false)}>
+                            <X size={20} color="#1E293B" />
+                        </TouchableOpacity>
                     </View>
+                    <FlatList
+                        data={ingredients}
+                        keyExtractor={(ing) => ing.id.toString()}
+                        style={styles.modalList}
+                        contentContainerStyle={styles.modalListContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={true}
+                        bounces={true}
+                        renderItem={({ item: ing }) => (
+                            <TouchableOpacity
+                                style={styles.modalItem}
+                                onPress={() => selectIngredient(ing.name)}
+                            >
+                                <Text style={styles.modalItemText}>{ing.name}</Text>
+                            </TouchableOpacity>
+                        )}
+                        ListEmptyComponent={
+                            <Text style={styles.modalEmpty}>Silakan tambah master bahan terlebih dahulu.</Text>
+                        }
+                    />
                 </View>
             </Modal>
         </View>
@@ -952,20 +971,9 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    modalContent: {
-        width: '90%',
-        maxWidth: 400,
         backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        maxHeight: '60%',
-        padding: 16,
-        elevation: 5,
-        alignItems: 'stretch',
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 16 : 50,
+        paddingHorizontal: 20,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -975,7 +983,6 @@ const styles = StyleSheet.create({
         paddingBottom: 8,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
-        width: '100%',
     },
     modalTitle: {
         fontSize: 16,
@@ -983,14 +990,16 @@ const styles = StyleSheet.create({
         color: '#1E293B',
     },
     modalList: {
-        width: '100%',
+        flex: 1,
+        height: SCREEN_HEIGHT,
+    },
+    modalListContent: {
+        paddingBottom: 40,
     },
     modalItem: {
         paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
-        width: '100%',
-        alignSelf: 'stretch',
     },
     modalItemText: {
         fontSize: 14,
@@ -1003,7 +1012,6 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         marginTop: 20,
         fontSize: 13,
-        width: '100%',
     }
 });
 
