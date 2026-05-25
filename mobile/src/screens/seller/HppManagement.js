@@ -10,7 +10,9 @@ import {
     Platform,
     Alert,
     StatusBar,
-    RefreshControl
+    RefreshControl,
+    Modal,
+    ScrollView
 } from 'react-native';
 import {
     ChevronLeft,
@@ -19,87 +21,195 @@ import {
     TrendingUp,
     DollarSign,
     Filter,
-    Package
+    Package,
+    Plus,
+    Trash2,
+    X,
+    Edit2,
+    PlusCircle,
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
-import { useConfirm } from '../../context/ConfirmContext';
+import { useToast } from '../../context/ToastContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HppManagement = ({ navigation }) => {
     const insets = useSafeAreaInsets();
-    const { confirm } = useConfirm();
+    const { showToast } = useToast();
     const [menuItems, setMenuItems] = useState([]);
+    const [ingredients, setIngredients] = useState([]);
+    const [newIngredient, setNewIngredient] = useState('');
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('all'); // all, profit, loss, low_stock
-    const [savingId, setSavingId] = useState(null);
-    const [localHppValues, setLocalHppValues] = useState({});
+    
+    // Dropdown picker modal states
+    const [pickerVisible, setPickerVisible] = useState(false);
+    const [activeEditItemId, setActiveEditItemId] = useState(null);
+    const [activeComponentIndex, setActiveComponentIndex] = useState(null);
+
+    // Fetch master bahan
+    const fetchIngredients = async () => {
+        try {
+            const response = await apiService.get('/api/hpp-ingredients');
+            if (response.data.message === 'success') {
+                setIngredients(response.data.data || []);
+            }
+        } catch (error) {
+            console.error('Fetch ingredients error:', error);
+        }
+    };
+
+    // Tambah master bahan baru
+    const handleAddIngredient = async () => {
+        if (!newIngredient.trim()) return;
+        try {
+            const response = await apiService.post('/api/hpp-ingredients', { name: newIngredient.trim() });
+            if (response.status === 200 || response.status === 201) {
+                showToast('Bahan berhasil ditambahkan', 'success');
+                setNewIngredient('');
+                fetchIngredients();
+            } else {
+                showToast(response.data.message || 'Gagal menambahkan bahan', 'error');
+            }
+        } catch (error) {
+            showToast('Gagal menambahkan bahan', 'error');
+        }
+    };
+
+    // Hapus master bahan
+    const handleDeleteIngredient = async (id) => {
+        Alert.alert(
+            'Konfirmasi',
+            'Yakin ingin menghapus bahan ini?',
+            [
+                { text: 'Batal', style: 'cancel' },
+                {
+                    text: 'Hapus',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const response = await apiService.delete(`/api/hpp-ingredients/${id}`);
+                            if (response.status === 200) {
+                                showToast('Bahan berhasil dihapus', 'success');
+                                fetchIngredients();
+                            } else {
+                                showToast('Gagal menghapus bahan', 'error');
+                            }
+                        } catch (error) {
+                            showToast('Gagal menghapus bahan', 'error');
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const response = await apiService.get('/api/menu-items/all');
-            setMenuItems(response.data.data || []);
-            // Initialize local state for HPP inputs
-            const initialHpp = {};
-            (response.data.data || []).forEach(item => {
-                initialHpp[item.id] = (item.hpp || 0).toString();
-            });
-            setLocalHppValues(initialHpp);
+            if (response.data.message === 'success' && Array.isArray(response.data.data)) {
+                const initializedItems = response.data.data.map(item => ({
+                    ...item,
+                    isEditing: false,
+                    draftComponents: Array.isArray(item.hpp_details) && item.hpp_details.length > 0
+                        ? item.hpp_details.map(c => ({ ...c }))
+                        : [{ name: '', cost: '' }],
+                }));
+                setMenuItems(initializedItems);
+            } else {
+                showToast('Gagal memuat data menu', 'error');
+            }
         } catch (error) {
             console.error('Error fetching menu data:', error);
-            Alert.alert('Error', 'Gagal memuat data menu');
+            showToast('Gagal memuat data menu', 'error');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
     useEffect(() => {
         fetchData();
+        fetchIngredients();
     }, [fetchData]);
 
-    const handleUpdateHpp = async (item) => {
-        const newHpp = localHppValues[item.id];
-        const hppValue = parseFloat(newHpp || 0);
+    const handleEdit = (itemId) => {
+        setMenuItems(prev =>
+            prev.map(item =>
+                item.id == itemId
+                    ? {
+                        ...item,
+                        isEditing: true,
+                        draftComponents: Array.isArray(item.hpp_details) && item.hpp_details.length > 0
+                            ? item.hpp_details.map(c => ({ ...c }))
+                            : [{ name: '', cost: '' }],
+                    }
+                    : { ...item, isEditing: false }
+            )
+        );
+    };
 
-        if (isNaN(hppValue)) {
-            Alert.alert('Error', 'Nilai HPP tidak valid');
-            return;
-        }
+    const handleCancel = (itemId) => {
+        setMenuItems(prev =>
+            prev.map(item =>
+                item.id == itemId ? { ...item, isEditing: false } : item
+            )
+        );
+    };
 
-        setSavingId(item.id);
+    const handleComponentChange = (itemId, index, field, value) => {
+        setMenuItems(prev =>
+            prev.map(item => {
+                if (item.id != itemId) return item;
+                const newComps = item.draftComponents.map((c, i) =>
+                    i === index ? { ...c, [field]: value } : c
+                );
+                return { ...item, draftComponents: newComps };
+            })
+        );
+    };
+
+    const handleAddComponent = (itemId) => {
+        setMenuItems(prev =>
+            prev.map(item =>
+                item.id == itemId
+                    ? { ...item, draftComponents: [...item.draftComponents, { name: '', cost: '' }] }
+                    : item
+            )
+        );
+    };
+
+    const handleRemoveComponent = (itemId, index) => {
+        setMenuItems(prev =>
+            prev.map(item => {
+                if (item.id != itemId) return item;
+                const newComps = item.draftComponents.filter((_, i) => i !== index);
+                return { ...item, draftComponents: newComps.length > 0 ? newComps : [{ name: '', cost: '' }] };
+            })
+        );
+    };
+
+    const calcTotalFromComponents = (components) =>
+        components.reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
+
+    const handleSave = async (itemId) => {
+        const itemToSave = menuItems.find(item => item.id == itemId);
+        if (!itemToSave) return;
+
+        const validComponents = itemToSave.draftComponents.filter(c => c.name.trim() !== '');
+        const totalHpp = calcTotalFromComponents(validComponents);
+
         try {
-            // We need to send other required fields or the backend might complain/reset them
-            // Assuming PUT /api/menu-items/:id updates only provided fields or we need to send all?
-            // Based on typical REST implementations, ideally PATCH would be better, but let's check MenuManagement usage.
-            // In MenuManagement handleSubmit, it sends all fields. Let's try to send all fields to be safe.
-
-            // Construct FormData as per MenuManagement
-            const formData = new FormData();
-            formData.append('name', item.name);
-            formData.append('price', item.price);
-            formData.append('stock', item.stock);
-            formData.append('category', item.category);
-            formData.append('hpp', hppValue);
-            formData.append('discount', item.discount || 0);
-            formData.append('is_featured', item.is_featured ? 1 : 0);
-            formData.append('description', item.description || '');
-
-            // We don't send image unless changed
-
-            await apiService.put(`/api/menu-items/${item.id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' } // Multer needs this
+            await apiService.put(`/api/menu-items/${itemToSave.id}`, {
+                hpp: totalHpp,
+                hpp_details: validComponents,
             });
 
-            // Update local item list to reflect "saved" state if needed
-            setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, hpp: hppValue } : m));
-            Alert.alert('Sukses', 'HPP berhasil diperbarui');
-
+            showToast('Detail HPP berhasil disimpan!', 'success');
+            fetchData();
         } catch (error) {
-            console.error('Error updating HPP:', error);
-            Alert.alert('Error', 'Gagal memperbarui HPP');
-        } finally {
-            setSavingId(null);
+            showToast('Gagal memperbarui HPP', 'error');
+            console.error('Save HPP Error:', error);
         }
     };
 
@@ -111,8 +221,10 @@ const HppManagement = ({ navigation }) => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
 
         let matchesFilter = true;
-        const currentHpp = parseFloat(localHppValues[item.id] || item.hpp || 0);
-        const margin = item.price - currentHpp;
+        const totalHpp = item.isEditing
+            ? calcTotalFromComponents(item.draftComponents)
+            : (item.hpp || 0);
+        const margin = item.price - totalHpp;
 
         if (selectedFilter === 'profit') {
             matchesFilter = margin > 0;
@@ -125,33 +237,48 @@ const HppManagement = ({ navigation }) => {
         return matchesSearch && matchesFilter;
     });
 
-    // Calculate Summary
     const totalItems = filteredItems.length;
-    const totalPotentialProfit = filteredItems.reduce((acc, item) => {
-        const hpp = parseFloat(localHppValues[item.id] || item.hpp || 0);
-        const margin = item.price - hpp;
-        // Assuming potential profit based on current stock? Or just unit margin?
-        // Let's show avg margin per unit for the list
-        return acc + margin;
-    }, 0);
-    // This sum is meaningless if not weighted. Let's calculate Total Stock Value (Assets)
     const totalAssets = filteredItems.reduce((acc, item) => {
-        const hpp = parseFloat(localHppValues[item.id] || item.hpp || 0);
+        const hpp = item.isEditing
+            ? calcTotalFromComponents(item.draftComponents)
+            : (item.hpp || 0);
         return acc + (hpp * item.stock);
     }, 0);
 
+    const openIngredientPicker = (itemId, index) => {
+        setActiveEditItemId(itemId);
+        setActiveComponentIndex(index);
+        setPickerVisible(true);
+    };
+
+    const selectIngredient = (name) => {
+        if (activeEditItemId !== null && activeComponentIndex !== null) {
+            handleComponentChange(activeEditItemId, activeComponentIndex, 'name', name);
+        }
+        setPickerVisible(false);
+    };
 
     const renderItem = ({ item }) => {
-        const currentHpp = parseFloat(localHppValues[item.id] || 0);
-        const margin = item.price - currentHpp;
+        const totalHpp = item.isEditing
+            ? calcTotalFromComponents(item.draftComponents)
+            : (item.hpp || 0);
+        const margin = item.price - totalHpp;
         const marginPercent = item.price > 0 ? (margin / item.price) * 100 : 0;
         const isProfit = margin >= 0;
 
         return (
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemCategory}>{item.category}</Text>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        <Text style={styles.itemCategory}>{item.category}</Text>
+                    </View>
+                    {!item.isEditing && (
+                        <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item.id)}>
+                            <Edit2 size={16} color="#2563EB" />
+                            <Text style={styles.editBtnText}>Edit HPP</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View style={styles.row}>
@@ -167,36 +294,77 @@ const HppManagement = ({ navigation }) => {
 
                 <View style={styles.divider} />
 
-                <View style={styles.inputRow}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>HPP (Modal)</Text>
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.prefix}>Rp</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={localHppValues[item.id]}
-                                onChangeText={(val) => setLocalHppValues(prev => ({ ...prev, [item.id]: val }))}
-                                keyboardType="numeric"
-                                placeholder="0"
-                            />
+                {item.isEditing ? (
+                    <View style={styles.editSection}>
+                        <Text style={styles.editSectionTitle}>Komponen Biaya (HPP)</Text>
+                        {item.draftComponents.map((comp, index) => (
+                            <View key={index} style={styles.compRow}>
+                                <TouchableOpacity
+                                    style={styles.pickerSelector}
+                                    onPress={() => openIngredientPicker(item.id, index)}
+                                >
+                                    <Text style={[styles.pickerSelectorText, !comp.name && styles.pickerSelectorPlaceholder]}>
+                                        {comp.name || 'Pilih Bahan'}
+                                    </Text>
+                                    <ChevronLeft size={16} color="#64748B" style={{ transform: [{ rotate: '-90deg' }] }} />
+                                </TouchableOpacity>
+
+                                <TextInput
+                                    style={styles.compCostInput}
+                                    value={comp.cost ? comp.cost.toString() : ''}
+                                    onChangeText={(val) => handleComponentChange(item.id, index, 'cost', val)}
+                                    keyboardType="numeric"
+                                    placeholder="Biaya (Rp)"
+                                />
+
+                                <TouchableOpacity
+                                    onPress={() => handleRemoveComponent(item.id, index)}
+                                    style={styles.removeCompBtn}
+                                >
+                                    <Trash2 size={16} color="#EF4444" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+
+                        <TouchableOpacity
+                            onPress={() => handleAddComponent(item.id)}
+                            style={styles.addCompBtn}
+                        >
+                            <PlusCircle size={16} color="#2563EB" />
+                            <Text style={styles.addCompText}>Tambah Komponen</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.saveCancelRow}>
+                            <TouchableOpacity style={styles.saveActionBtn} onPress={() => handleSave(item.id)}>
+                                <Save size={16} color="#FFF" />
+                                <Text style={styles.saveActionText}>Simpan HPP</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.cancelActionBtn} onPress={() => handleCancel(item.id)}>
+                                <X size={16} color="#64748B" />
+                                <Text style={styles.cancelActionText}>Batal</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
-                    <TouchableOpacity
-                        style={[styles.saveBtn, savingId === item.id && styles.disabledBtn]}
-                        onPress={() => handleUpdateHpp(item)}
-                        disabled={savingId === item.id}
-                    >
-                        {savingId === item.id ? (
-                            <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                    <View style={styles.detailsSection}>
+                        {Array.isArray(item.hpp_details) && item.hpp_details.length > 0 ? (
+                            <View style={styles.detailsGrid}>
+                                {item.hpp_details.map((comp, idx) => (
+                                    <View key={idx} style={styles.detailChip}>
+                                        <Text style={styles.detailChipName}>{comp.name}</Text>
+                                        <Text style={styles.detailChipCost}>{formatCurrency(comp.cost)}</Text>
+                                    </View>
+                                ))}
+                            </View>
                         ) : (
-                            <Save size={20} color="#FFF" />
+                            <Text style={styles.emptyDetailsText}>Belum ada rincian komponen HPP.</Text>
                         )}
-                    </TouchableOpacity>
-                </View>
+                    </View>
+                )}
 
                 <View style={[styles.marginBadge, isProfit ? styles.profitBg : styles.lossBg]}>
                     <Text style={[styles.marginText, isProfit ? styles.profitText : styles.lossText]}>
-                        Margin: {formatCurrency(margin)} ({marginPercent.toFixed(1)}%)
+                        Total HPP: {formatCurrency(totalHpp)}  |  Laba: {formatCurrency(margin)} ({marginPercent.toFixed(1)}%)
                     </Text>
                 </View>
             </View>
@@ -215,9 +383,7 @@ const HppManagement = ({ navigation }) => {
                         <ChevronLeft size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Manajemen HPP</Text>
-                    <TouchableOpacity style={styles.backBtn}>
-                        <Filter size={20} color="#FFFFFF" />
-                    </TouchableOpacity>
+                    <View style={{ width: 40 }} />
                 </View>
 
                 {/* Filter Tabs */}
@@ -243,34 +409,30 @@ const HppManagement = ({ navigation }) => {
 
             {/* Content Body */}
             <View style={styles.contentBody}>
-                {/* Search Bar - Floating overlapping header */}
-                <View style={styles.searchContainer}>
-                    <View style={styles.searchBar}>
-                        <Search size={20} color="#94A3B8" />
-                        <TextInput
-                            placeholder="Cari produk..."
-                            style={styles.searchInput}
-                            value={searchTerm}
-                            onChangeText={setSearchTerm}
-                        />
-                    </View>
-                </View>
+                {/* Search Bar & Master Bahan */}
+                <FlatList
+                    data={filteredItems}
+                    extraData={menuItems}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.listContent}
+                    refreshControl={
+                        <RefreshControl refreshing={loading} onRefresh={fetchData} colors={['#1E40AF']} />
+                    }
+                    ListHeaderComponent={
+                        <View style={{ gap: 16, marginBottom: 10 }}>
+                            {/* Search Bar */}
+                            <View style={styles.searchBar}>
+                                <Search size={20} color="#94A3B8" />
+                                <TextInput
+                                    placeholder="Cari produk..."
+                                    style={styles.searchInput}
+                                    value={searchTerm}
+                                    onChangeText={setSearchTerm}
+                                />
+                            </View>
 
-                {/* List */}
-                {loading ? (
-                    <View style={styles.loadingArea}>
-                        <ActivityIndicator size="large" color="#1E40AF" />
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredItems}
-                        keyExtractor={item => item.id.toString()}
-                        renderItem={renderItem}
-                        contentContainerStyle={styles.listContent}
-                        refreshControl={
-                            <RefreshControl refreshing={loading} onRefresh={fetchData} colors={['#1E40AF']} />
-                        }
-                        ListHeaderComponent={
+                            {/* Summary Grid */}
                             <View style={styles.summaryGrid}>
                                 <View style={styles.summaryItem}>
                                     <View style={[styles.summaryIcon, { backgroundColor: '#EFF6FF' }]}>
@@ -291,15 +453,79 @@ const HppManagement = ({ navigation }) => {
                                     </View>
                                 </View>
                             </View>
-                        }
-                        ListEmptyComponent={
-                            <View style={styles.emptyArea}>
-                                <Text style={styles.emptyText}>Tidak ada data produk</Text>
+
+                            {/* Master Daftar Bahan */}
+                            <View style={styles.masterBahanCard}>
+                                <Text style={styles.masterBahanTitle}>Master Daftar Bahan</Text>
+                                <View style={styles.masterForm}>
+                                    <TextInput
+                                        style={styles.masterInput}
+                                        placeholder="Nama bahan baru (contoh: Sambal)"
+                                        value={newIngredient}
+                                        onChangeText={setNewIngredient}
+                                    />
+                                    <TouchableOpacity style={styles.masterAddBtn} onPress={handleAddIngredient}>
+                                        <Plus size={20} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                {ingredients.length === 0 ? (
+                                    <Text style={styles.masterBahanEmpty}>Belum ada master bahan.</Text>
+                                ) : (
+                                    <View style={styles.chipContainer}>
+                                        {ingredients.map((ing) => (
+                                            <View key={ing.id} style={styles.chip}>
+                                                <Text style={styles.chipText}>{ing.name}</Text>
+                                                <TouchableOpacity onPress={() => handleDeleteIngredient(ing.id)}>
+                                                    <X size={14} color="#6366F1" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
                             </View>
-                        }
-                    />
-                )}
+                        </View>
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.emptyArea}>
+                            <Text style={styles.emptyText}>Tidak ada data produk</Text>
+                        </View>
+                    }
+                />
             </View>
+
+            {/* Custom Modal Picker for Ingredients Selection */}
+            <Modal
+                transparent={true}
+                visible={pickerVisible}
+                animationType="fade"
+                onRequestClose={() => setPickerVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Pilih Bahan Baku</Text>
+                            <TouchableOpacity onPress={() => setPickerVisible(false)}>
+                                <X size={20} color="#1E293B" />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.modalList}>
+                            {ingredients.map((ing) => (
+                                <TouchableOpacity
+                                    key={ing.id}
+                                    style={styles.modalItem}
+                                    onPress={() => selectIngredient(ing.name)}
+                                >
+                                    <Text style={styles.modalItemText}>{ing.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                            {ingredients.length === 0 && (
+                                <Text style={styles.modalEmpty}>Silakan tambah master bahan terlebih dahulu.</Text>
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -307,12 +533,11 @@ const HppManagement = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1E40AF', // Match header color for full immersion
+        backgroundColor: '#1E40AF',
     },
-
     headerContainer: {
         backgroundColor: '#1E40AF',
-        paddingBottom: 30, // Space for overlapping content
+        paddingBottom: 30,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
     },
@@ -362,10 +587,40 @@ const styles = StyleSheet.create({
         color: '#1E40AF',
         fontWeight: 'bold',
     },
+    contentBody: {
+        flex: 1,
+        backgroundColor: '#F8FAFC',
+        marginTop: -25,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingTop: 10,
+        overflow: 'hidden'
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 16,
+        height: 48,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    searchInput: {
+        flex: 1,
+        marginLeft: 10,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    listContent: {
+        padding: 20,
+        gap: 16,
+        paddingBottom: 40,
+    },
     summaryGrid: {
         flexDirection: 'row',
         gap: 12,
-        marginBottom: 20,
     },
     summaryItem: {
         flex: 1,
@@ -396,41 +651,68 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#1E293B',
     },
-    contentBody: {
-        flex: 1,
-        backgroundColor: '#F8FAFC', // Content background
-        marginTop: -25, // Overlap header
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 0,
-        overflow: 'hidden' // Ensure content respects border radius
-    },
-    searchContainer: {
-        paddingHorizontal: 20,
-        marginBottom: 10,
-    },
-    searchBar: {
-        marginTop: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
+    masterBahanCard: {
         backgroundColor: '#FFFFFF',
-        paddingHorizontal: 16,
-        height: 48,
-        borderRadius: 12,
-        marginBottom: 10,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
-    searchInput: {
-        flex: 1,
-        marginLeft: 10,
-        fontSize: 14,
+    masterBahanTitle: {
+        fontSize: 15,
         fontWeight: 'bold',
         color: '#1E293B',
+        marginBottom: 12,
     },
-    listContent: {
-        padding: 20,
-        paddingTop: 5,
-        gap: 16,
-        paddingBottom: 40,
+    masterForm: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 12,
+    },
+    masterInput: {
+        flex: 1,
+        height: 40,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    masterAddBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#4F46E5',
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    masterBahanEmpty: {
+        fontSize: 12,
+        color: '#64748B',
+        fontStyle: 'italic',
+    },
+    chipContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    chip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#EEF2FF',
+        borderWidth: 1,
+        borderColor: '#E0E7FF',
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    chipText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#4F46E5',
     },
     card: {
         backgroundColor: '#FFFFFF',
@@ -442,24 +724,33 @@ const styles = StyleSheet.create({
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'flex-start',
         marginBottom: 12,
     },
     itemName: {
         fontSize: 16,
         fontWeight: '900',
         color: '#1E293B',
-        flex: 1,
     },
     itemCategory: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: 'bold',
         color: '#64748B',
-        backgroundColor: '#F1F5F9',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        marginTop: 2,
+    },
+    editBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 8,
-        overflow: 'hidden',
-        marginLeft: 8,
+    },
+    editBtnText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#2563EB',
     },
     row: {
         flexDirection: 'row',
@@ -484,46 +775,145 @@ const styles = StyleSheet.create({
     divider: {
         height: 1,
         backgroundColor: '#F1F5F9',
-        marginVertical: 12,
+        marginVertical: 10,
     },
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        gap: 12,
+    editSection: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        padding: 12,
         marginBottom: 12,
     },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8FAFC',
-        borderWidth: 1,
-        borderColor: '#CBD5E1',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        height: 44,
-    },
-    prefix: {
-        fontSize: 14,
+    editSectionTitle: {
+        fontSize: 11,
         fontWeight: 'bold',
         color: '#64748B',
-        marginRight: 8,
+        textTransform: 'uppercase',
+        marginBottom: 10,
     },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: 'bold',
+    compRow: {
+        flexDirection: 'row',
+        gap: 8,
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    pickerSelector: {
+        flex: 1.2,
+        height: 40,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    pickerSelectorText: {
+        fontSize: 13,
+        fontWeight: '600',
         color: '#1E293B',
     },
-    saveBtn: {
-        width: 44,
-        height: 44,
-        backgroundColor: '#2563EB',
-        borderRadius: 10,
+    pickerSelectorPlaceholder: {
+        color: '#94A3B8',
+    },
+    compCostInput: {
+        flex: 0.8,
+        height: 40,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#1E293B',
+    },
+    removeCompBtn: {
+        width: 36,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    disabledBtn: {
-        backgroundColor: '#94A3B8',
+    addCompBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 6,
+        marginBottom: 12,
+    },
+    addCompText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#2563EB',
+    },
+    saveCancelRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    saveActionBtn: {
+        flex: 1.3,
+        height: 38,
+        backgroundColor: '#4F46E5',
+        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
+    },
+    saveActionText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    cancelActionBtn: {
+        flex: 0.7,
+        height: 38,
+        backgroundColor: '#E2E8F0',
+        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
+    },
+    cancelActionText: {
+        color: '#475569',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    detailsSection: {
+        marginBottom: 12,
+    },
+    detailsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    detailChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    detailChipName: {
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '500',
+    },
+    detailChipCost: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#EA580C',
+    },
+    emptyDetailsText: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontStyle: 'italic',
+        paddingVertical: 4,
     },
     marginBadge: {
         padding: 10,
@@ -559,6 +949,61 @@ const styles = StyleSheet.create({
     emptyText: {
         color: '#94A3B8',
         fontSize: 14,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '90%',
+        maxWidth: 400,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        maxHeight: '60%',
+        padding: 16,
+        elevation: 5,
+        alignItems: 'stretch',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+        width: '100%',
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    modalList: {
+        width: '100%',
+    },
+    modalItem: {
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+        width: '100%',
+        alignSelf: 'stretch',
+    },
+    modalItemText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    modalEmpty: {
+        textAlign: 'center',
+        color: '#64748B',
+        fontStyle: 'italic',
+        marginTop: 20,
+        fontSize: 13,
+        width: '100%',
     }
 });
 

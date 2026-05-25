@@ -58,6 +58,7 @@ const MENU_ITEMS = [
     { label: 'Rekonsiliasi', icon: Calculator, color: '#F59E0B', bgColor: '#FFFBEB', target: 'CashReconciliation' },
     { label: 'Laporan Bisnis', icon: BarChart3, color: '#10B981', bgColor: '#ECFDF5', target: 'BusinessReports' },
     { label: 'Laporan Keuangan', icon: Briefcase, color: '#059669', bgColor: '#D1FAE5', target: 'FinancialReport' },
+    { label: 'Laporan HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppReport' },
     { label: 'Manajemen HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppManagement' },
     { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
@@ -95,7 +96,7 @@ const SellerMenu = ({ navigation }) => {
                 <View style={styles.grid}>
                     {MENU_ITEMS.filter(item => {
                         // Restrict sensitive menus to admin/owner
-                        const sensitiveMenus = ['Backup DB', 'Promo', 'HPP Management', 'Popup'];
+                        const sensitiveMenus = ['Backup DB', 'Promo', 'HPP Management', 'Laporan HPP', 'Popup'];
                         const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
 
                         if (sensitiveMenus.includes(item.label) || item.target === 'PromoManagement' || item.target === 'PopupManagement') {

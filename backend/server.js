@@ -3704,6 +3704,34 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
         }
         const oldTrans = oldTransRows[0];
 
+        // --- Proses Items untuk Memastikan HPP Tidak Hilang ---
+        let processedItems = items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null;
+        if (items) {
+            let parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+            const itemsWithDetails = [];
+            for (const item of parsedItems) {
+                let hpp = parseFloat(item.hpp);
+                let hpp_details = item.hpp_details;
+
+                if (isNaN(hpp) || hpp === 0 || !hpp_details) {
+                    const [menuItemRows] = await connection.query('SELECT hpp, hpp_details FROM menu_items WHERE id = ?', [item.id]);
+                    if (menuItemRows.length > 0) {
+                        hpp = parseFloat(menuItemRows[0].hpp || 0);
+                        hpp_details = typeof menuItemRows[0].hpp_details === 'string'
+                            ? JSON.parse(menuItemRows[0].hpp_details)
+                            : menuItemRows[0].hpp_details;
+                    } else {
+                        hpp = 0;
+                        hpp_details = [];
+                    }
+                }
+                
+                itemsWithDetails.push({ ...item, hpp: hpp, hpp_details: hpp_details });
+            }
+            processedItems = JSON.stringify(itemsWithDetails);
+        }
+        // --- Akhir Proses Items ---
+
         // 2. Perform the update
         const sql = `UPDATE transactions SET 
            \`total\` = COALESCE(?, \`total\`), 
@@ -3730,7 +3758,7 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
             timestamp ? timestamp : null,
             manual_discount,
             catatan,
-            items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null,
+            processedItems,
             req.body.cash_paid !== undefined ? parseFloat(req.body.cash_paid) : null,
             req.body.change !== undefined ? parseFloat(req.body.change) : null,
             customer_name !== undefined ? customer_name : null,
@@ -9471,11 +9499,11 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
         }
 
         // Fetch Completed Orders
-        const ordersSql = `SELECT items FROM orders WHERE status = 'completed' AND deleted_at IS NULL ${dateFilterOrders}`;
+        const ordersSql = `SELECT items, promo_discount FROM orders WHERE status = 'completed' AND deleted_at IS NULL ${dateFilterOrders}`;
         const [ordersRows] = await db.query(ordersSql, queryParams);
 
         // Fetch POS Transactions (Assuming all in 'transactions' table are completed)
-        const transSql = `SELECT items FROM transactions WHERE deleted_at IS NULL ${dateFilterTrans}`;
+        const transSql = `SELECT items, manual_discount, promo_discount FROM transactions WHERE deleted_at IS NULL ${dateFilterTrans}`;
         const [transRows] = await db.query(transSql, queryParams);
 
         let totalRevenue = 0;
@@ -9484,12 +9512,25 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
         const itemBreakdown = {};
         const globalIngredients = {};
 
-        const processItems = (itemsJson) => {
+        const processItems = (itemsJson, totalDiscount = 0) => {
             if (!itemsJson) return;
             let items = [];
             try {
                 items = typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
             } catch (e) { return; }
+
+            // Hitung total kotor untuk menentukan proporsi diskon
+            let totalSubtotal = 0;
+            items.forEach(item => {
+                const qty = parseInt(item.quantity) || 0;
+                let itemRev = parseFloat(item.subtotal) || 0;
+                if (!itemRev && item.price) {
+                     itemRev = parseFloat(item.price) * qty;
+                }
+                totalSubtotal += itemRev;
+            });
+
+            const discountToApply = parseFloat(totalDiscount) || 0;
 
             items.forEach(item => {
                 const qty = parseInt(item.quantity) || 0;
@@ -9499,6 +9540,12 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
                 let itemRevenue = parseFloat(item.subtotal) || 0;
                 if (!itemRevenue && item.price) {
                      itemRevenue = parseFloat(item.price) * qty;
+                }
+
+                // Terapkan diskon secara proporsional ke item ini
+                if (discountToApply > 0 && totalSubtotal > 0) {
+                    const proportion = itemRevenue / totalSubtotal;
+                    itemRevenue = Math.max(0, itemRevenue - (discountToApply * proportion));
                 }
 
                 const itemTotalHpp = hpp * qty;
@@ -9554,8 +9601,14 @@ app.get("/api/reports/hpp", authenticateToken, authorizeRoles('admin', 'owner'),
             });
         };
 
-        ordersRows.forEach(row => processItems(row.items));
-        transRows.forEach(row => processItems(row.items));
+        ordersRows.forEach(row => {
+            const totalDisc = parseFloat(row.promo_discount) || 0;
+            processItems(row.items, totalDisc);
+        });
+        transRows.forEach(row => {
+            const totalDisc = (parseFloat(row.manual_discount) || 0) + (parseFloat(row.promo_discount) || 0);
+            processItems(row.items, totalDisc);
+        });
 
         // Convert components object to array for easier frontend use
         const breakdownArray = Object.values(itemBreakdown).sort((a, b) => b.quantitySold - a.quantitySold).map(item => ({
