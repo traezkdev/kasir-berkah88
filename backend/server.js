@@ -3704,6 +3704,34 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
         }
         const oldTrans = oldTransRows[0];
 
+        // --- Proses Items untuk Memastikan HPP Tidak Hilang ---
+        let processedItems = items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null;
+        if (items) {
+            let parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+            const itemsWithDetails = [];
+            for (const item of parsedItems) {
+                let hpp = parseFloat(item.hpp);
+                let hpp_details = item.hpp_details;
+
+                if (isNaN(hpp) || hpp === 0 || !hpp_details) {
+                    const [menuItemRows] = await connection.query('SELECT hpp, hpp_details FROM menu_items WHERE id = ?', [item.id]);
+                    if (menuItemRows.length > 0) {
+                        hpp = parseFloat(menuItemRows[0].hpp || 0);
+                        hpp_details = typeof menuItemRows[0].hpp_details === 'string'
+                            ? JSON.parse(menuItemRows[0].hpp_details)
+                            : menuItemRows[0].hpp_details;
+                    } else {
+                        hpp = 0;
+                        hpp_details = [];
+                    }
+                }
+                
+                itemsWithDetails.push({ ...item, hpp: hpp, hpp_details: hpp_details });
+            }
+            processedItems = JSON.stringify(itemsWithDetails);
+        }
+        // --- Akhir Proses Items ---
+
         // 2. Perform the update
         const sql = `UPDATE transactions SET 
            \`total\` = COALESCE(?, \`total\`), 
@@ -3730,7 +3758,7 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
             timestamp ? timestamp : null,
             manual_discount,
             catatan,
-            items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null,
+            processedItems,
             req.body.cash_paid !== undefined ? parseFloat(req.body.cash_paid) : null,
             req.body.change !== undefined ? parseFloat(req.body.change) : null,
             customer_name !== undefined ? customer_name : null,
