@@ -51,6 +51,7 @@ import AllFeatures from './pages/AllFeatures';
 import DownloadApp from './pages/DownloadApp';
 import Archive from './pages/Archive';
 import ArchiveSessionDetail from './pages/Archive/SessionDetail';
+import Tutorial from './pages/Tutorial';
 
 import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
@@ -166,6 +167,7 @@ const AppRoutes = () => {
       <Route path="/" element={<BerkahLandingPage />} />
       <Route path="/download" element={<DownloadApp />} />
       <Route path="/guest-checkout" element={<GuestCheckout />} />
+      <Route path="/tutorial" element={<Tutorial />} />
 
       {/* Owner Dashboard Routes */}
       <Route

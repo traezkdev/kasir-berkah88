@@ -25,7 +25,7 @@ const LandingHeader = () => {
     const navLinks = [
         { name: 'Beranda', target: 'hero' },
         { name: 'Menu Favorit', target: 'products' },
-        { name: 'Pesan Online', target: 'delivery' },
+        { name: 'Tutorial Belanja', path: '/tutorial' },
         { name: 'Lokasi', target: 'location' },
         { name: 'Tentang Kami', target: 'footer' },
     ];
@@ -59,16 +59,30 @@ const LandingHeader = () => {
 
                     {/* Desktop Nav */}
                     <nav className="hidden md:flex items-center gap-8">
-                        {navLinks.map((link) => (
-                            <button
-                                key={link.name}
-                                onClick={() => scrollToSection(link.target)}
-                                className={`text-sm font-bold transition-colors relative group ${scrolled ? 'text-slate-600 hover:text-emerald-600' : 'text-white/80 hover:text-white'}`}
-                            >
-                                {link.name}
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full" />
-                            </button>
-                        ))}
+                        {navLinks.map((link) => {
+                            if (link.path) {
+                                return (
+                                    <Link
+                                        key={link.name}
+                                        to={link.path}
+                                        className={`text-sm font-bold transition-colors relative group ${scrolled ? 'text-slate-600 hover:text-emerald-600' : 'text-white/80 hover:text-white'}`}
+                                    >
+                                        {link.name}
+                                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full" />
+                                    </Link>
+                                );
+                            }
+                            return (
+                                <button
+                                    key={link.name}
+                                    onClick={() => scrollToSection(link.target)}
+                                    className={`text-sm font-bold transition-colors relative group ${scrolled ? 'text-slate-600 hover:text-emerald-600' : 'text-white/80 hover:text-white'}`}
+                                >
+                                    {link.name}
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full" />
+                                </button>
+                            );
+                        })}
                         <button
                             onClick={() => navigate('/auth')}
                             className={`px-6 py-2.5 text-sm font-black rounded-full transition-all duration-300 hover:scale-105 shadow-sm ${scrolled
@@ -93,15 +107,29 @@ const LandingHeader = () => {
             {isMobileMenuOpen && (
                 <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4">
                     <div className="px-4 py-6 space-y-4">
-                        {navLinks.map((link) => (
-                            <button
-                                key={link.name}
-                                onClick={() => scrollToSection(link.target)}
-                                className="block w-full text-left px-4 py-3 text-base font-bold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                            >
-                                {link.name}
-                            </button>
-                        ))}
+                        {navLinks.map((link) => {
+                            if (link.path) {
+                                return (
+                                    <Link
+                                        key={link.name}
+                                        to={link.path}
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-base font-bold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                    >
+                                        {link.name}
+                                    </Link>
+                                );
+                            }
+                            return (
+                                <button
+                                    key={link.name}
+                                    onClick={() => scrollToSection(link.target)}
+                                    className="block w-full text-left px-4 py-3 text-base font-bold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                >
+                                    {link.name}
+                                </button>
+                            );
+                        })}
                         <div className="pt-4 border-t border-slate-100">
                             <button
                                 onClick={() => navigate('/auth')}
