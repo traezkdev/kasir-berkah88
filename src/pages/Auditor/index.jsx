@@ -680,6 +680,37 @@ export default function AuditorPage() {
                         </div>
                     </div>
 
+                    {/* Total Kekayaan */}
+                    <div className="p-5 rounded-2xl border border-border bg-amber-500/10 transition-all hover:shadow-md flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-500">
+                                <Icon name="Landmark" size={18} />
+                            </div>
+                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Total Kekayaan Bisnis</span>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-mono font-black text-amber-500 tracking-tight">{formatCurrency(data.metrics.currentEquity)}</p>
+                            <p className="text-xs text-text-secondary mt-1 leading-relaxed">Nilai gabungan antara Kas Aktual (uang tunai & bank) dengan Nilai Stok Barang yang dimiliki saat ini.</p>
+                        </div>
+                        <div className="pt-3 border-t border-amber-500/20 space-y-2">
+                            <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">
+                                Rincian Kekayaan
+                            </p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="Package" size={11} /> Nilai Stok Barang</span>
+                                <span className="text-xs font-black text-amber-600 font-mono">{formatCurrency(data.metrics.stockValue)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-text-secondary flex items-center gap-1.5"><Icon name="Wallet" size={11} /> Kas Aktual</span>
+                                <span className="text-xs font-black text-amber-600 font-mono">{formatCurrency(data.metrics.physicalCash)}</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-amber-500/20">
+                                <span className="text-xs font-black text-text-primary">Total</span>
+                                <span className="text-xs font-black text-amber-500 font-mono">{formatCurrency(data.metrics.currentEquity)}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Hasil Audit — Full Width */}
                     <div className={`lg:col-span-3 p-6 rounded-2xl border-2 transition-all shadow-sm ${data.metrics.cashDifference < 0 ? 'bg-red-500/10 border-red-500/30' : data.metrics.cashDifference > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
                         {/* Header */}
