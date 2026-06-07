@@ -151,6 +151,15 @@ class BluetoothPrinterService {
     }
   }
 
+  async openCashDrawer() {
+    if (!BluetoothPrinter) return;
+    try {
+      return await BluetoothPrinter.openCashDrawer();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async isConnected() {
     if (!BluetoothPrinter) return false;
     try {

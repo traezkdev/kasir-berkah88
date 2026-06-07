@@ -36,6 +36,7 @@ class BluetoothPrinterModule(reactContext: ReactApplicationContext) : ReactConte
     private val CMD_FONT_NORMAL = byteArrayOf(ESC, 0x21.toByte(), 0x00.toByte())
     private val CMD_FONT_LARGE = byteArrayOf(ESC, 0x21.toByte(), 0x30.toByte()) // Double height & width
     private val CMD_CUT = byteArrayOf(GS, 0x56.toByte(), 0x42.toByte(), 0x00.toByte())
+    private val CMD_OPEN_DRAWER = byteArrayOf(ESC, 0x70.toByte(), 0x00.toByte(), 0x19.toByte(), 0xFA.toByte()) // Perintah ESC p untuk laci uang
 
     override fun getName(): String = "BluetoothPrinter"
 
@@ -214,6 +215,23 @@ class BluetoothPrinterModule(reactContext: ReactApplicationContext) : ReactConte
         } catch (e: Exception) {
             promise.reject("ERR_CUT", e.message)
         }
+    }
+
+    @ReactMethod
+    fun openCashDrawer(promise: Promise) {
+        if (outputStream == null) {
+            promise.reject("ERR_NOT_CONNECTED", "Printer tidak terhubung")
+            return
+        }
+
+        Thread {
+            try {
+                outputStream!!.write(CMD_OPEN_DRAWER)
+                promise.resolve(true)
+            } catch (e: Exception) {
+                promise.reject("ERR_DRAWER", "Gagal membuka laci: ${e.message}")
+            }
+        }.start()
     }
 
     private fun sendEvent(eventName: String, params: String) {
