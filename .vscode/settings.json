@@ -4,6 +4,15 @@
     "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable",
     "java.configuration.updateBuildConfiguration": "interactive",
     "java.project.excludePaths": [
-        "**/node_modules"
-    ]
+        "**/node_modules",
+        "**/mobile/**"
+    ],
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/mobile/**"
+    ],
+    "java.autobuild.enabled": false,
+    "java.import.gradle.enabled": false,
+    "java.import.maven.enabled": false,
+    "java.project.importHint": "ignore"
 }

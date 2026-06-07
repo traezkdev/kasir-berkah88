@@ -280,6 +280,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
 
             await BluetoothPrinter.printReceipt(printData);
             await BluetoothPrinter.cut();
+
+            // Buka laci uang khusus untuk metode tunai/cash
+            if (methodAttr === 'tunai' || methodAttr === 'cash') {
+                if (BluetoothPrinter.openCashDrawer) {
+                    await BluetoothPrinter.openCashDrawer();
+                }
+            }
+
             showToast('Sedang mencetak struk...', 'success');
         } catch (error) {
             console.error('Print error:', error);
