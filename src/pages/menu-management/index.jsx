@@ -12,6 +12,7 @@ import EditMenuItemModal from './components/EditMenuItemModal';
 import AddMenuItemModal from './components/AddMenuItemModal';
 import RecipeManagementModal from './RecipeManagementModal'; // Import the new modal
 import Pagination from '../../components/ui/Pagination'; // Add this import
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
@@ -38,6 +39,7 @@ const MenuManagement = ({ headerTitle }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false); // State for adding new item
   const [isRecipeModalOpen, setRecipeModalOpen] = useState(false); // State for recipe modal
   const [selectedMenuItemForRecipe, setSelectedMenuItemForRecipe] = useState(null); // State for recipe item
+  const [isResetStockModalOpen, setIsResetStockModalOpen] = useState(false); // State for reset stock modal
   const [pagination, setPagination] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -366,7 +368,34 @@ Powered by Kasir Berkah 88`;
     showNotification('Membuka WhatsApp untuk membagikan stok...', 'success');
   };
 
+  const handleEmptyAllStock = () => {
+    if (userRole !== 'admin' && userRole !== 'owner') {
+      showError('Hanya admin dan owner yang dapat mengosongkan stok.');
+      return;
+    }
+    setIsResetStockModalOpen(true);
+  };
 
+  const executeEmptyAllStock = async () => {
+    setIsResetStockModalOpen(false);
+    try {
+      const response = await authFetch(`${apiUrl}/api/menu-items/reset-stock`, {
+        method: 'PUT',
+      });
+      const result = await response.json();
+      
+      if (response.ok && result.message === 'success') {
+        showNotification(`Berhasil mengosongkan stok ${result.data.affectedRows} menu.`, 'success');
+        fetchMenuItems(currentPage, activeFilter);
+        fetchAllMenuItems();
+      } else {
+        showError(`Gagal mengosongkan stok: ${result.error || 'Terjadi kesalahan'}`);
+      }
+    } catch (error) {
+      console.error('Error emptying stock:', error);
+      showError(`Error mengosongkan stok: ${error.message}`);
+    }
+  };
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -498,7 +527,8 @@ Powered by Kasir Berkah 88`;
             stickyTitle={headerTitle || 'Kelola Menu'}
             actions={[
               { label: 'Tambah Menu', icon: 'Plus', onClick: () => setIsAddModalOpen(true) },
-              { label: 'Status Stok', icon: 'Share2', onClick: handleShareStock }
+              { label: 'Status Stok', icon: 'Share2', onClick: handleShareStock },
+              ...(userRole === 'admin' || userRole === 'owner' ? [{ label: 'Kosongkan Stok', icon: 'Trash2', onClick: handleEmptyAllStock, color: 'danger' }] : [])
             ]}
           />
         )}
@@ -540,6 +570,19 @@ Powered by Kasir Berkah 88`;
                   <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-md transition-transform duration-300 ${globalIgnoreStock ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
               </div>
+
+              {(userRole === 'admin' || userRole === 'owner') && (
+                <button
+                  onClick={handleEmptyAllStock}
+                  className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 shadow-sm"
+                  title="Ubah semua stok menu menjadi 0"
+                >
+                  <div className="bg-rose-200/50 p-1.5 rounded-lg text-rose-600">
+                    <Icon name="Trash2" size={16} />
+                  </div>
+                  Kosongkan Stok
+                </button>
+              )}
 
               <button
                 onClick={() => setIsAddModalOpen(true)}
@@ -665,6 +708,17 @@ Powered by Kasir Berkah 88`;
           />
         )
       }
+
+      <ConfirmationModal
+        isOpen={isResetStockModalOpen}
+        onClose={() => setIsResetStockModalOpen(false)}
+        onConfirm={executeEmptyAllStock}
+        title="Kosongkan Semua Stok"
+        message="Apakah Anda yakin ingin mengosongkan semua stok menu menjadi 0? Tindakan ini tidak dapat dibatalkan!"
+        confirmText="Ya, Kosongkan"
+        cancelText="Batal"
+        isDestructive={true}
+      />
     </div >
   );
 };
