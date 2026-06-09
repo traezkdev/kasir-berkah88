@@ -1580,6 +1580,21 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'p
     }
 });
 
+// Reset all menu stock to 0
+app.put('/api/menu-items/reset-stock', authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const sql = 'UPDATE menu_items SET stock = 0';
+        const [result] = await db.query(sql);
+        
+        await logActivity(req.user.userId, 'Kosongkan Stok', 'menu_items', null, `Admin mengosongkan stok ${result.affectedRows} menu`);
+
+        res.json({ message: 'success', data: { affectedRows: result.affectedRows } });
+    } catch (err) {
+        console.error("Error resetting stock:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update a menu item
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), upload.single('image'), async (req, res, next) => {
     let connection;
@@ -4205,6 +4220,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
                 DATE_FORMAT(e.date, '%Y-%m-%d %H:%i:%s+07:00') AS date,
                 e.notes,
                 e.user_id,
+                e.closing_session_id,
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
@@ -4276,6 +4292,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'ka
                 DATE_FORMAT(e.date, '%Y-%m-%d %H:%i:%s+07:00') AS date,
                 e.notes,
                 e.user_id,
+                e.closing_session_id,
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id

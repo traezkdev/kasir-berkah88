@@ -112,7 +112,7 @@ const AdminMobileHeader = ({
                 </div>
 
                 {actions.length > 0 && (
-                    <div className="mt-8 flex gap-3 relative z-10">
+                    <div className="mt-8 flex flex-wrap gap-3 relative z-10">
                         {actions.map((action, index) => {
                             const isSuccess = action.color === 'success';
                             const isDanger = action.color === 'danger' || action.color === 'destructive';

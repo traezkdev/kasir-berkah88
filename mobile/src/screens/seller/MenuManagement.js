@@ -305,6 +305,30 @@ const MenuManagement = ({ navigation }) => {
         }
     }, [confirm, fetchData]);
 
+    const handleEmptyAllStock = useCallback(async () => {
+        const accepted = await confirm({
+            title: 'Kosongkan Semua Stok',
+            message: 'Apakah Anda yakin ingin mengosongkan semua stok menu menjadi 0? Tindakan ini tidak dapat dibatalkan!',
+            confirmText: 'Ya, Kosongkan',
+            type: 'danger'
+        });
+
+        if (accepted) {
+            try {
+                const response = await apiService.put('/api/menu-items/reset-stock');
+                if (response.status === 200 && response.data.message === 'success') {
+                    showToast(`Stok ${response.data.data.affectedRows} menu berhasil dikosongkan`, 'success');
+                    fetchData();
+                } else {
+                    showToast('Gagal mengosongkan stok', 'error');
+                }
+            } catch (error) {
+                console.error('Error emptying stock:', error);
+                showToast('Gagal mengosongkan stok menu', 'error');
+            }
+        }
+    }, [confirm, fetchData, showToast]);
+
     const handleToggleVisibility = useCallback(async (item) => {
         try {
             const newStatus = !item.is_hidden;
@@ -358,23 +382,26 @@ const MenuManagement = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Global Settings Row */}
-            <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingBottom: 15 }}>
+            {/* Global Settings Row - compact 1 baris */}
+            <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingBottom: 12, flexDirection: 'row', gap: 8 }}>
+                {/* Toggle Abaikan Stok */}
                 <View style={[styles.featuredToggle, {
+                    flex: 1,
                     marginBottom: 0,
-                    padding: 12,
-                    borderRadius: 20,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: 16,
                     backgroundColor: ignoreStock ? '#FFF1F2' : '#F0FDF4',
                     borderColor: ignoreStock ? '#FFE4E6' : '#DCFCE7'
                 }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <View style={{ padding: 10, backgroundColor: ignoreStock ? '#FECDD3' : '#BBF7D0', borderRadius: 14 }}>
-                            <PackageX size={20} color={ignoreStock ? "#BE123C" : "#15803D"} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                        <View style={{ padding: 6, backgroundColor: ignoreStock ? '#FECDD3' : '#BBF7D0', borderRadius: 10 }}>
+                            <PackageX size={14} color={ignoreStock ? "#BE123C" : "#15803D"} />
                         </View>
-                        <View>
-                            <Text style={[styles.toggleTitle, { fontSize: 13, color: ignoreStock ? '#9F1239' : '#166534' }]}>Abaikan Stok Global</Text>
-                            <Text style={[styles.toggleSubtitle, { fontSize: 10, color: ignoreStock ? '#BE123C' : '#15803D' }]}>
-                                {ignoreStock ? 'Mode Bebas Aktif' : 'Pengecekan Aktif'}
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 11, fontWeight: '900', color: ignoreStock ? '#9F1239' : '#166534' }}>Abaikan Stok</Text>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold', color: ignoreStock ? '#BE123C' : '#15803D', opacity: 0.8 }}>
+                                {ignoreStock ? 'Mode Bebas' : 'Cek Stok Aktif'}
                             </Text>
                         </View>
                     </View>
@@ -383,9 +410,33 @@ const MenuManagement = ({ navigation }) => {
                         onValueChange={toggleIgnoreStock}
                         trackColor={{ false: '#E2E8F0', true: ignoreStock ? '#FECDD3' : '#BBF7D0' }}
                         thumbColor={ignoreStock ? '#E11D48' : '#16A34A'}
+                        style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                     />
                 </View>
+
+                {/* Tombol Kosongkan Semua Stok - kompak horizontal */}
+                <TouchableOpacity
+                    onPress={handleEmptyAllStock}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 7,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 16,
+                        backgroundColor: '#FFF1F2',
+                        borderWidth: 1,
+                        borderColor: '#FFE4E6',
+                    }}
+                    activeOpacity={0.7}
+                >
+                    <View style={{ padding: 6, backgroundColor: '#FECDD3', borderRadius: 10 }}>
+                        <Trash2 size={14} color="#BE123C" />
+                    </View>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#9F1239', textTransform: 'uppercase', letterSpacing: 0.2 }}>{'Kosongkan\nStok'}</Text>
+                </TouchableOpacity>
             </View>
+
 
             {/* Search */}
             <View style={styles.searchSection}>
