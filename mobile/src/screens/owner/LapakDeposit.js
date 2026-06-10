@@ -521,29 +521,8 @@ const OwnerLapakDeposit = ({ navigation }) => {
                 </View>
             </View>
 
-            {/* List & Search */}
+            {/* List */}
             <View style={styles.contentWrapper}>
-                <View style={styles.searchAndFilter}>
-                    <View style={styles.searchBox}>
-                        <Search size={18} color="#94A3B8" />
-                        <TextInput
-                            placeholder="Cari transaksi..."
-                            style={styles.searchInput}
-                            value={searchInput}
-                            onChangeText={setSearchInput}
-                            placeholderTextColor="#94A3B8"
-                        />
-                    </View>
-                    <TouchableOpacity
-                        style={[styles.filterBtn, (filters.startDate || filters.endDate || filters.type !== 'all') && styles.filterBtnActive]}
-                        onPress={() => {
-                            setLocalFilters(filters);
-                            setShowFilterModal(true);
-                        }}
-                    >
-                        <Filter size={20} color={(filters.startDate || filters.endDate || filters.type !== 'all') ? "#FFFFFF" : "#64748B"} />
-                    </TouchableOpacity>
-                </View>
 
                 {loading && !lapakAccount ? (
                     <View style={styles.centerPadding}>
@@ -553,6 +532,29 @@ const OwnerLapakDeposit = ({ navigation }) => {
                 ) : (
                     <FlatList
                         data={lapakAccount?.transactions || []}
+                        ListHeaderComponent={(
+                            <View style={styles.searchAndFilter}>
+                                <View style={styles.searchBox}>
+                                    <Search size={18} color="#94A3B8" />
+                                    <TextInput
+                                        placeholder="Cari transaksi..."
+                                        style={styles.searchInput}
+                                        value={searchInput}
+                                        onChangeText={setSearchInput}
+                                        placeholderTextColor="#94A3B8"
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.filterBtn, (filters.startDate || filters.endDate || filters.type !== 'all') && styles.filterBtnActive]}
+                                    onPress={() => {
+                                        setLocalFilters(filters);
+                                        setShowFilterModal(true);
+                                    }}
+                                >
+                                    <Filter size={20} color={(filters.startDate || filters.endDate || filters.type !== 'all') ? "#FFFFFF" : "#64748B"} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                         renderItem={({ item }) => (
                             <TransactionCard
                                 item={item}
