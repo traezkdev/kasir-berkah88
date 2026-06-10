@@ -26,7 +26,8 @@ import {
     Wallet,
     TrendingUp,
     Briefcase,
-    ShieldCheck
+    ShieldCheck,
+    Users
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -71,6 +72,7 @@ const OwnerAllFeatures = ({ navigation }) => {
                 { id: 'CategoryManagement', label: "Menu & Kategori", icon: Utensils, color: "#EC4899" },
                 { id: 'PromoManagement', label: "Promo & Diskon", icon: Ticket, color: "#F97316" },
                 { id: 'ManageInformation', label: "Pengumuman", icon: Bell, color: "#06B6D4" },
+                { id: 'Credits', label: "Kasbon Karyawan", icon: Users, color: "#EF4444" },
             ]
         },
         {
