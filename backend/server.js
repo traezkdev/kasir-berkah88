@@ -8833,6 +8833,7 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                  AND LOWER(description) NOT LIKE 'pengeluaran:%' 
                  AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
                  AND LOWER(description) NOT LIKE 'penyesuaian transaksi%'
+                 AND LOWER(description) NOT LIKE 'koreksi metode pembayaran%'
                  AND LOWER(description) NOT LIKE 'modal awal%'
                  AND LOWER(description) NOT LIKE 'reset saldo%'
                  AND LOWER(description) NOT LIKE 'saldo awal%'
@@ -8912,6 +8913,7 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
              AND LOWER(description) NOT LIKE 'pengeluaran:%' 
              AND LOWER(description) NOT LIKE 'pembatalan transaksi%'
              AND LOWER(description) NOT LIKE 'penyesuaian transaksi%'
+             AND LOWER(description) NOT LIKE 'koreksi metode pembayaran%'
              AND LOWER(description) NOT LIKE 'modal awal%'
              AND LOWER(description) NOT LIKE 'reset saldo%'
              AND LOWER(description) NOT LIKE 'saldo awal%'
@@ -8940,6 +8942,7 @@ app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admi
                 openingBalance,
                 periodRevenue: totalPeriodRev,
                 periodExpenses: parseFloat(periodExp[0].total || 0),
+                periodAdjustment,
                 expectedClosingBalance,
                 physicalCashAtEnd,
                 currentLapakBalance: lapakAtEnd,
