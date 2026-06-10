@@ -325,6 +325,7 @@ const AuditorScreen = ({ navigation }) => {
                             <tr><td>Modal Awal (Baseline Audit)</td><td class="text-right bold">${formatCurrency(m.periodOpeningBalance)}</td></tr>
                             <tr><td>Total Pemasukan (Revenue)</td><td class="text-right bold">${formatCurrency(m.totalRevenue)}</td></tr>
                             <tr><td>Total Pengeluaran (Expense)</td><td class="text-right bold">${formatCurrency(m.totalExpenses)}</td></tr>
+                            ${m.periodAdjustment !== 0 ? `<tr><td>Penyesuaian Saldo</td><td class="text-right bold">${m.periodAdjustment > 0 ? '+' : ''}${formatCurrency(m.periodAdjustment)}</td></tr>` : ''}
                             <tr><td>Laba Bersih Operasional</td><td class="text-right bold">${formatCurrency(m.netProfit)}</td></tr>
                             <tr><td>Nilai Persediaan Aset/Stok</td><td class="text-right bold">${formatCurrency(m.stockValue)}</td></tr>
                             <tr><td>Estimasi Kas dari Sistem</td><td class="text-right bold">${formatCurrency(m.expectedCash)}</td></tr>
@@ -396,6 +397,9 @@ const AuditorScreen = ({ navigation }) => {
             csv += "KETERANGAN;NILAI\n";
             csv += `Total Pendapatan;${m.totalRevenue}\n`;
             csv += `Total Pengeluaran;${m.totalExpenses}\n`;
+            if (m.periodAdjustment !== 0) {
+                csv += `Penyesuaian Saldo;${m.periodAdjustment}\n`;
+            }
             csv += `Laba Bersih;${m.netProfit}\n`;
             csv += `Selisih Kas;${m.cashDifference}\n`;
             csv += `Saldo Bank;${m.ownerBalance}\n`;
@@ -685,6 +689,14 @@ const AuditorScreen = ({ navigation }) => {
                                 <Text style={styles.flowLabelSmall}>- Pengeluaran</Text>
                                 <Text style={[styles.flowValueSmall, { color: '#EF4444' }]}>-{formatCurrency(metrics.totalExpenses)}</Text>
                             </View>
+                            {metrics.periodAdjustment !== 0 && (
+                                <View style={styles.flowItemCompact}>
+                                    <Text style={styles.flowLabelSmall}>± Penyesuaian</Text>
+                                    <Text style={[styles.flowValueSmall, { color: metrics.periodAdjustment > 0 ? '#10B981' : '#EF4444' }]}>
+                                        {metrics.periodAdjustment > 0 ? '+' : ''}{formatCurrency(metrics.periodAdjustment)}
+                                    </Text>
+                                </View>
+                            )}
                             <View style={styles.flowDividerSmall} />
                             <View style={styles.flowItemCompact}>
                                 <Text style={styles.flowLabelBoldSmall}>Estimasi</Text>
