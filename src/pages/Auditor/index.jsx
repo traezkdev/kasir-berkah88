@@ -176,6 +176,7 @@ export default function AuditorPage() {
         const physicalCash = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (parseFloat(raw.ownerBalance) + parseFloat(raw.lapakBalance));
         const finalOwnerBalance = precision.currentOwnerBalance !== undefined ? precision.currentOwnerBalance : raw.ownerBalance;
         const finalLapakBalance = precision.currentLapakBalance !== undefined ? precision.currentLapakBalance : raw.lapakBalance;
+        const periodAdjustment = precision.periodAdjustment || 0;
 
         const cashDifference = physicalCash - expectedCash;
 
@@ -248,7 +249,8 @@ export default function AuditorPage() {
                 currentEquity,
                 equityDifference,
                 ownerBalance: finalOwnerBalance,
-                lapakBalance: finalLapakBalance
+                lapakBalance: finalLapakBalance,
+                periodAdjustment
             },
             anomalies
         });
@@ -762,6 +764,14 @@ export default function AuditorPage() {
                                         <span className="text-xs text-text-secondary">− Pengeluaran keluar</span>
                                         <span className="text-xs font-black font-mono text-rose-500">-{formatCurrency(data.metrics.totalExpenses)}</span>
                                     </div>
+                                    {data.metrics.periodAdjustment !== 0 && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-text-secondary">± Penyesuaian Saldo</span>
+                                            <span className={`text-xs font-black font-mono ${data.metrics.periodAdjustment > 0 ? 'text-indigo-500' : 'text-rose-500'}`}>
+                                                {data.metrics.periodAdjustment > 0 ? '+' : ''}{formatCurrency(data.metrics.periodAdjustment)}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex items-center justify-between pt-2 border-t border-border">
                                         <span className="text-xs font-black text-text-primary">= Seharusnya Ada</span>
                                         <span className="text-xs font-black font-mono text-blue-600">{formatCurrency(data.metrics.expectedCash)}</span>
