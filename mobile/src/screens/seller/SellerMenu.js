@@ -35,7 +35,8 @@ import {
     Star,
     Database,
     Trash2,
-    ShieldCheck
+    ShieldCheck,
+    Users
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -69,6 +70,7 @@ const MENU_ITEMS = [
     { label: 'Backup DB', icon: Database, color: '#138FEA', bgColor: '#E0F2FE', target: 'DatabaseManagement' },
     { label: 'Profil Saya', icon: UserCircle, color: '#475569', bgColor: '#F1F5F9', target: 'ProfileScreen' },
     { label: 'Tentang App', icon: Code, color: '#64748B', bgColor: '#F8FAFC', target: 'DeveloperCreditsScreen' },
+    { label: 'Kasbon', icon: Users, color: '#EF4444', bgColor: '#FEF2F2', target: 'Credits' },
 ];
 
 import { useAuth } from '../../context/AuthContext';

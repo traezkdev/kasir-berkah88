@@ -63,6 +63,7 @@ import OwnerDeveloperCreditsScreen from '../screens/owner/DeveloperCreditsScreen
 import OwnerExpenseManagement from '../screens/owner/ExpenseManagement';
 import OwnerLapakDeposit from '../screens/owner/LapakDeposit';
 import OrderTrash from '../screens/seller/OrderTrash';
+import Credits from '../screens/seller/Credits';
 
 // Owner Screens
 import OwnerBusinessReports from '../screens/owner/BusinessReports';
@@ -305,6 +306,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="PopupManagement" component={PopupManagement} />
         <Stack.Screen name="ReviewManagement" component={ReviewManagement} />
         <Stack.Screen name="Auditor" component={SellerAuditor} />
+        <Stack.Screen name="Credits" component={Credits} />
     </Stack.Navigator>
 );
 
@@ -472,6 +474,7 @@ const OwnerRootStack = () => (
         <Stack.Screen name="OwnerBusinessReports" component={OwnerBusinessReports} />
         <Stack.Screen name="OwnerFinancialReport" component={OwnerFinancialReport} />
         <Stack.Screen name="OwnerProfileScreen" component={OwnerProfileScreen} />
+        <Stack.Screen name="Credits" component={Credits} />
     </Stack.Navigator>
 );
 
