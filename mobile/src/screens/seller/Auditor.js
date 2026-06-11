@@ -143,7 +143,8 @@ const AuditorScreen = ({ navigation }) => {
             .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
 
         const totalExpenses = precision.periodExpenses !== undefined ? precision.periodExpenses : raw.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-        const expectedCash = precision.expectedClosingBalance || (periodOpeningBalance + totalRevenue - totalExpenses);
+        const periodAdjustment = precision.periodAdjustment || 0;
+        const expectedCash = precision.expectedClosingBalance || (periodOpeningBalance + totalRevenue - totalExpenses + periodAdjustment);
 
         const physicalCash = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (parseFloat(raw.ownerBalance) + parseFloat(raw.lapakBalance));
         const finalOwnerBalance = precision.currentOwnerBalance !== undefined ? precision.currentOwnerBalance : raw.ownerBalance;
@@ -196,6 +197,7 @@ const AuditorScreen = ({ navigation }) => {
                 periodOpeningBalance,
                 totalRevenue,
                 totalExpenses,
+                periodAdjustment,
                 expectedCash,
                 physicalCash,
                 cashDifference,
@@ -685,6 +687,14 @@ const AuditorScreen = ({ navigation }) => {
                                 <Text style={styles.flowLabelSmall}>- Pengeluaran</Text>
                                 <Text style={[styles.flowValueSmall, { color: '#EF4444' }]}>-{formatCurrency(metrics.totalExpenses)}</Text>
                             </View>
+                            {metrics.periodAdjustment !== 0 && (
+                                <View style={styles.flowItemCompact}>
+                                    <Text style={styles.flowLabelSmall}>± Penyesuaian</Text>
+                                    <Text style={[styles.flowValueSmall, { color: metrics.periodAdjustment > 0 ? '#10B981' : '#EF4444' }]}>
+                                        {metrics.periodAdjustment > 0 ? '+' : ''}{formatCurrency(metrics.periodAdjustment)}
+                                    </Text>
+                                </View>
+                            )}
                             <View style={styles.flowDividerSmall} />
                             <View style={styles.flowItemCompact}>
                                 <Text style={styles.flowLabelBoldSmall}>Estimasi</Text>
