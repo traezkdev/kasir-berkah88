@@ -130,7 +130,7 @@ const LaporanHarian = ({ navigation }) => {
             const d = new Date(t.timestamp || t.created_at || '');
             if (!isNaN(d.getTime())) hours[d.getHours()].count += 1;
         });
-        return hours;
+        return hours.filter(h => h.count > 0);
     }, [transactions]);
 
     // Menu sold data
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
 
     // Hourly Chart
     chartContainer: { paddingHorizontal: 16, paddingBottom: 16 },
-    chartInner: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingTop: 16, minHeight: 160 },
+    chartInner: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingTop: 16, paddingRight: 32, minHeight: 160 },
     barGroup: { alignItems: 'center', width: 32 },
     bar: { width: 18, backgroundColor: '#3b82f6', borderRadius: 4, borderTopLeftRadius: 6, borderTopRightRadius: 6, marginBottom: 4 },
     barCount: { fontSize: 10, color: '#475569', fontWeight: '600', marginBottom: 2 },
