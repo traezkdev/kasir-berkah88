@@ -46,6 +46,7 @@ import ExpenseManagement from '../screens/seller/ExpenseManagement';
 import LapakDeposit from '../screens/seller/LapakDeposit';
 import CashReconciliation from '../screens/seller/CashReconciliation';
 import DailyReport from '../screens/seller/DailyReport';
+import SellerLaporanHarian from '../screens/seller/LaporanHarian';
 import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 import TransactionTrash from '../screens/seller/TransactionTrash';
 import BusinessReports from '../screens/seller/BusinessReports';
@@ -69,6 +70,7 @@ import Credits from '../screens/seller/Credits';
 import OwnerBusinessReports from '../screens/owner/BusinessReports';
 import OwnerFinancialReport from '../screens/owner/FinancialReport';
 import OwnerDailyReport from '../screens/owner/DailyReport';
+import OwnerLaporanHarian from '../screens/owner/LaporanHarian';
 import OwnerCashReconciliation from '../screens/owner/CashReconciliation';
 import OwnerCategoryManagement from '../screens/owner/CategoryManagement';
 import OwnerPromoManagement from '../screens/owner/PromoManagement';
@@ -299,6 +301,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="LapakDeposit" component={LapakDeposit} />
         <Stack.Screen name="CashReconciliation" component={CashReconciliation} />
         <Stack.Screen name="DailyReport" component={DailyReport} />
+        <Stack.Screen name="LaporanHarian" component={SellerLaporanHarian} />
         <Stack.Screen name="ManageInformation" component={ManageInformation} />
         <Stack.Screen name="FinancialReport" component={FinancialReport} />
         <Stack.Screen name="HppManagement" component={HppManagement} />
@@ -413,6 +416,7 @@ const OwnerDashboardStack = () => (
         <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
         <Stack.Screen name="AllFeatures" component={OwnerAllFeatures} />
         <Stack.Screen name="DailyReport" component={OwnerDailyReport} />
+        <Stack.Screen name="LaporanHarian" component={OwnerLaporanHarian} />
         <Stack.Screen name="ExpenseManagement" component={OwnerExpenseManagement} />
         <Stack.Screen name="LapakDeposit" component={OwnerLapakDeposit} />
         <Stack.Screen name="CashReconciliation" component={OwnerCashReconciliation} />
@@ -425,6 +429,7 @@ const OwnerDashboardStack = () => (
 const OwnerBusinessStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="OwnerBusinessReports" component={OwnerBusinessReports} />
+        <Stack.Screen name="LaporanHarian" component={OwnerLaporanHarian} />
         <Stack.Screen name="CategoryManagement" component={OwnerCategoryManagement} />
         <Stack.Screen name="PromoManagement" component={OwnerPromoManagement} />
         <Stack.Screen name="ManageInformation" component={OwnerManageInformation} />

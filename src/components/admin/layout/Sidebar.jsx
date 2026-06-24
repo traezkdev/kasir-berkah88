@@ -221,6 +221,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
               >
                 Analisis Data
               </MenuItem>
+              <MenuItem
+                to="/laporan-harian"
+                icon={FaChartLine}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Laporan Harian
+              </MenuItem>
 
               {/* Grup Sistem - Simple */}
               {!isCollapsed && <div className={groupTitleClasses}>Sistem</div>}
@@ -483,6 +495,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 activeLinkClasses={activeLinkClasses}
               >
                 Analisis Data
+              </MenuItem>
+              <MenuItem
+                to="/laporan-harian"
+                icon={FaChartLine}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Laporan Harian
               </MenuItem>
               <MenuItem
                 to="/all-logs"

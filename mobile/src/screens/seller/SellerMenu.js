@@ -61,7 +61,7 @@ const MENU_ITEMS = [
     { label: 'Laporan Keuangan', icon: Briefcase, color: '#059669', bgColor: '#D1FAE5', target: 'FinancialReport' },
     { label: 'Laporan HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppReport' },
     { label: 'Manajemen HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppManagement' },
-    { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
+    { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'LaporanHarian' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
     { label: 'Audit', icon: ShieldCheck, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Auditor' },
     { label: 'Review', icon: Star, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ReviewManagement' },
