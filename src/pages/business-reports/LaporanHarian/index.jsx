@@ -40,6 +40,8 @@ const LaporanHarian = () => {
   const [transactions, setTransactions] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [totalExpense, setTotalExpense] = useState(0);
+  const [ownerDeposit, setOwnerDeposit] = useState(0);
+  const [lapakDeposit, setLapakDeposit] = useState(0);
   const [currentExpensePage, setCurrentExpensePage] = useState(1);
   const expensesPerPage = 10;
   const [currentMenuPage, setCurrentMenuPage] = useState(1);
@@ -61,7 +63,13 @@ const LaporanHarian = () => {
       }
 
       // Fetch all transactions for detailed stats
-      const allTxRes = await authFetch(`${apiUrl}/api/transactions/all?startDate=${selectedDate}&endDate=${selectedDate}`);
+      const [allTxRes, expensesRes, ownerRes, lapakRes] = await Promise.all([
+        authFetch(`${apiUrl}/api/transactions/all?startDate=${selectedDate}&endDate=${selectedDate}`),
+        authFetch(`${apiUrl}/api/expenses/all?startDate=${selectedDate}&endDate=${selectedDate}&filterClosed=false`),
+        authFetch(`${apiUrl}/api/accounts/owner_deposit`),
+        authFetch(`${apiUrl}/api/accounts/lapak_deposit`)
+      ]);
+
       const allTxData = await allTxRes.json();
       if (allTxData.message === 'success') {
         setTransactions(allTxData.data);
@@ -71,7 +79,6 @@ const LaporanHarian = () => {
       }
 
       // Fetch all expenses for the date
-      const expensesRes = await authFetch(`${apiUrl}/api/expenses/all?startDate=${selectedDate}&endDate=${selectedDate}&filterClosed=false`);
       const expensesData = await expensesRes.json();
       if (expensesData.message === 'success') {
         const total = expensesData.data.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
@@ -80,6 +87,16 @@ const LaporanHarian = () => {
         setCurrentExpensePage(1); // Reset page on new date
       } else {
         throw new Error(expensesData.error || 'Gagal memuat data pengeluaran.');
+      }
+
+      const ownerData = await ownerRes.json();
+      if (ownerData.message === 'success') {
+        setOwnerDeposit(ownerData.data?.account?.balance || 0);
+      }
+
+      const lapakData = await lapakRes.json();
+      if (lapakData.message === 'success') {
+        setLapakDeposit(lapakData.data?.account?.balance || 0);
       }
     } catch (err) {
       setError(err.message);
@@ -173,6 +190,8 @@ const LaporanHarian = () => {
       ["Total Tunai", summaryData.total_tunai],
       ["Total Transfer/QRIS", summaryData.total_transfer],
       ["Total Aplikasi", summaryData.total_gojek],
+      ["Sisa Deposit Lapak", lapakDeposit],
+      ["Sisa Deposit Transfer", ownerDeposit],
     ];
     const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
     XLSX.utils.book_append_sheet(workbook, wsSummary, "Ringkasan");
@@ -222,7 +241,9 @@ const LaporanHarian = () => {
         ["Total Pengeluaran", formatCurrency(totalExpense)],
         ["Total Tunai", formatCurrency(summaryData.total_tunai)],
         ["Total Transfer/QRIS", formatCurrency(summaryData.total_transfer)],
-        ["Total Aplikasi (Gojek dll)", formatCurrency(summaryData.total_gojek)]
+        ["Total Aplikasi (Gojek dll)", formatCurrency(summaryData.total_gojek)],
+        ["Sisa Deposit Lapak", formatCurrency(lapakDeposit)],
+        ["Sisa Deposit Transfer", formatCurrency(ownerDeposit)],
       ],
       theme: 'grid',
       headStyles: { fillColor: [41, 128, 185] }
@@ -328,7 +349,7 @@ const LaporanHarian = () => {
         <>
           {/* Summary Cards */}
           {summaryData && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-5 text-white shadow-md relative overflow-hidden group">
                 <div className="relative z-10">
                   <p className="text-emerald-100 text-sm font-medium mb-1">Total Pendapatan</p>
@@ -371,6 +392,22 @@ const LaporanHarian = () => {
                   <Icon name="Smartphone" size={16} className="text-orange-500" />
                 </div>
                 <h3 className="text-lg font-bold text-text-primary">{formatCurrency(summaryData.total_gojek)}</h3>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-text-secondary text-xs font-medium">Sisa Deposit Lapak</p>
+                  <Icon name="Wallet" size={16} className="text-blue-600" />
+                </div>
+                <h3 className="text-lg font-bold text-text-primary">{formatCurrency(lapakDeposit)}</h3>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-text-secondary text-xs font-medium">Sisa Deposit Transfer</p>
+                  <Icon name="Building" size={16} className="text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-bold text-text-primary">{formatCurrency(ownerDeposit)}</h3>
               </div>
             </div>
           )}

@@ -26,6 +26,7 @@ import {
     BarChart2,
     FileText,
     FileSpreadsheet,
+    Building,
     ChevronLeft as ChevronLeftIcon,
     ChevronRight as ChevronRightIcon,
 } from 'lucide-react-native';
@@ -79,6 +80,8 @@ const LaporanHarian = ({ navigation }) => {
     const [transactions, setTransactions] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [totalExpense, setTotalExpense] = useState(0);
+    const [lapakDeposit, setLapakDeposit] = useState(0);
+    const [ownerDeposit, setOwnerDeposit] = useState(0);
 
     // Pagination
     const [menuPage, setMenuPage] = useState(1);
@@ -87,10 +90,12 @@ const LaporanHarian = ({ navigation }) => {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [summaryRes, allTxRes, expenseRes] = await Promise.all([
+            const [summaryRes, allTxRes, expenseRes, lapakRes, ownerRes] = await Promise.all([
                 apiService.get(`/api/transactions/daily-recap?date=${selectedDate}`),
                 apiService.get(`/api/transactions/all?startDate=${selectedDate}&endDate=${selectedDate}&filterClosed=false`),
                 apiService.get(`/api/expenses/all?startDate=${selectedDate}&endDate=${selectedDate}&filterClosed=false`),
+                apiService.get('/api/accounts/lapak_deposit'),
+                apiService.get('/api/accounts/owner_deposit'),
             ]);
 
             if (summaryRes.data.message === 'success') {
@@ -106,6 +111,12 @@ const LaporanHarian = ({ navigation }) => {
                 setExpenses(expData);
                 setTotalExpense(total);
                 setExpensePage(1);
+            }
+            if (lapakRes.data.message === 'success') {
+                setLapakDeposit(lapakRes.data.data?.account?.balance || 0);
+            }
+            if (ownerRes.data.message === 'success') {
+                setOwnerDeposit(ownerRes.data.data?.account?.balance || 0);
             }
         } catch (err) {
             console.error('LaporanHarian fetch error:', err);
@@ -202,6 +213,8 @@ const LaporanHarian = ({ navigation }) => {
                     <div class="card"><div class="card-label">Transfer / QRIS</div><div class="card-value">${formatCurrency(summaryData.total_transfer)}</div></div>
                     <div class="card"><div class="card-label">Total Transaksi</div><div class="card-value">${transactions.length} Trx</div></div>
                     <div class="card"><div class="card-label">Aplikasi (Gojek dll)</div><div class="card-value">${formatCurrency(summaryData.total_gojek)}</div></div>
+                    <div class="card"><div class="card-label">Sisa Deposit Lapak</div><div class="card-value" style="color:#2563eb">${formatCurrency(lapakDeposit)}</div></div>
+                    <div class="card"><div class="card-label">Sisa Deposit Transfer</div><div class="card-value" style="color:#4f46e5">${formatCurrency(ownerDeposit)}</div></div>
                 </div>
 
                 <h2>Menu Terjual</h2>
@@ -325,6 +338,18 @@ const LaporanHarian = ({ navigation }) => {
                                 value={formatCurrency(summaryData.total_gojek)}
                                 icon={Smartphone}
                                 color="#ea580c"
+                            />
+                            <SummaryCard
+                                title="Sisa Deposit Lapak"
+                                value={formatCurrency(lapakDeposit)}
+                                icon={Wallet}
+                                color="#2563eb"
+                            />
+                            <SummaryCard
+                                title="Sisa Deposit Transfer"
+                                value={formatCurrency(ownerDeposit)}
+                                icon={Building}
+                                color="#4f46e5"
                             />
                             <SummaryCard
                                 title="Total Transaksi"
