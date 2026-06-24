@@ -168,6 +168,18 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             Laporan Lengkap
           </MenuItem>
           <MenuItem
+            to="/laporan-harian"
+            icon={FaChartBar}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Laporan Harian
+          </MenuItem>
+          <MenuItem
             to="/auditor"
             icon={FaClipboardList}
             onClick={() => window.innerWidth < 1024 && toggleSidebar()}

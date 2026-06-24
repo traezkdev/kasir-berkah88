@@ -58,7 +58,7 @@ const OwnerAllFeatures = ({ navigation }) => {
             items: [
                 { id: 'BusinessReports', label: "Laporan Bisnis", icon: BarChart3, color: "#3B82F6" },
                 { id: 'FinancialReport', label: "Laporan Keuangan", icon: DollarSign, color: "#10B981" },
-                { id: 'DailyReport', label: "Laporan Harian", icon: FileText, color: "#349BE5" },
+                { id: 'LaporanHarian', label: "Laporan Harian", icon: FileText, color: "#349BE5" },
                 { id: 'CashReconciliation', label: "Rekonsiliasi Kas", icon: CreditCard, color: "#6366F1" },
                 { id: 'Auditor', label: "Sistem Audit", icon: ShieldCheck, color: "#F59E0B" },
             ]

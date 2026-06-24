@@ -57,6 +57,7 @@ import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
 import DashboardV2 from './pages/dashboard-v2';
 import AllLogs from './pages/all-logs';
+import LaporanHarian from './pages/business-reports/LaporanHarian/index.jsx';
 import CustomerLayout from './pages/customer/components/CustomerLayout';
 import CustomerDashboard from './pages/customer/Dashboard';
 import CustomerMenu from './pages/customer/Menu';
@@ -283,6 +284,7 @@ const AppRoutes = () => {
         }
       >
         <Route path="/all-logs" element={<AllLogs />} />
+        <Route path="/laporan-harian" element={<LaporanHarian />} />
       </Route>
 
       {/* Customer Routes */}
