@@ -1353,20 +1353,6 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
         const dataSql = `
             SELECT 
                 mi.*,
-                COALESCE(
-                    (
-                        SELECT JSON_ARRAYAGG(
-                            JSON_OBJECT(
-                                'id', mio.id, 
-                                'name', mio.name, 
-                                'price_adjustment', mio.price_adjustment
-                            )
-                        )
-                        FROM menu_item_options mio 
-                        WHERE mio.menu_item_id = mi.id
-                    ),
-                    '[]'
-                ) AS options,
                 (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
                 (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
@@ -1377,10 +1363,26 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
 
-        // Parse the options string for each item
+        const itemIds = rows.map(r => r.id);
+        const optionsMap = {};
+        if (itemIds.length > 0) {
+            const [optRows] = await db.query(
+                'SELECT id, menu_item_id, name, price_adjustment FROM menu_item_options WHERE menu_item_id IN (?)',
+                [itemIds]
+            );
+            optRows.forEach(opt => {
+                if (!optionsMap[opt.menu_item_id]) optionsMap[opt.menu_item_id] = [];
+                optionsMap[opt.menu_item_id].push({
+                    id: opt.id,
+                    name: opt.name,
+                    price_adjustment: opt.price_adjustment
+                });
+            });
+        }
+
         const data = rows.map(row => ({
             ...row,
-            options: JSON.parse(row.options) // COALESCE guarantees a parsable string
+            options: optionsMap[row.id] || []
         }));
 
         res.json({
@@ -1405,23 +1407,9 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
         const sql = `
             SELECT 
                 mi.*,
-                COALESCE(opt.options_json, '[]') AS options,
                 COALESCE(rev.average_rating, 0) AS average_rating,
                 COALESCE(rev.total_reviews, 0) AS total_reviews
             FROM menu_items mi
-            LEFT JOIN (
-                SELECT 
-                    menu_item_id, 
-                    JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'id', id, 
-                            'name', name, 
-                            'price_adjustment', price_adjustment
-                        )
-                    ) AS options_json
-                FROM menu_item_options
-                GROUP BY menu_item_id
-            ) opt ON mi.id = opt.menu_item_id
             LEFT JOIN (
                 SELECT 
                     menu_item_id, 
@@ -1434,10 +1422,26 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
         `;
         const [rows] = await db.query(sql);
 
-        // Parse the options string for each item
+        const itemIds = rows.map(r => r.id);
+        const optionsMap = {};
+        if (itemIds.length > 0) {
+            const [optRows] = await db.query(
+                'SELECT id, menu_item_id, name, price_adjustment FROM menu_item_options WHERE menu_item_id IN (?)',
+                [itemIds]
+            );
+            optRows.forEach(opt => {
+                if (!optionsMap[opt.menu_item_id]) optionsMap[opt.menu_item_id] = [];
+                optionsMap[opt.menu_item_id].push({
+                    id: opt.id,
+                    name: opt.name,
+                    price_adjustment: opt.price_adjustment
+                });
+            });
+        }
+
         const data = rows.map(row => ({
             ...row,
-            options: JSON.parse(row.options), // No need for ternary, COALESCE guarantees a string
+            options: optionsMap[row.id] || [],
             hpp_details: row.hpp_details ? (typeof row.hpp_details === 'string' ? JSON.parse(row.hpp_details) : row.hpp_details) : []
         }));
 
@@ -1456,20 +1460,6 @@ app.get("/api/public/menu-items", async (req, res) => {
         const sql = `
             SELECT 
                 mi.*,
-                COALESCE(
-                    (
-                        SELECT JSON_ARRAYAGG(
-                            JSON_OBJECT(
-                                'id', mio.id, 
-                                'name', mio.name, 
-                                'price_adjustment', mio.price_adjustment
-                            )
-                        )
-                        FROM menu_item_options mio 
-                        WHERE mio.menu_item_id = mi.id
-                    ),
-                    '[]'
-                ) AS options,
                 (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
                 (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
@@ -1478,10 +1468,26 @@ app.get("/api/public/menu-items", async (req, res) => {
         `;
         const [rows] = await db.query(sql);
 
-        // Parse the options string for each item
+        const itemIds = rows.map(r => r.id);
+        const optionsMap = {};
+        if (itemIds.length > 0) {
+            const [optRows] = await db.query(
+                'SELECT id, menu_item_id, name, price_adjustment FROM menu_item_options WHERE menu_item_id IN (?)',
+                [itemIds]
+            );
+            optRows.forEach(opt => {
+                if (!optionsMap[opt.menu_item_id]) optionsMap[opt.menu_item_id] = [];
+                optionsMap[opt.menu_item_id].push({
+                    id: opt.id,
+                    name: opt.name,
+                    price_adjustment: opt.price_adjustment
+                });
+            });
+        }
+
         const data = rows.map(row => ({
             ...row,
-            options: JSON.parse(row.options)
+            options: optionsMap[row.id] || []
         }));
 
         res.json({
@@ -2533,21 +2539,23 @@ app.delete("/api/expense-categories/:id", authenticateToken, authorizeRoles('adm
 // --- Settings Endpoints ---
 
 // Get PPN setting
-app.get('/api/settings/ppn', authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res) => {
+app.get('/api/settings/ppn', authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner', 'penjual', 'pelanggan'), async (req, res) => {
     try {
-        const sql = "SELECT value FROM settings WHERE `key` = ?";
-        const [rows] = await db.query(sql, ['ppn']);
-        if (rows.length > 0) {
-            res.json({
-                "message": "success",
-                "data": parseFloat(rows[0].value)
-            });
-        } else {
-            res.json({
-                "message": "success",
-                "data": 0.11 // Default value
-            });
-        }
+        const sql = "SELECT `key`, `value` FROM settings WHERE `key` IN ('ppn', 'ppn_enabled')";
+        const [rows] = await db.query(sql);
+        const settings = {};
+        rows.forEach(r => { settings[r.key] = r.value; });
+
+        const isEnabled = settings['ppn_enabled'] === '1' || settings['ppn_enabled'] === 'true';
+        // Jika PPN nonaktif, rate efektif yang dikembalikan adalah 0 sehingga kasir tidak otomatis kena PPN
+        const effectiveRate = isEnabled ? parseFloat(settings['ppn'] || 0) : 0;
+
+        res.json({
+            "message": "success",
+            "data": effectiveRate,
+            "rate": parseFloat(settings['ppn'] || 0),
+            "enabled": isEnabled
+        });
     } catch (err) {
         res.status(500).json({ "error": err.message });
     }
@@ -2804,28 +2812,24 @@ app.delete('/api/settings/logo', authenticateToken, authorizeRoles('admin'), asy
 });
 
 // Update PPN setting
-app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { value } = req.body;
-        if (value === undefined) {
-            return res.status(400).json({ "error": "Value is required" });
+        const { value, enabled } = req.body;
+        if (value === undefined && enabled === undefined) {
+            return res.status(400).json({ "error": "Value or enabled is required" });
         }
 
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['ppn']);
-
-        if (rows.length > 0) {
-            // Update existing setting
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [value.toString(), 'ppn']);
-        } else {
-            // Insert new setting
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['ppn', value.toString()]);
+        if (value !== undefined) {
+            const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+            await db.query(sql, ['ppn', value.toString()]);
         }
 
-        res.json({ message: "success", data: { key: 'ppn', value } });
+        if (enabled !== undefined) {
+            const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+            await db.query(sql, ['ppn_enabled', (enabled === true || enabled === '1' || enabled === 'true') ? '1' : '0']);
+        }
 
+        res.json({ message: "success", data: { key: 'ppn', value, enabled } });
     } catch (err) {
         res.status(400).json({ "error": err.message });
     }

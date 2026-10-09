@@ -23,9 +23,11 @@ pool.on('connection', (connection) => {
 const promisePool = pool.promise();
 
 const setupDatabase = async () => {
+  let connection;
   try {
-    const connection = await promisePool.getConnection();
+    connection = await promisePool.getConnection();
     console.log('Connected to MySQL database.');
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
 
     // SQL statements to create tables if they don't exist
     const createReviewsTable = `
@@ -198,10 +200,44 @@ const setupDatabase = async () => {
       );
     `;
 
+    // Ensure core parent tables exist before dependent child tables
+    await connection.query(createUsersTable);
+    console.log('users table is ready.');
+    await connection.query(createMenuItemsTable);
+    console.log('menu_items table is ready.');
+
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
     await connection.query(createBannersTable);
     console.log('banners table is ready.');
+
+    // Seed default banner if empty
+    const [bannerCheck] = await connection.query('SELECT id FROM banners LIMIT 1');
+    if (bannerCheck.length === 0) {
+      await connection.query(
+        'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, show_text, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        ['Selamat Datang di Berkah 88', 'Nikmati berbagai sajian lezat dan promo hemat setiap hari!', '', 'bg-green-600', 'Percent', '', 1, 1]
+      );
+      console.log('Default banner created.');
+    }
+
+    // Seed default sample menu items if empty
+    const [menuCheck] = await connection.query('SELECT id FROM menu_items LIMIT 1');
+    if (menuCheck.length === 0) {
+      const defaultMenus = [
+        ['menu_ayam_geprek', 'Ayam Geprek Berkah', 15000, 50, 'Makanan', '', 10000, 0, 1, 'Ayam geprek krispi dengan sambal khas', 0],
+        ['menu_nasi_goreng', 'Nasi Goreng Spesial', 18000, 50, 'Makanan', '', 11000, 0, 1, 'Nasi goreng gurih dengan telur dan suwiran ayam', 0],
+        ['menu_es_teh', 'Es Teh Manis', 5000, 100, 'Minuman', '', 2000, 0, 0, 'Es teh manis segar pelepas dahaga', 0],
+        ['menu_kopi_susu', 'Kopi Susu Gula Aren', 12000, 50, 'Minuman', '', 6000, 0, 1, 'Espresso mantap dengan susu segar dan gula aren', 0]
+      ];
+      for (const m of defaultMenus) {
+        await connection.query(
+          'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          m
+        );
+      }
+      console.log('Default sample menu items created.');
+    }
     await connection.query(createSellerBannersTable);
     console.log('seller_banners table is ready.');
     await connection.query(createPromosTable);
@@ -559,43 +595,33 @@ const setupDatabase = async () => {
       console.error('Error migrating settings unique constraint:', err.message);
     }
 
-    const insertDefaultSettings = `
-      INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
-      ('cashier_dashboard_title', 'Dasbor Kasir'),
-      ('dashboard_running_text', 'Selamat datang di POS Berkah 88! Semangat berjualan hari ini!'),
-      ('dashboard_running_text_enabled', '1'),
-      ('dashboard_watermark_enabled', '1'),
-      ('daily_welcome_enabled', '1'),
-      ('audit_start_date', '');
-    `;
-    await connection.query(insertDefaultSettings);
+    // Ensure all essential default settings exist (defaulting to 0 where applicable)
+    const defaultSettingsToEnsure = [
+      ['cashier_dashboard_title', 'Dasbor Kasir'],
+      ['dashboard_running_text', 'Selamat datang di POS Berkah 88! Semangat berjualan hari ini!'],
+      ['dashboard_running_text_enabled', '1'],
+      ['dashboard_watermark_enabled', '1'],
+      ['daily_welcome_enabled', '1'],
+      ['audit_start_date', ''],
+      ['simple_transaction_title', 'Transaksi'],
+      ['ignore_stock_simple_transaction', '0'],
+      ['ignore_stock_sales_form', '0'],
+      ['ppn', '0.12'],
+      ['ppn_enabled', '0'],
+      ['receipt_version', '1'],
+      ['auth_ui_version', '1'],
+      ['initial_capital', '0'],
+      ['initial_capital_date', new Date().toISOString().slice(0, 19).replace('T', ' ')],
+      ['points_per_item', '0'],
+      ['point_system_enabled', '1']
+    ];
 
-    // Ensure simple_transaction_title is always 'Transaksi'
-    const ensureSimpleTransactionTitle = `
-      INSERT INTO settings (\`key\`, \`value\`) VALUES
-      ('simple_transaction_title', 'Transaksi')
-      ON DUPLICATE KEY UPDATE \`value\` = 'Transaksi';
-    `;
-    await connection.query(ensureSimpleTransactionTitle);
-
-    // Ensure ignore_stock_simple_transaction setting exists and defaults to '0' (false)
-    const ensureIgnoreStockSimpleTransactionSetting = `
-      INSERT INTO settings (\`key\`, \`value\`) VALUES
-      ('ignore_stock_simple_transaction', '0'),
-      ('ppn', '0.12'),
-      ('receipt_version', '1'),
-      ('auth_ui_version', '1')
-      ON DUPLICATE KEY UPDATE \`value\` = \`value\`;
-    `;
-    await connection.query(ensureIgnoreStockSimpleTransactionSetting);
-
-    // Ensure ignore_stock_sales_form setting exists and defaults to '0' (false)
-    const ensureIgnoreStockSalesFormSetting = `
-      INSERT INTO settings (\`key\`, \`value\`) VALUES
-      ('ignore_stock_sales_form', '0')
-      ON DUPLICATE KEY UPDATE \`value\` = \`value\`;
-    `;
-    await connection.query(ensureIgnoreStockSalesFormSetting);
+    for (const [sKey, sVal] of defaultSettingsToEnsure) {
+      await connection.query(
+        'INSERT IGNORE INTO settings (`key`, `value`) VALUES (?, ?)',
+        [sKey, sVal]
+      );
+    }
 
     await connection.query(createTransactionsTable);
 
@@ -1313,14 +1339,14 @@ const setupDatabase = async () => {
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'order_id';
     `;
-    const addOrderIdColumn = `
-      ALTER TABLE transactions
-      ADD COLUMN order_id INT NULL,
-      ADD FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
-    `;
     const [orderIdRows] = await connection.query(checkOrderIdColumn);
     if (orderIdRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addOrderIdColumn);
+      await connection.query("ALTER TABLE transactions ADD COLUMN order_id INT NULL");
+      try {
+        await connection.query("ALTER TABLE transactions ADD CONSTRAINT fk_transactions_order_id FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL");
+      } catch (fkErr) {
+        console.warn("FK fk_transactions_order_id skipped:", fkErr.message);
+      }
       console.log('Added order_id column and foreign key to transactions table.');
     }
 
@@ -1329,14 +1355,14 @@ const setupDatabase = async () => {
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'user_id';
     `;
-    const addOrderUserIdColumn = `
-      ALTER TABLE orders
-      ADD COLUMN user_id INT NULL,
-      ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-    `;
     const [orderUserIdRows] = await connection.query(checkOrderUserIdColumn);
     if (orderUserIdRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addOrderUserIdColumn);
+      await connection.query("ALTER TABLE orders ADD COLUMN user_id INT NULL");
+      try {
+        await connection.query("ALTER TABLE orders ADD CONSTRAINT fk_orders_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL");
+      } catch (fkErr) {
+        console.warn("FK fk_orders_user_id skipped:", fkErr.message);
+      }
       console.log('Added user_id column and foreign key to orders table.');
     }
 
@@ -1503,32 +1529,30 @@ const setupDatabase = async () => {
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'user_id';
     `;
-    const addUserIdColumn = `
-      ALTER TABLE transactions
-      ADD COLUMN user_id INT NULL,
-      ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-    `;
     const [userIdRows] = await connection.query(checkUserIdColumn);
     if (userIdRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addUserIdColumn);
+      await connection.query("ALTER TABLE transactions ADD COLUMN user_id INT NULL");
+      try {
+        await connection.query("ALTER TABLE transactions ADD CONSTRAINT fk_transactions_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL");
+      } catch (fkErr) {
+        console.warn('Skipping FK fk_transactions_user_id (might already exist):', fkErr.message);
+      }
       console.log('Added user_id column and foreign key to transactions table.');
     }
-
-
 
     // Check and add user_id column to expenses if it doesn't exist
     const checkExpenseUserIdColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'expenses' AND COLUMN_NAME = 'user_id';
     `;
-    const addExpenseUserIdColumn = `
-      ALTER TABLE expenses
-      ADD COLUMN user_id INT NULL,
-      ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-    `;
     const [expenseUserIdRows] = await connection.query(checkExpenseUserIdColumn);
     if (expenseUserIdRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addExpenseUserIdColumn);
+      await connection.query("ALTER TABLE expenses ADD COLUMN user_id INT NULL");
+      try {
+        await connection.query("ALTER TABLE expenses ADD CONSTRAINT fk_expenses_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL");
+      } catch (fkErr) {
+        console.warn('Skipping FK fk_expenses_user_id (might already exist):', fkErr.message);
+      }
       console.log('Added user_id column and foreign key to expenses table.');
     }
 
@@ -1536,7 +1560,11 @@ const setupDatabase = async () => {
     const [expenseAccountIdCol] = await connection.query("SHOW COLUMNS FROM expenses LIKE 'account_id'");
     if (expenseAccountIdCol.length === 0) {
       await connection.query("ALTER TABLE expenses ADD COLUMN account_id INT NULL");
-      await connection.query("ALTER TABLE expenses ADD FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL");
+      try {
+        await connection.query("ALTER TABLE expenses ADD CONSTRAINT fk_expenses_account_id FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL");
+      } catch (fkErr) {
+        console.warn('Skipping FK fk_expenses_account_id:', fkErr.message);
+      }
       console.log('Added account_id column to expenses table.');
     }
 
@@ -1544,13 +1572,15 @@ const setupDatabase = async () => {
     const [atExpenseIdCol] = await connection.query("SHOW COLUMNS FROM account_transactions LIKE 'expense_id'");
     if (atExpenseIdCol.length === 0) {
       await connection.query("ALTER TABLE account_transactions ADD COLUMN expense_id INT NULL");
-      await connection.query("ALTER TABLE account_transactions ADD FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE");
+      try {
+        await connection.query("ALTER TABLE account_transactions ADD CONSTRAINT fk_at_expense_id FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE");
+      } catch (fkErr) {
+        console.warn('Skipping FK fk_at_expense_id:', fkErr.message);
+      }
       console.log('Added expense_id column to account_transactions table.');
     }
 
-
-
-    // --- Logika Pembuatan Admin Default ---
+    // --- Logika Pembuatan Default Users (Admin, Kasir, Owner) ---
     const [adminUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['admin']);
     if (adminUser.length === 0) {
       const defaultAdminPassword = 'admin'; // Password default
@@ -1561,7 +1591,27 @@ const setupDatabase = async () => {
       );
       console.log('Default admin user "admin" created with password "admin".');
     }
-    // --- Akhir Logika Pembuatan Admin Default ---
+
+    const [kasirUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['kasir']);
+    if (kasirUser.length === 0) {
+      const hashedKasirPassword = await bcrypt.hash('kasir', 10);
+      await connection.query(
+        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+        ['kasir', hashedKasirPassword, 'kasir']
+      );
+      console.log('Default kasir user "kasir" created with password "kasir".');
+    }
+
+    const [ownerUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['owner']);
+    if (ownerUser.length === 0) {
+      const hashedOwnerPassword = await bcrypt.hash('owner', 10);
+      await connection.query(
+        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+        ['owner', hashedOwnerPassword, 'owner']
+      );
+      console.log('Default owner user "owner" created with password "owner".');
+    }
+    // --- Akhir Logika Pembuatan Default Users ---
 
     // Create app_settings table
     const createAppSettingsTable = `
@@ -1990,7 +2040,12 @@ const setupDatabase = async () => {
     `;
     const [txCustRows] = await connection.query(checkTxCustomerIdColumn);
     if (txCustRows[0]['COUNT(*)'] === 0) {
-      await connection.query("ALTER TABLE transactions ADD COLUMN customer_id INT NULL, ADD FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE SET NULL");
+      await connection.query("ALTER TABLE transactions ADD COLUMN customer_id INT NULL");
+      try {
+        await connection.query("ALTER TABLE transactions ADD CONSTRAINT fk_transactions_customer_id FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE SET NULL");
+      } catch (fkErr) {
+        console.warn('Skipping FK fk_transactions_customer_id:', fkErr.message);
+      }
       console.log('Added customer_id column to transactions table.');
     }
 
@@ -2319,13 +2374,14 @@ const setupDatabase = async () => {
     await connection.query(createHppIngredientsTable);
     console.log('hpp_ingredients table is ready.');
 
-    connection.release();
-
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1;');
   } catch (error) {
     console.error('Error setting up the database:', error);
     console.error(error.stack);
     // Exit process if database connection fails
     process.exit(1);
+  } finally {
+    if (connection) connection.release();
   }
 };
 

@@ -362,10 +362,12 @@ export default function CashierDashboard() {
                 <span className="text-text-secondary">Subtotal</span>
                 <span className="font-medium">Rp{cart.reduce((sum, i) => sum + (i.finalPrice * i.quantity), 0).toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">PPN ({ppnRate * 100}%)</span>
-                <span className="font-medium">Rp{(cart.reduce((sum, i) => sum + (i.finalPrice * i.quantity), 0) * ppnRate).toLocaleString('id-ID')}</span>
-              </div>
+              {ppnRate > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">PPN ({ppnRate * 100}%)</span>
+                  <span className="font-medium">Rp{(cart.reduce((sum, i) => sum + (i.finalPrice * i.quantity), 0) * ppnRate).toLocaleString('id-ID')}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
                 <span>Total</span>
                 <span className="text-primary">Rp{totalAmount.toLocaleString('id-ID')}</span>

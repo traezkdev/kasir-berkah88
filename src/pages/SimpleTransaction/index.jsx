@@ -671,10 +671,12 @@ export default function SimpleTransaction() { // Renamed component
                   <span>- Rp{formatNumber(totalDiscountAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-lg font-medium">
-                <span>PPN ({ppnRate * 100}%):</span>
-                <span>Rp{taxAmount.toLocaleString('id-ID')}</span>
-              </div>
+              {ppnRate > 0 && (
+                <div className="flex justify-between text-lg font-medium">
+                  <span>PPN ({ppnRate * 100}%):</span>
+                  <span>Rp{taxAmount.toLocaleString('id-ID')}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-xl font-bold border-t dark:border-gray-700 pt-2">
                 <span>Total:</span>
                 {isEditingTotal ? (

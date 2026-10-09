@@ -27,7 +27,7 @@ const OrderSummary = ({
 
 }) => {
   const { theme } = useTheme();
-  const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
+  const [ppnRate, setPpnRate] = useState(0); // Default 0 (no PPN unless enabled in settings)
   const [isEditingPpn, setIsEditingPpn] = useState(false);
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [customTotal, setCustomTotal] = useState(null);
@@ -257,30 +257,32 @@ const OrderSummary = ({
               <div className="flex-grow border-b border-dashed border-gray-200 dark:border-slate-700 mx-4"></div>
               <p className="font-bold text-gray-800 dark:text-white">Rp {subtotal.toLocaleString('id-ID')}</p>
             </div>
-            <div className="flex justify-between items-center text-sm">
-              <p className="text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">PPN ({`${(ppnRate * 100).toFixed(0)}%`})</p>
-              <div className="flex-grow border-b border-dashed border-gray-200 dark:border-slate-700 mx-4"></div>
-              <div className="flex items-center gap-2">
-                {isEditingPpn ? (
-                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 px-1">
-                    <input
-                      type="number"
-                      value={ppnRate * 100}
-                      onChange={handlePpnChange}
-                      className="w-10 text-center text-xs font-black text-gray-800 dark:text-white bg-transparent outline-none py-1"
-                    />
-                    <button onClick={handleSavePpn} className="text-blue-600 p-1">
-                      <Icon name="Check" size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <p className="font-bold text-gray-800 dark:text-white flex items-center gap-1" onClick={() => setIsEditingPpn(true)}>
-                    Rp {tax.toLocaleString('id-ID')}
-                    {isMobilePopup && <Icon name="Edit3" size={12} className="opacity-40" />}
-                  </p>
-                )}
+            {ppnRate > 0 && (
+              <div className="flex justify-between items-center text-sm">
+                <p className="text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">PPN ({`${(ppnRate * 100).toFixed(0)}%`})</p>
+                <div className="flex-grow border-b border-dashed border-gray-200 dark:border-slate-700 mx-4"></div>
+                <div className="flex items-center gap-2">
+                  {isEditingPpn ? (
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 px-1">
+                      <input
+                        type="number"
+                        value={ppnRate * 100}
+                        onChange={handlePpnChange}
+                        className="w-10 text-center text-xs font-black text-gray-800 dark:text-white bg-transparent outline-none py-1"
+                      />
+                      <button onClick={handleSavePpn} className="text-blue-600 p-1">
+                        <Icon name="Check" size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="font-bold text-gray-800 dark:text-white flex items-center gap-1" onClick={() => setIsEditingPpn(true)}>
+                      Rp {tax.toLocaleString('id-ID')}
+                      {isMobilePopup && <Icon name="Edit3" size={12} className="opacity-40" />}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             {manualDiscount > 0 && (
               <div className="flex justify-between items-center text-sm">
                 <p className="text-red-500 font-medium whitespace-nowrap">Diskon</p>

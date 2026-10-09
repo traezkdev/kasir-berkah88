@@ -187,7 +187,9 @@ const Settings = () => {
   const [restaurantSettings, setRestaurantSettings] = useState({ restaurant_name: 'Trz Kasir Apps', restaurant_slogan: 'Aplikasi kasir modern cepat dan keren' });
   const [isDataSyncModalOpen, setIsDataSyncModalOpen] = useState(false);
   const [ppnRate, setPpnRate] = useState('');
-  const [newPpnRate, setNewPpnRate] = useState('');
+  const [newPpnRate, setNewPpnRate] = useState('12');
+  const [ppnEnabled, setPpnEnabled] = useState(false);
+  const [newPpnEnabled, setNewPpnEnabled] = useState(false);
   const [receiptVersion, setReceiptVersion] = useState('1');
   const [newReceiptVersion, setNewReceiptVersion] = useState('1');
   const [authUiVersion, setAuthUiVersion] = useState('1');
@@ -292,8 +294,13 @@ const Settings = () => {
         setInitialCapital(data.data.initial_capital || '');
         setCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
         setNewCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
-        setPpnRate(data.data.ppn || '0.12');
-        setNewPpnRate(data.data.ppn || '0.12');
+        const currentPpn = data.data.ppn !== undefined ? data.data.ppn : '0.12';
+        const isPpnOn = data.data.ppn_enabled === '1' || data.data.ppn_enabled === 'true';
+        setPpnRate(currentPpn);
+        const pPercent = (parseFloat(currentPpn || 0) * 100).toFixed(1).replace(/\.0$/, '');
+        setNewPpnRate(pPercent !== '0' ? pPercent : '12');
+        setPpnEnabled(isPpnOn);
+        setNewPpnEnabled(isPpnOn);
         setReceiptVersion(data.data.receipt_version || '1');
         setNewReceiptVersion(data.data.receipt_version || '1');
         setAuthUiVersion(data.data.auth_ui_version || '1');
@@ -827,7 +834,24 @@ const Settings = () => {
               description="Konfigurasi struk, kategori, dan laporan"
               icon="ClipboardList"
             >
-              <SettingsCard icon="FileText" title="PPN & Struk" description="Atur rate PPN dan versi struk" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
+              <SettingsCard 
+                icon="Receipt" 
+                title="PPN Global" 
+                description="Atur status aktif/nonaktif dan tarif pajak PPN" 
+                badge={
+                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded-full ${ppnEnabled ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-gray-500/10 text-gray-500 border border-gray-500/20'}`}>
+                    {ppnEnabled ? `Aktif (${(parseFloat(ppnRate || 0) * 100).toFixed(0)}%)` : 'Nonaktif'}
+                  </span>
+                }
+                onClick={() => {
+                  setNewPpnEnabled(ppnEnabled);
+                  const pPercent = (parseFloat(ppnRate || 0) * 100).toFixed(1).replace(/\.0$/, '');
+                  setNewPpnRate(pPercent !== '0' ? pPercent : '12');
+                  setActiveModal('ppnRate');
+                }} 
+                disabled={!isAdmin} 
+              />
+              <SettingsCard icon="FileText" title="Format Struk" description="Pilih versi tampilan struk transaksi" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
               <SettingsCard icon="LayoutList" title="Kategori Menu" description="Kelola kategori produk makanan/minuman" onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
               <SettingsCard icon="Wallet" title="Kategori Biaya" description="Kelola kategori pengeluaran operasional" onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
               <SettingsCard icon="FileText" title="Template PDF Audit" description="Kustomisasi teks laporan audit PDF" onClick={() => setIsAuditPdfTemplateModalOpen(true)} disabled={!isAdmin} />
@@ -1099,22 +1123,81 @@ const Settings = () => {
         </div>
       </SettingsModal>
 
-      <SettingsModal title="Atur PPN Global" isOpen={activeModal === 'ppnRate'} onClose={handleModalClose}>
-        <form onSubmit={(e) => {
+      <SettingsModal title="Pengaturan PPN Global" isOpen={activeModal === 'ppnRate'} onClose={handleModalClose}>
+        <form onSubmit={async (e) => {
           e.preventDefault();
-          handleUpdateSetting(e, '/api/settings', { ppn: newPpnRate }, 'PPN Global berhasil diperbarui!', 'POST');
-        }} className="space-y-4">
-          <p className="text-sm text-text-secondary mb-4">Nilai 0.12 berarti 12%. Gunakan titik (.) untuk desimal.</p>
-          <Input
-            label="Rate PPN (Contoh: 0.12 untuk 12%)"
-            name="newPpnRate"
-            type="number"
-            step="0.01"
-            value={newPpnRate}
-            onChange={(e) => setNewPpnRate(e.target.value)}
-            required
-          />
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+          const decimalRate = (parseFloat(newPpnRate || 0) / 100).toString();
+          await handleUpdateSetting(
+            e, 
+            '/api/settings', 
+            { 
+              ppn: decimalRate, 
+              ppn_enabled: newPpnEnabled ? '1' : '0' 
+            }, 
+            'Pengaturan PPN Global berhasil disimpan!', 
+            'POST'
+          );
+          setPpnRate(decimalRate);
+          setPpnEnabled(newPpnEnabled);
+        }} className="space-y-6">
+          <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+            <div className="space-y-1 pr-4">
+              <h4 className="text-sm font-bold text-text-primary">Aktifkan PPN Global</h4>
+              <p className="text-xs text-text-secondary">
+                {newPpnEnabled 
+                  ? 'PPN aktif dan akan otomatis dihitung saat kasir transaksi per item.' 
+                  : 'PPN dinonaktifkan. Kasir tidak akan mengenakan pajak pada penjualan per item.'}
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={newPpnEnabled}
+                onChange={(e) => setNewPpnEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          <div className={`space-y-3 transition-opacity ${newPpnEnabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+            <label className="text-xs font-bold text-text-primary uppercase tracking-wider block">
+              Tarif Pajak PPN (%)
+            </label>
+            <div className="relative">
+              <Input
+                name="newPpnRate"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={newPpnRate}
+                onChange={(e) => setNewPpnRate(e.target.value)}
+                placeholder="Contoh: 11 atau 12"
+                className="pr-10 text-base font-bold"
+                required={newPpnEnabled}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">
+                %
+              </span>
+            </div>
+            <p className="text-[11px] text-text-secondary">
+              Contoh umum di Indonesia: <strong>11%</strong> atau <strong>12%</strong>.
+            </p>
+
+            {newPpnRate && !isNaN(parseFloat(newPpnRate)) && parseFloat(newPpnRate) > 0 && (
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800 text-xs text-text-secondary flex justify-between">
+                <span>Simulasi (Subtotal Rp 100.000):</span>
+                <span className="font-bold text-text-primary">
+                  PPN = Rp {(100000 * (parseFloat(newPpnRate) / 100)).toLocaleString('id-ID')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Menyimpan...' : 'Simpan Pengaturan PPN'}
+          </Button>
         </form>
       </SettingsModal>
 
