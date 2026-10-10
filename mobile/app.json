@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Kasir Berkah 88",
-    "slug": "kasir-berkah88-mobile",
-    "version": "1.6.1",
+    "name": "WRN Kasir",
+    "slug": "warung-rasa-nikmat",
+    "version": "1.6.2",
     "orientation": "portrait",
     "icon": "./assets/logonew.png",
     "userInterfaceStyle": "light",
