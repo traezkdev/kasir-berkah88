@@ -75,6 +75,7 @@ const SellerDashboard = ({ navigation }) => {
     const [dashboardWatermarkEnabled, setDashboardWatermarkEnabled] = useState(true);
     const [dashboardWatermarkUrl, setDashboardWatermarkUrl] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
+    const [restaurantName, setRestaurantName] = useState('');
     const { unreadCount } = useChat();
     const { refreshTrigger } = useOrderNotification();
 
@@ -115,6 +116,7 @@ const SellerDashboard = ({ navigation }) => {
             // Fetch Shop Status
             const settingsRes = await apiService.get('/api/restaurant-settings');
             setIsOpen(settingsRes.data.data.is_open === 1);
+            setRestaurantName(settingsRes.data.data.restaurant_name || '');
 
             // Fetch Stats (We'll combine multiple requests like the web version)
             const [bannersRes, menuRes, catRes, ordersRes, allSettingsRes] = await Promise.all([
@@ -321,7 +323,7 @@ const SellerDashboard = ({ navigation }) => {
                     <View style={styles.headerLeft}>
                         <View style={styles.roleBadge}>
                             <Store size={14} color="#FFFFFF" />
-                            <Text style={styles.roleText}>Kerongkongan berkah 88</Text>
+                            <Text style={styles.roleText}>{restaurantName || 'Nama Toko'}</Text>
                         </View>
                         <Text style={styles.welcomeText} numberOfLines={1} ellipsizeMode="tail">Halo, {user?.name}!</Text>
                         <Text style={styles.subtitleText} numberOfLines={1} ellipsizeMode="tail">Pantau tokomu hari ini</Text>

@@ -14,7 +14,7 @@ import { navigationRef } from './src/navigation/navigationRef';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Mencegah splash screen menghilang otomatis
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 import { ToastProvider } from './src/context/ToastContext';
 import { OrderNotificationProvider } from './src/context/OrderNotificationContext';
@@ -117,7 +117,11 @@ export default function App() {
 
     // Sembunyikan splash screen setelah 1 detik
     const timer = setTimeout(async () => {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        // Abaikan jika sudah sembunyi
+      }
     }, 1000);
 
     return () => clearTimeout(timer);

@@ -52,6 +52,7 @@ const AuditorScreen = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [isSavingDefault, setIsSavingDefault] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [fetchError, setFetchError] = useState(null);
 
     // Jakarta date helpers
     const getJakartaDate = () => {
@@ -70,12 +71,23 @@ const AuditorScreen = ({ navigation }) => {
     const [auditData, setAuditData] = useState(null);
 
     const formatCurrency = (amount) => {
+        const val = Number(amount) || 0;
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
-        }).format(amount || 0);
+        }).format(val);
+    };
+
+    const safeGet = async (url, fallback = {}) => {
+        try {
+            const res = await apiService.get(url);
+            return res.data;
+        } catch (err) {
+            console.warn(`[OwnerAuditor] Request ${url} warning:`, err?.response?.status || err?.message);
+            return fallback;
+        }
     };
 
     const fetchData = useCallback(async (currentStart, currentEnd) => {
@@ -83,22 +95,33 @@ const AuditorScreen = ({ navigation }) => {
         const end = currentEnd || endDate;
 
         setLoading(true);
+        setFetchError(null);
         try {
             const queryString = `?startDate=${start}&endDate=${end}&filterClosed=true`;
 
-            const [allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes, precisionRes] = await Promise.all([
-                apiService.get(`/api/transactions/all${queryString}`),
-                apiService.get('/api/menu-items/all'),
-                apiService.get(`/api/expenses/all${queryString}`),
-                apiService.get('/api/all-settings'),
-                apiService.get('/api/accounts/owner_deposit'),
-                apiService.get('/api/accounts/lapak_deposit'),
-                apiService.get('/api/raw-materials'),
-                apiService.get('/api/units'),
-                apiService.get(`/api/audit/calculate-accuracy${queryString}`)
+            const [
+                allTransRes,
+                menuRes,
+                expenseRes,
+                settingsRes,
+                ownerAccountRes,
+                lapakAccountRes,
+                rawMaterialsRes,
+                unitsRes,
+                precisionRes
+            ] = await Promise.all([
+                safeGet(`/api/transactions/all${queryString}`, { data: [] }),
+                safeGet('/api/menu-items/all', { data: [] }),
+                safeGet(`/api/expenses/all${queryString}`, { data: [] }),
+                safeGet('/api/all-settings', { data: {} }),
+                safeGet('/api/accounts/owner_deposit', { data: { account: { balance: 0 } } }),
+                safeGet('/api/accounts/lapak_deposit', { data: { account: { balance: 0 } } }),
+                safeGet('/api/raw-materials', { data: [] }),
+                safeGet('/api/units', { data: [] }),
+                safeGet(`/api/audit/calculate-accuracy${queryString}`, { data: {} })
             ]);
 
-            const settings = settingsRes.data.data || {};
+            const settings = settingsRes?.data || {};
 
             // Auto-initialize dates from settings on first load
             if (!isInitialized) {
@@ -114,18 +137,19 @@ const AuditorScreen = ({ navigation }) => {
             }
 
             processAuditData({
-                transactions: allTransRes.data.data || [],
-                menuItems: menuRes.data.data || [],
-                expenses: expenseRes.data.data || [],
+                transactions: allTransRes?.data || [],
+                menuItems: menuRes?.data || [],
+                expenses: expenseRes?.data || [],
                 settings: settings,
-                ownerBalance: ownerAccountRes.data.data?.account?.balance || 0,
-                lapakBalance: lapakAccountRes.data.data?.account?.balance || 0,
-                rawMaterials: rawMaterialsRes.data.data || [],
-                units: unitsRes.data.data || [],
-                precision: precisionRes.data.data || {}
+                ownerBalance: ownerAccountRes?.data?.account?.balance ?? 0,
+                lapakBalance: lapakAccountRes?.data?.account?.balance ?? 0,
+                rawMaterials: rawMaterialsRes?.data || [],
+                units: unitsRes?.data || [],
+                precision: precisionRes?.data || {}
             });
         } catch (error) {
             console.error("Audit fetch error:", error);
+            setFetchError(error.message || "Gagal memuat data audit");
             showToast("Gagal memuat data audit", "error");
         } finally {
             setLoading(false);
@@ -134,25 +158,47 @@ const AuditorScreen = ({ navigation }) => {
     }, [startDate, endDate, isInitialized, showToast]);
 
     const processAuditData = (raw) => {
-        const precision = raw.precision || {};
-        const masterInitialCapital = parseFloat(raw.settings.initial_capital) || 0;
-        const periodOpeningBalance = precision.openingBalance !== undefined ? precision.openingBalance : masterInitialCapital;
+        const precision = raw?.precision || {};
+        const masterInitialCapital = parseFloat(raw?.settings?.initial_capital) || 0;
+        const periodOpeningBalance = precision.openingBalance !== undefined 
+            ? parseFloat(precision.openingBalance) 
+            : masterInitialCapital;
 
-        const totalRevenue = precision.periodRevenue !== undefined ? precision.periodRevenue : raw.transactions
-            .filter(t => t.payment_method !== 'employee_meal')
-            .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+        const transactions = Array.isArray(raw?.transactions) ? raw.transactions : [];
+        const expenses = Array.isArray(raw?.expenses) ? raw.expenses : [];
+        const rawMaterials = Array.isArray(raw?.rawMaterials) ? raw.rawMaterials : [];
+        const units = Array.isArray(raw?.units) ? raw.units : [];
+        const menuItems = Array.isArray(raw?.menuItems) ? raw.menuItems : [];
 
-        const totalExpenses = precision.periodExpenses !== undefined ? precision.periodExpenses : raw.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-        const expectedCash = precision.expectedClosingBalance || (periodOpeningBalance + totalRevenue - totalExpenses);
+        const totalRevenue = precision.periodRevenue !== undefined 
+            ? parseFloat(precision.periodRevenue) 
+            : transactions
+                .filter(t => t && t.payment_method !== 'employee_meal')
+                .reduce((sum, t) => sum + (parseFloat(t?.total) || 0), 0);
 
-        const physicalCash = precision.physicalCashAtEnd !== undefined ? precision.physicalCashAtEnd : (parseFloat(raw.ownerBalance) + parseFloat(raw.lapakBalance));
-        const finalOwnerBalance = precision.currentOwnerBalance !== undefined ? precision.currentOwnerBalance : raw.ownerBalance;
-        const finalLapakBalance = precision.currentLapakBalance !== undefined ? precision.currentLapakBalance : raw.lapakBalance;
+        const totalExpenses = precision.periodExpenses !== undefined 
+            ? parseFloat(precision.periodExpenses) 
+            : expenses.reduce((sum, e) => sum + (parseFloat(e?.amount) || 0), 0);
+
+        const periodAdjustment = parseFloat(precision.periodAdjustment) || 0;
+        const expectedCash = precision.expectedClosingBalance !== undefined
+            ? parseFloat(precision.expectedClosingBalance)
+            : (periodOpeningBalance + totalRevenue - totalExpenses + periodAdjustment);
+
+        const rawOwner = parseFloat(raw?.ownerBalance) || 0;
+        const rawLapak = parseFloat(raw?.lapakBalance) || 0;
+        const physicalCash = precision.physicalCashAtEnd !== undefined 
+            ? parseFloat(precision.physicalCashAtEnd) 
+            : (rawOwner + rawLapak);
+        const finalOwnerBalance = precision.currentOwnerBalance !== undefined ? parseFloat(precision.currentOwnerBalance) : rawOwner;
+        const finalLapakBalance = precision.currentLapakBalance !== undefined ? parseFloat(precision.currentLapakBalance) : rawLapak;
 
         const cashDifference = physicalCash - expectedCash;
 
-        const stockValue = raw.rawMaterials.reduce((sum, m) => {
-            const unitDef = raw.units.find(u => u.name.toLowerCase() === (m.unit || '').toLowerCase());
+        const stockValue = rawMaterials.reduce((sum, m) => {
+            if (!m) return sum;
+            const mUnit = (m.unit || '').toString().toLowerCase();
+            const unitDef = units.find(u => (u?.name || '').toString().toLowerCase() === mUnit);
             const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
             const currentStock = parseFloat(m.current_stock || 0);
             const menuStock = parseFloat(m.menu_stock || 0);
@@ -181,7 +227,7 @@ const AuditorScreen = ({ navigation }) => {
             });
         }
 
-        const negativeStockItems = raw.menuItems.filter(i => i.stock < 0);
+        const negativeStockItems = menuItems.filter(i => (parseFloat(i?.stock) || 0) < 0);
         if (negativeStockItems.length > 0) {
             anomalies.push({
                 title: "Stok Menu Negatif",
@@ -196,6 +242,7 @@ const AuditorScreen = ({ navigation }) => {
                 periodOpeningBalance,
                 totalRevenue,
                 totalExpenses,
+                periodAdjustment,
                 expectedCash,
                 physicalCash,
                 cashDifference,
@@ -497,10 +544,54 @@ const AuditorScreen = ({ navigation }) => {
     );
 
     if (!auditData) {
+        if (fetchError) {
+            return (
+                <View style={styles.container}>
+                    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+                    <View style={[styles.header, { backgroundColor: '#349BE5' }]}>
+                        <View style={styles.headerContent}>
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                                <ChevronLeft size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <View style={styles.headerTitleContainer}>
+                                <Text style={styles.headerTitle}>Sistem Audit</Text>
+                                <Text style={styles.headerSubtitle}>Integritas & Transparansi</Text>
+                            </View>
+                            <View style={{ width: 40 }} />
+                        </View>
+                    </View>
+                    <View style={styles.errorContainer}>
+                        <AlertTriangle size={48} color="#EF4444" style={{ marginBottom: 16 }} />
+                        <Text style={styles.errorTitle}>Gagal Memuat Data Audit</Text>
+                        <Text style={styles.errorDesc}>{fetchError}</Text>
+                        <TouchableOpacity style={[styles.retryBtn, { backgroundColor: '#349BE5' }]} onPress={() => fetchData()}>
+                            <RefreshCw size={16} color="#FFFFFF" />
+                            <Text style={styles.retryBtnText}>Coba Lagi</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            );
+        }
+
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#349BE5" />
-                <Text style={styles.loadingText}>Menyiapkan Data...</Text>
+            <View style={styles.container}>
+                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+                <View style={[styles.header, { backgroundColor: '#349BE5' }]}>
+                    <View style={styles.headerContent}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                            <ChevronLeft size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <View style={styles.headerTitleContainer}>
+                            <Text style={styles.headerTitle}>Sistem Audit</Text>
+                            <Text style={styles.headerSubtitle}>Integritas & Transparansi</Text>
+                        </View>
+                        <View style={{ width: 40 }} />
+                    </View>
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#349BE5" />
+                    <Text style={styles.loadingText}>Menyiapkan Data...</Text>
+                </View>
             </View>
         );
     }
@@ -989,6 +1080,41 @@ const styles = StyleSheet.create({
         marginTop: 12,
         color: '#349BE5',
         fontWeight: 'bold',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 30,
+        backgroundColor: '#FFFFFF',
+    },
+    errorTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    errorDesc: {
+        fontSize: 12,
+        color: '#64748B',
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 18,
+    },
+    retryBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#349BE5',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 14,
+        gap: 8,
+    },
+    retryBtnText: {
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '700',
     },
     header: {
         paddingTop: Platform.OS === 'ios' ? 50 : 40,

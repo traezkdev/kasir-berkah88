@@ -479,6 +479,7 @@ const OwnerRootStack = () => (
         <Stack.Screen name="OwnerBusinessReports" component={OwnerBusinessReports} />
         <Stack.Screen name="OwnerFinancialReport" component={OwnerFinancialReport} />
         <Stack.Screen name="OwnerProfileScreen" component={OwnerProfileScreen} />
+        <Stack.Screen name="Auditor" component={OwnerAuditor} />
         <Stack.Screen name="Credits" component={Credits} />
     </Stack.Navigator>
 );

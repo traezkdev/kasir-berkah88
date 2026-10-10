@@ -1,0 +1,4 @@
+=== LIST USERS ===
+ID: 1, Username: admin, Role: admin
+ID: 2, Username: kasir, Role: kasir
+ID: 3, Username: owner, Role: owner

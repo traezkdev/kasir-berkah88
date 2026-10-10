@@ -847,7 +847,7 @@ app.post("/api/reviews", authenticateToken, async (req, res) => {
 // --- Raw Materials Endpoints ---
 
 // Get all raw materials
-app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), async (req, res) => {
+app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir', 'penjual', 'seller'), async (req, res) => {
     try {
         const rawMaterials = await getRawMaterials();
         res.json({ message: "success", data: rawMaterials });
@@ -946,7 +946,7 @@ app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 
 });
 
 // Get all material units
-app.get("/api/units", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), async (req, res) => {
+app.get("/api/units", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir', 'penjual', 'seller'), async (req, res) => {
     try {
         const sql = "SELECT * FROM material_units ORDER BY name ASC";
         const [rows] = await db.query(sql);
@@ -2875,8 +2875,8 @@ app.get('/api/restaurant-settings', async (req, res) => {
     }
 });
 
-// Update restaurant settings (admin only)
-app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Update restaurant settings (admin & owner)
+app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, store_address, open_time, close_time } = req.body;
         if (!restaurant_name || !restaurant_slogan) {
@@ -4558,7 +4558,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         let allowedRoles;
 
         if (accountName === 'lapak_deposit') {
-            allowedRoles = ['admin', 'user', 'kasir', 'owner']; // Owner can also view lapak deposit
+            allowedRoles = ['admin', 'user', 'kasir', 'owner', 'penjual', 'seller']; // Owner and sellers can also view lapak deposit
         } else if (accountName === 'owner_deposit') {
             allowedRoles = ['admin', 'owner', 'kasir', 'user', 'penjual', 'seller']; // Expanded roles for Owner account as requested
         } else {
@@ -6341,7 +6341,7 @@ app.get("/api/all-settings", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Update multiple settings
-app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.post("/api/settings", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller'), async (req, res) => {
     try {
         const settings = req.body;
         if (typeof settings !== 'object' || settings === null || Object.keys(settings).length === 0) {
@@ -8781,7 +8781,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Get accurate audit calculation for a specific period
-app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.get("/api/audit/calculate-accuracy", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
 
