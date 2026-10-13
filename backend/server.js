@@ -3151,12 +3151,27 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
         `;
         const [rows] = await db.query(sql, queryParams); // Pass queryParams here
 
-        const transactions = rows.map(row => ({
-            ...row,
-            isEmployeeMeal: row.isEmployeeMeal === 1,
-            // Parse items JSON if needed (it's already parsed in the /api/transactions endpoint)
-            items: JSON.parse(row.items || '[]')
-        }));
+        const transactions = rows.map(row => {
+            let parsedItems = [];
+            if (row.items) {
+                if (typeof row.items === 'string') {
+                    try {
+                        parsedItems = JSON.parse(row.items);
+                    } catch (e) {
+                        console.error(`Error parsing items JSON for transaction ${row.id}:`, e);
+                        parsedItems = [];
+                    }
+                } else if (typeof row.items === 'object') {
+                    parsedItems = row.items;
+                }
+            }
+
+            return {
+                ...row,
+                isEmployeeMeal: row.isEmployeeMeal === 1,
+                items: parsedItems
+            };
+        });
 
         res.json({
             "message": "success",

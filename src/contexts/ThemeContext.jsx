@@ -6,8 +6,13 @@ export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
   const [storedTheme, setStoredTheme] = useState(() => {
+    const isExplicit = localStorage.getItem('theme_user_selected') === 'true';
     const savedTheme = localStorage.getItem('app-theme');
-    return savedTheme === 'admin' ? 'admin' : 'default';
+    if (isExplicit && (savedTheme === 'admin' || savedTheme === 'default')) {
+      return savedTheme;
+    }
+    // Default tema di awal untuk user baru adalah 'admin'
+    return 'admin';
   });
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -15,6 +20,14 @@ export const ThemeProvider = ({ children }) => {
   const [appStyle, setAppStyle] = useState(() => {
     return localStorage.getItem('app-style') || 'clean';
   });
+
+  useEffect(() => {
+    const handleReset = (e) => {
+      setStoredTheme(e.detail || 'admin');
+    };
+    window.addEventListener('app-theme-reset', handleReset);
+    return () => window.removeEventListener('app-theme-reset', handleReset);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -35,7 +48,13 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [appStyle]);
 
+  const setTheme = (newTheme) => {
+    localStorage.setItem('theme_user_selected', 'true');
+    setStoredTheme(newTheme);
+  };
+
   const toggleTheme = () => {
+    localStorage.setItem('theme_user_selected', 'true');
     setStoredTheme(prevTheme => prevTheme === 'default' ? 'admin' : 'default');
   };
 
@@ -46,7 +65,7 @@ export const ThemeProvider = ({ children }) => {
   const value = {
     theme,
     toggleTheme,
-    setTheme: setStoredTheme,
+    setTheme,
     appStyle,
     setAppStyle,
     isMobile,
