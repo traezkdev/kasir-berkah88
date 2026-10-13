@@ -12,6 +12,7 @@ export const AppSettingsProvider = ({ children }) => {
     const [ignoreStock, setIgnoreStock] = useState(false);
     const [loading, setLoading] = useState(true);
     const [logoUrl, setLogoUrl] = useState(null);
+    const [ownerPhone, setOwnerPhone] = useState(null);
 
     const fetchSettings = async () => {
         try {
@@ -22,6 +23,9 @@ export const AppSettingsProvider = ({ children }) => {
                 setIgnoreStock(!!response.data.data.ignore_stock);
                 if (response.data.data.app_name) {
                     setHeaderTitle(response.data.data.app_name);
+                }
+                if (response.data.data.owner_phone) {
+                    setOwnerPhone(response.data.data.owner_phone);
                 }
             }
 
@@ -71,6 +75,7 @@ export const AppSettingsProvider = ({ children }) => {
         ignoreStock,
         loading,
         logoUrl,
+        ownerPhone,
         refreshSettings: fetchSettings,
         toggleIgnoreStock
     };

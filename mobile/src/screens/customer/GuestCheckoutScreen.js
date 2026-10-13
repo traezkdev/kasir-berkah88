@@ -34,6 +34,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import apiService, { API_URL } from '../../api/apiService';
 import AppImage from '../../components/AppImage';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useAppSettings } from '../../context/AppSettingsContext';
 
 const { width } = Dimensions.get('window');
 
@@ -119,6 +120,7 @@ const MenuItem = memo(({ item, qty, globalIgnoreStock, onAdd, onRemove }) => {
 
 const GuestCheckoutScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
+    const { ownerPhone } = useAppSettings();
     const appState = useRef(AppState.currentState);
     const [menuItems, setMenuItems] = useState([]);
     const [cart, setCart] = useState({});
@@ -281,24 +283,26 @@ const GuestCheckoutScreen = ({ navigation }) => {
                 whatsappMessage += `💰 *Total Akhir: Rp ${calculateTotal.toLocaleString('id-ID')}*\n\n`;
                 whatsappMessage += "Mohon segera diproses ya, terima kasih! 🙏";
 
-                const whatsappNumber = "6285864875536";
+                const whatsappNumber = ownerPhone
+                    ? ownerPhone.replace(/^0/, '62').replace(/[^0-9]/g, '')
+                    : '6285864875536'; // Fallback default
                 const encodedMessage = encodeURIComponent(whatsappMessage);
                 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-                const supported = await Linking.canOpenURL(whatsappUrl);
-                if (supported) {
+                try {
                     await Linking.openURL(whatsappUrl);
-                    Alert.alert('Berhasil', 'Pesanan Anda telah dicatat. Silakan lanjutkan pesan via WhatsApp.', [
-                        {
-                            text: 'OK', onPress: () => {
-                                setCart({});
-                                navigation.replace('Welcome');
-                            }
-                        }
-                    ]);
-                } else {
-                    Alert.alert('Error', 'Gagal membuka WhatsApp. Mohon pastikan WhatsApp terpasang.');
+                } catch (linkErr) {
+                    console.warn('Could not open WhatsApp URL:', linkErr);
                 }
+
+                Alert.alert('Berhasil', 'Pesanan Anda telah dicatat. Silakan lanjutkan konfirmasi via WhatsApp.', [
+                    {
+                        text: 'OK', onPress: () => {
+                            setCart({});
+                            navigation.replace('Welcome');
+                        }
+                    }
+                ]);
             }
         } catch (error) {
             console.error('Checkout error:', error);

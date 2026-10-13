@@ -341,7 +341,7 @@ const setupDatabase = async () => {
     const createOrdersTable = `
       CREATE TABLE IF NOT EXISTS orders (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          user_id INT NOT NULL,
+          user_id INT NULL,
           customer_name VARCHAR(255),
           customer_address TEXT,
           customer_phone VARCHAR(50),
@@ -353,12 +353,19 @@ const setupDatabase = async () => {
           note TEXT,
           points_used DECIMAL(15, 2) DEFAULT 0,
           promo_id INT DEFAULT NULL,
-          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
           FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE SET NULL
       );
     `;
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
+
+    // Ensure user_id allows NULL for guest orders
+    try {
+      await connection.query("ALTER TABLE orders MODIFY COLUMN user_id INT NULL");
+    } catch (err) {
+      console.warn("Could not modify orders.user_id to NULL:", err.message);
+    }
 
     // Check if points_used column exists in orders table
     const [pointsUsedColumnorders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'points_used'");
