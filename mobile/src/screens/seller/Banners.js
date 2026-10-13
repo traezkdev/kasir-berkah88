@@ -14,12 +14,11 @@ import {
     ScrollView,
     Switch,
     RefreshControl,
-    Dimensions,
-    StatusBar
+    StatusBar,
+    useWindowDimensions
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     ChevronLeft,
     Plus,
@@ -44,17 +43,15 @@ import * as ImagePicker from 'expo-image-picker';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
 
-const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
-
 const ICON_MAP = {
-    Percent: Percent,
-    Utensils: Utensils,
-    Star: Star,
-    Gift: Gift,
-    Tag: Tag,
-    Coffee: Coffee,
-    Zap: Zap,
-    ShoppingBag: ShoppingBag
+    Percent,
+    Utensils,
+    Star,
+    Gift,
+    Tag,
+    Coffee,
+    Zap,
+    ShoppingBag
 };
 
 const COLOR_MAP = {
@@ -62,16 +59,58 @@ const COLOR_MAP = {
     'bg-blue-600': '#2563EB',
     'bg-sky-500': '#0EA5E9',
     'bg-emerald-600': '#059669',
+    'bg-green-600': '#16A34A',
     'bg-amber-500': '#F59E0B',
     'bg-orange-500': '#F97316',
     'bg-rose-500': '#F43F5E',
     'bg-purple-600': '#9333EA',
+    'bg-red-600': '#DC2626',
+    'bg-teal-600': '#0D9488',
+    'bg-slate-700': '#334155',
+};
+
+const getBannerIcon = (iconName) => {
+    if (!iconName) return Percent;
+    if (ICON_MAP[iconName]) return ICON_MAP[iconName];
+    const match = Object.keys(ICON_MAP).find(k => k.toLowerCase() === String(iconName).toLowerCase());
+    return match ? ICON_MAP[match] : Percent;
+};
+
+const getBannerColor = (colorClass) => {
+    if (!colorClass) return '#4F46E5';
+    return COLOR_MAP[colorClass] || '#4F46E5';
+};
+
+const getImageUrl = (url) => {
+    if (!url || typeof url !== 'string' || !url.trim()) return null;
+    if (url.startsWith('data:') || url.startsWith('http')) return url;
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+const uriToBlob = async (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith('data:')) {
+        const arr = uri.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+    }
+    const res = await fetch(uri);
+    return await res.blob();
 };
 
 const Banners = ({ navigation }) => {
     const { confirm } = useConfirm();
     const { showToast } = useToast();
     const insets = useSafeAreaInsets();
+    const { height: windowHeight } = useWindowDimensions();
+
     const [banners, setBanners] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -80,7 +119,7 @@ const Banners = ({ navigation }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [isLayoutReady, setIsLayoutReady] = useState(false);
+    const [isLayoutReady, setIsLayoutReady] = useState(Platform.OS === 'web');
     const [formData, setFormData] = useState({
         title: '',
         subtitle: '',
@@ -91,6 +130,8 @@ const Banners = ({ navigation }) => {
         is_active: true
     });
     const [imageUri, setImageUri] = useState(null);
+    const [selectedImageFile, setSelectedImageFile] = useState(null);
+    const [hasNewImage, setHasNewImage] = useState(false);
     const [isImageRemoved, setIsImageRemoved] = useState(false);
 
     const colors = [
@@ -98,22 +139,27 @@ const Banners = ({ navigation }) => {
         { name: 'Blue', class: 'bg-blue-600' },
         { name: 'Sky', class: 'bg-sky-500' },
         { name: 'Emerald', class: 'bg-emerald-600' },
+        { name: 'Green', class: 'bg-green-600' },
         { name: 'Amber', class: 'bg-amber-500' },
         { name: 'Orange', class: 'bg-orange-500' },
         { name: 'Rose', class: 'bg-rose-500' },
         { name: 'Purple', class: 'bg-purple-600' },
+        { name: 'Slate', class: 'bg-slate-700' },
     ];
 
     const icons = ['Percent', 'Utensils', 'Star', 'Gift', 'Tag', 'Coffee', 'Zap', 'ShoppingBag'];
 
-    // Effect untuk menangani bug layout Android pada Modal
     useEffect(() => {
         if (isModalOpen) {
-            setIsLayoutReady(false);
-            const timer = setTimeout(() => {
+            if (Platform.OS === 'web') {
                 setIsLayoutReady(true);
-            }, 100); // 100ms untuk memastikan mesin render Android siap
-            return () => clearTimeout(timer);
+            } else {
+                setIsLayoutReady(false);
+                const timer = setTimeout(() => {
+                    setIsLayoutReady(true);
+                }, 80);
+                return () => clearTimeout(timer);
+            }
         }
     }, [isModalOpen]);
 
@@ -149,10 +195,12 @@ const Banners = ({ navigation }) => {
                 color_class: item.color_class || 'bg-indigo-600',
                 icon_name: item.icon_name || 'Percent',
                 link_url: item.link_url || '',
-                show_text: item.show_text === 1 || item.show_text === true,
-                is_active: item.is_active === 1 || item.is_active === true
+                show_text: item.show_text === 1 || item.show_text === true || item.show_text === '1' || item.show_text === undefined,
+                is_active: item.is_active === 1 || item.is_active === true || item.is_active === '1' || item.is_active === undefined
             });
-            setImageUri(item.image_url ? `${API_URL}${item.image_url}` : null);
+            setImageUri(getImageUrl(item.image_url));
+            setSelectedImageFile(null);
+            setHasNewImage(false);
             setIsImageRemoved(false);
         } else {
             setEditingItem(null);
@@ -166,6 +214,8 @@ const Banners = ({ navigation }) => {
                 is_active: true
             });
             setImageUri(null);
+            setSelectedImageFile(null);
+            setHasNewImage(false);
             setIsImageRemoved(false);
         }
         setIsModalOpen(true);
@@ -180,14 +230,18 @@ const Banners = ({ navigation }) => {
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
+                mediaTypes: ['images'],
+                allowsEditing: Platform.OS !== 'web',
                 aspect: [16, 9],
                 quality: 0.8,
             });
 
-            if (!result.canceled) {
-                setImageUri(result.assets[0].uri);
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                console.log('[Banners] Selected image:', asset.uri, 'file:', asset.file);
+                setImageUri(asset.uri);
+                setSelectedImageFile(asset.file || null);
+                setHasNewImage(true);
                 setIsImageRemoved(false);
             }
         } catch (error) {
@@ -197,8 +251,8 @@ const Banners = ({ navigation }) => {
     };
 
     const handleSubmit = async () => {
-        if (!formData.title) {
-            Alert.alert('Error', 'Judul banner wajib diisi');
+        if (!formData.title || !formData.title.trim()) {
+            Alert.alert('Peringatan', 'Judul banner wajib diisi');
             return;
         }
 
@@ -206,25 +260,41 @@ const Banners = ({ navigation }) => {
         try {
             const formDataToSend = new FormData();
 
-            // Append data as JSON string for compatibility with web-optimized backend if needed
-            // However, the web version appends 'data' as JSON under 'data' field.
-            // Let's check how many fields the backend expects.
-            // If the backend uses multer and then JSON.parse(req.body.data):
+            // Append metadata payload
             formDataToSend.append('data', JSON.stringify({
                 ...formData,
+                title: formData.title.trim(),
+                subtitle: formData.subtitle ? formData.subtitle.trim() : '',
+                link_url: formData.link_url ? formData.link_url.trim() : '',
                 remove_image: isImageRemoved
             }));
 
-            if (imageUri && !imageUri.startsWith('http')) {
-                const filename = imageUri.split('/').pop();
-                const match = /\.(\w+)$/.exec(filename);
-                const type = match ? `image/${match[1]}` : 'image/jpeg';
+            // Handle newly selected image
+            if (hasNewImage && imageUri) {
+                if (Platform.OS === 'web') {
+                    if (selectedImageFile) {
+                        formDataToSend.append('image', selectedImageFile, selectedImageFile.name || 'banner.jpg');
+                    } else {
+                        try {
+                            const blob = await uriToBlob(imageUri);
+                            if (blob) {
+                                formDataToSend.append('image', blob, 'banner.jpg');
+                            }
+                        } catch (blobErr) {
+                            console.error('Error converting image to blob on web:', blobErr);
+                        }
+                    }
+                } else {
+                    const filename = imageUri.split('/').pop() || 'banner.jpg';
+                    const match = /\.(\w+)$/.exec(filename);
+                    const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-                formDataToSend.append('image', {
-                    uri: imageUri,
-                    name: filename,
-                    type
-                });
+                    formDataToSend.append('image', {
+                        uri: imageUri,
+                        name: filename,
+                        type
+                    });
+                }
             }
 
             const url = editingItem
@@ -232,30 +302,36 @@ const Banners = ({ navigation }) => {
                 : `/api/banners`;
             const method = editingItem ? 'put' : 'post';
 
-            const response = await apiService[method](url, formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const response = await apiService[method](url, formDataToSend);
 
             if (response.status === 200 || response.status === 201) {
-                showToast(editingItem ? 'Banner diperbarui' : 'Banner ditambahkan', 'success');
+                showToast(editingItem ? 'Banner berhasil diperbarui' : 'Banner berhasil ditambahkan', 'success');
                 setIsModalOpen(false);
                 fetchData();
             }
         } catch (error) {
             console.error('Error saving banner:', error);
-            showToast('Gagal menyimpan banner', 'error');
+            const errMsg = error.response?.data?.error || 'Gagal menyimpan banner';
+            showToast(errMsg, 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
-        const accepted = await confirm({
-            title: 'Hapus Banner',
-            message: 'Apakah Anda yakin ingin menghapus banner ini?',
-            confirmText: 'Ya, Hapus',
-            type: 'danger'
-        });
+        let accepted = false;
+        try {
+            accepted = await confirm({
+                title: 'Hapus Banner',
+                message: 'Apakah Anda yakin ingin menghapus banner ini?',
+                confirmText: 'Ya, Hapus',
+                type: 'danger'
+            });
+        } catch (e) {
+            accepted = typeof window !== 'undefined' && window.confirm
+                ? window.confirm('Apakah Anda yakin ingin menghapus banner ini?')
+                : true;
+        }
 
         if (accepted) {
             try {
@@ -264,31 +340,37 @@ const Banners = ({ navigation }) => {
                 fetchData();
             } catch (error) {
                 console.error('Error deleting banner:', error);
-                showToast('Gagal menghapus banner', 'error');
+                const errMsg = error.response?.data?.error || 'Gagal menghapus banner';
+                showToast(errMsg, 'error');
             }
         }
     };
 
     const renderBanner = ({ item }) => {
-        const IconComp = ICON_MAP[item.icon_name] || Percent;
-        const bgColor = COLOR_MAP[item.color_class] || '#4F46E5';
+        const IconComp = getBannerIcon(item.icon_name);
+        const bgColor = getBannerColor(item.color_class);
+        const bannerImgUri = getImageUrl(item.image_url);
+        const shouldShowText = item.show_text === 1 || item.show_text === true || item.show_text === '1' || item.show_text === undefined;
 
         return (
             <View style={styles.bannerCard}>
                 <View style={[styles.bannerPreview, { backgroundColor: bgColor }]}>
                     {/* Background Image */}
-                    {item.image_url && (
+                    {bannerImgUri ? (
                         <Image
-                            source={{ uri: `${API_URL}${item.image_url}` }}
+                            source={{ uri: bannerImgUri }}
                             style={styles.bannerBackgroundImage}
                             resizeMode="cover"
                         />
-                    )}
+                    ) : null}
+
                     {/* Overlay untuk memastikan text tetap terbaca */}
-                    {item.image_url && (item.show_text === 1 || item.show_text === true) && <View style={styles.bannerOverlay} />}
+                    {bannerImgUri && shouldShowText ? (
+                        <View style={styles.bannerOverlay} />
+                    ) : null}
 
                     {/* Background decoration */}
-                    {(item.show_text === 1 || item.show_text === true) && (
+                    {shouldShowText ? (
                         <IconComp
                             size={120}
                             color="#FFFFFF"
@@ -296,14 +378,14 @@ const Banners = ({ navigation }) => {
                             strokeWidth={1}
                             opacity={0.1}
                         />
-                    )}
+                    ) : null}
 
                     <View style={styles.bannerContentWrapper}>
-                        {item.show_text === 1 || item.show_text === true ? (
+                        {shouldShowText ? (
                             <View style={styles.bannerContent}>
                                 <View style={styles.bannerText}>
-                                    <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
-                                    <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                                    <Text style={styles.bannerTitle} numberOfLines={1}>{item.title || ''}</Text>
+                                    <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle || ''}</Text>
                                 </View>
                                 <View style={styles.bannerIconBadge}>
                                     <IconComp size={22} color="#FFFFFF" strokeWidth={2.5} />
@@ -327,13 +409,15 @@ const Banners = ({ navigation }) => {
                     <TouchableOpacity
                         onPress={() => handleOpenModal(item)}
                         style={styles.editBtn}
+                        activeOpacity={0.7}
                     >
-                        <Edit size={18} color="#64748B" />
+                        <Edit size={18} color="#475569" />
                         <Text style={styles.editBtnText}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => handleDelete(item.id)}
                         style={styles.deleteBtn}
+                        activeOpacity={0.7}
                     >
                         <Trash2 size={18} color="#EF4444" />
                     </TouchableOpacity>
@@ -341,6 +425,9 @@ const Banners = ({ navigation }) => {
             </View>
         );
     };
+
+    const FormScrollContainer = Platform.OS === 'web' ? ScrollView : KeyboardAwareScrollView;
+    const ModalIcon = getBannerIcon(formData.icon_name);
 
     return (
         <View style={styles.container}>
@@ -394,27 +481,29 @@ const Banners = ({ navigation }) => {
                 transparent={false}
                 onRequestClose={() => setIsModalOpen(false)}
             >
-                {/* Gunakan tinggi eksplisit untuk mematikan ketidakpastian layout Android */}
-                <View style={[styles.modalContainer, { height: windowHeight, backgroundColor: '#FFFFFF' }]}>
-                    {/* Header */}
+                <View style={[
+                    styles.modalContainer,
+                    Platform.OS === 'android' ? { height: windowHeight } : { flex: 1 }
+                ]}>
+                    {/* Header Modal */}
                     <View style={[styles.modalHeader, {
-                        paddingTop: Math.max(insets.top + 10, 20),
+                        paddingTop: Math.max(insets.top + 10, 16),
                         borderBottomWidth: 1,
                         borderBottomColor: '#F1F5F9',
                         backgroundColor: '#FFFFFF'
                     }]}>
                         <View>
                             <Text style={styles.modalTitle}>{editingItem ? 'Edit' : 'Buat'} Banner</Text>
-                            <Text style={styles.modalSubtitle}>KONFIGURASI TAMPILAN</Text>
+                            <Text style={styles.modalSubtitle}>KONFIGURASI TAMPILAN BANNER</Text>
                         </View>
                         <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.closeBtn}>
-                            <X size={24} color="#64748B" />
+                            <X size={22} color="#64748B" />
                         </TouchableOpacity>
                     </View>
 
-                    {/* Konten Utama: Menggunakan flex: 1 untuk mendorong footer ke bawah */}
+                    {/* Konten Scroll Modal */}
                     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-                        <KeyboardAwareScrollView
+                        <FormScrollContainer
                             style={{ flex: 1 }}
                             showsVerticalScrollIndicator={false}
                             keyboardShouldPersistTaps="handled"
@@ -422,46 +511,61 @@ const Banners = ({ navigation }) => {
                             extraScrollHeight={Platform.OS === 'ios' ? 40 : 20}
                             contentContainerStyle={[
                                 styles.scrollBodyContent,
-                                { paddingBottom: 40 } // Padding agar item terakhir tidak mepet footer
+                                { paddingBottom: 40 }
                             ]}
                         >
-                            {/* Hanya tampilkan konten jika layout sudah 'Ready' (Hack untuk Android) */}
                             {isLayoutReady ? (
                                 <View style={styles.formSection}>
                                     {/* Live Preview */}
                                     <Text style={styles.labelGroup}>PRATINJAU LANGSUNG</Text>
-                                    <View style={[styles.bannerPreview, { backgroundColor: COLOR_MAP[formData.color_class] || '#4F46E5', marginBottom: 30 }]}>
-                                        {imageUri && (
+                                    <View style={[
+                                        styles.bannerPreview,
+                                        { backgroundColor: getBannerColor(formData.color_class), marginBottom: 24 }
+                                    ]}>
+                                        {imageUri ? (
                                             <Image
                                                 source={{ uri: imageUri }}
                                                 style={styles.bannerBackgroundImage}
                                                 resizeMode="cover"
                                             />
-                                        )}
-                                        {imageUri && formData.show_text && <View style={styles.bannerOverlay} />}
+                                        ) : null}
 
-                                        {formData.show_text && React.createElement(ICON_MAP[formData.icon_name] || Percent, {
-                                            size: 120,
-                                            color: '#FFFFFF',
-                                            style: styles.bgDecoration,
-                                            strokeWidth: 1,
-                                            opacity: 0.1
-                                        })}
+                                        {imageUri && formData.show_text ? (
+                                            <View style={styles.bannerOverlay} />
+                                        ) : null}
+
+                                        {formData.show_text ? (
+                                            <ModalIcon
+                                                size={120}
+                                                color="#FFFFFF"
+                                                style={styles.bgDecoration}
+                                                strokeWidth={1}
+                                                opacity={0.1}
+                                            />
+                                        ) : null}
 
                                         <View style={styles.bannerContentWrapper}>
                                             {formData.show_text ? (
                                                 <View style={styles.bannerContent}>
                                                     <View style={styles.bannerText}>
-                                                        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
-                                                        <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
+                                                        <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '900' }}>
+                                                            {formData.title || 'Judul Banner'}
+                                                        </Text>
+                                                        <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.85, marginTop: 2 }}>
+                                                            {formData.subtitle || 'Sub-titel banner Anda'}
+                                                        </Text>
                                                     </View>
                                                     <View style={styles.bannerIconBadge}>
-                                                        {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
+                                                        <ModalIcon size={22} color="#FFFFFF" strokeWidth={2.5} />
                                                     </View>
                                                 </View>
                                             ) : null}
                                             <View style={styles.bannerFooter}>
-                                                <View style={styles.footerLine} />
+                                                <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                                    <Text style={styles.statusText}>
+                                                        {formData.is_active ? 'AKTIF' : 'NON-AKTIF'}
+                                                    </Text>
+                                                </View>
                                                 <View style={styles.arrowCircle}>
                                                     <ArrowRight size={14} color="#1E293B" />
                                                 </View>
@@ -471,18 +575,42 @@ const Banners = ({ navigation }) => {
 
                                     {/* Form Inputs */}
                                     <View style={styles.formGroup}>
-                                        <Text style={styles.label}>JUDUL KONTEN</Text>
+                                        <Text style={styles.label}>JUDUL KONTEN *</Text>
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Contoh: Diskon Kopi 50%"
+                                            placeholder="Contoh: Promo Spesial Hari Ini"
+                                            placeholderTextColor="#94A3B8"
                                             value={formData.title}
-                                            onChangeText={(val) => setFormData({ ...formData, title: val })}
+                                            onChangeText={(val) => setFormData(prev => ({ ...prev, title: val }))}
+                                        />
+                                    </View>
+
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>DESKRIPSI / SUB-TITEL</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: Nikmati potongan harga hingga 50%"
+                                            placeholderTextColor="#94A3B8"
+                                            value={formData.subtitle}
+                                            onChangeText={(val) => setFormData(prev => ({ ...prev, subtitle: val }))}
+                                        />
+                                    </View>
+
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>TAUTAN / LINK TUJUAN (OPSIONAL)</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: /menu atau https://..."
+                                            placeholderTextColor="#94A3B8"
+                                            value={formData.link_url}
+                                            onChangeText={(val) => setFormData(prev => ({ ...prev, link_url: val }))}
+                                            autoCapitalize="none"
                                         />
                                     </View>
 
                                     <View style={styles.formGroup}>
                                         <Text style={styles.label}>GAMBAR LATAR BELAKANG (OPSIONAL)</Text>
-                                        <TouchableOpacity onPress={pickImage} style={styles.imageUploadBox}>
+                                        <TouchableOpacity onPress={pickImage} style={styles.imageUploadBox} activeOpacity={0.8}>
                                             {imageUri ? (
                                                 <View style={styles.imagePreviewContainer}>
                                                     <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
@@ -494,15 +622,17 @@ const Banners = ({ navigation }) => {
                                             ) : (
                                                 <View style={styles.uploadPlaceholder}>
                                                     <ImageIcon size={32} color="#94A3B8" />
-                                                    <Text style={styles.uploadText}>Pilih Gambar</Text>
-                                                    <Text style={styles.uploadHint}>Rasio 16:9 • Max 2MB</Text>
+                                                    <Text style={styles.uploadText}>Pilih Gambar Banner</Text>
+                                                    <Text style={styles.uploadHint}>Rasio 16:9 disarankan</Text>
                                                 </View>
                                             )}
                                         </TouchableOpacity>
-                                        {imageUri && (
+                                        {imageUri ? (
                                             <TouchableOpacity
                                                 onPress={() => {
                                                     setImageUri(null);
+                                                    setSelectedImageFile(null);
+                                                    setHasNewImage(false);
                                                     setIsImageRemoved(true);
                                                 }}
                                                 style={styles.removeImageBtn}
@@ -510,29 +640,19 @@ const Banners = ({ navigation }) => {
                                                 <X size={16} color="#EF4444" />
                                                 <Text style={styles.removeImageText}>Hapus Gambar</Text>
                                             </TouchableOpacity>
-                                        )}
+                                        ) : null}
                                     </View>
 
                                     <View style={styles.formGroup}>
-                                        <Text style={styles.label}>DESKRIPSI / SUB-TITEL</Text>
-                                        <TextInput
-                                            style={styles.input}
-                                            placeholder="Contoh: Berlaku s/d jam 10 pagi"
-                                            value={formData.subtitle}
-                                            onChangeText={(val) => setFormData({ ...formData, subtitle: val })}
-                                        />
-                                    </View>
-
-                                    <View style={styles.formGroup}>
-                                        <Text style={styles.label}>WARNA UTAMA</Text>
+                                        <Text style={styles.label}>WARNA TEMA UTAMA</Text>
                                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorGrid}>
                                             {colors.map(color => (
                                                 <TouchableOpacity
                                                     key={color.class}
-                                                    onPress={() => setFormData({ ...formData, color_class: color.class })}
+                                                    onPress={() => setFormData(prev => ({ ...prev, color_class: color.class }))}
                                                     style={[
                                                         styles.colorCircle,
-                                                        { backgroundColor: COLOR_MAP[color.class] },
+                                                        { backgroundColor: COLOR_MAP[color.class] || '#4F46E5' },
                                                         formData.color_class === color.class && styles.activeColor
                                                     ]}
                                                 />
@@ -544,15 +664,15 @@ const Banners = ({ navigation }) => {
                                         <Text style={styles.label}>IKON ILUSTRASI</Text>
                                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconGrid}>
                                             {icons.map(iconName => {
-                                                const IconComp = ICON_MAP[iconName];
+                                                const IconComponent = getBannerIcon(iconName);
                                                 const isActive = formData.icon_name === iconName;
                                                 return (
                                                     <TouchableOpacity
                                                         key={iconName}
-                                                        onPress={() => setFormData({ ...formData, icon_name: iconName })}
+                                                        onPress={() => setFormData(prev => ({ ...prev, icon_name: iconName }))}
                                                         style={[styles.iconBox, isActive && styles.activeIconBox]}
                                                     >
-                                                        <IconComp size={20} color={isActive ? '#FFFFFF' : '#94A3B8'} />
+                                                        <IconComponent size={20} color={isActive ? '#FFFFFF' : '#64748B'} />
                                                     </TouchableOpacity>
                                                 );
                                             })}
@@ -560,44 +680,44 @@ const Banners = ({ navigation }) => {
                                     </View>
 
                                     <View style={styles.toggleRow}>
-                                        <View>
+                                        <View style={{ flex: 1, paddingRight: 12 }}>
                                             <Text style={styles.toggleTitle}>Tampilkan Teks & Tombol</Text>
-                                            <Text style={styles.toggleSubtitle}>Sembunyikan jika hanya ingin gambar banner saja</Text>
+                                            <Text style={styles.toggleSubtitle}>Sembunyikan teks jika gambar sudah memiliki tulisan promo</Text>
                                         </View>
                                         <Switch
                                             value={formData.show_text}
-                                            onValueChange={(val) => setFormData({ ...formData, show_text: val })}
-                                            trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                                            onValueChange={(val) => setFormData(prev => ({ ...prev, show_text: val }))}
+                                            trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
                                             thumbColor={formData.show_text ? '#2563EB' : '#F8FAFC'}
                                         />
                                     </View>
 
                                     <View style={styles.toggleRow}>
-                                        <View>
+                                        <View style={{ flex: 1, paddingRight: 12 }}>
                                             <Text style={styles.toggleTitle}>Status Banner Aktif</Text>
-                                            <Text style={styles.toggleSubtitle}>Munculkan banner di dashboard pelanggan</Text>
+                                            <Text style={styles.toggleSubtitle}>Tampilkan banner ini di dashboard aplikasi pelanggan</Text>
                                         </View>
                                         <Switch
                                             value={formData.is_active}
-                                            onValueChange={(val) => setFormData({ ...formData, is_active: val })}
-                                            trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                                            onValueChange={(val) => setFormData(prev => ({ ...prev, is_active: val }))}
+                                            trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
                                             thumbColor={formData.is_active ? '#2563EB' : '#F8FAFC'}
                                         />
                                     </View>
                                 </View>
                             ) : (
-                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
                                     <ActivityIndicator size="large" color="#2563EB" />
                                 </View>
                             )}
-                        </KeyboardAwareScrollView>
+                        </FormScrollContainer>
                     </View>
 
-                    {/* Footer / Navbar: Pola standard (non-absolute) agar tidak menutupi konten */}
+                    {/* Footer Modal */}
                     <View style={[
                         styles.modalFooter,
                         {
-                            paddingBottom: Math.max(insets.bottom, 24),
+                            paddingBottom: Math.max(insets.bottom, 20),
                             backgroundColor: '#FFFFFF',
                             borderTopWidth: 1,
                             borderTopColor: '#F1F5F9',
@@ -605,7 +725,11 @@ const Banners = ({ navigation }) => {
                             zIndex: 10
                         }
                     ]}>
-                        <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.cancelBtn}>
+                        <TouchableOpacity
+                            onPress={() => setIsModalOpen(false)}
+                            style={styles.cancelBtn}
+                            disabled={isSaving}
+                        >
                             <Text style={styles.cancelBtnText}>Batal</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -613,8 +737,10 @@ const Banners = ({ navigation }) => {
                             disabled={isSaving}
                             style={styles.saveBtn}
                         >
-                            <Text style={styles.saveBtnText}>{isSaving ? 'Memproses...' : (editingItem ? 'Simpan Update' : 'Terbitkan')}</Text>
-                            {!isSaving && <Check size={20} color="#FFFFFF" />}
+                            <Text style={styles.saveBtnText}>
+                                {isSaving ? 'Menyimpan...' : (editingItem ? 'Simpan Update' : 'Terbitkan')}
+                            </Text>
+                            {!isSaving ? <Check size={18} color="#FFFFFF" /> : null}
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -636,6 +762,8 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 20,
         backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
     },
     backBtn: {
         width: 40,
@@ -653,6 +781,8 @@ const styles = StyleSheet.create({
     headerAdd: {
         width: 40,
         height: 40,
+        backgroundColor: '#EFF6FF',
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -663,7 +793,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: 20,
-        gap: 20,
+        gap: 16,
     },
     bannerCard: {
         backgroundColor: '#FFFFFF',
@@ -673,7 +803,8 @@ const styles = StyleSheet.create({
         borderColor: '#F1F5F9',
         ...Platform.select({
             android: { elevation: 3 },
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 }
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 10 },
+            web: { boxShadow: '0px 4px 16px rgba(0,0,0,0.06)' }
         })
     },
     bannerPreview: {
@@ -684,7 +815,7 @@ const styles = StyleSheet.create({
     },
     bannerContentWrapper: {
         ...StyleSheet.absoluteFillObject,
-        padding: 24,
+        padding: 20,
         justifyContent: 'space-between',
         zIndex: 10,
     },
@@ -700,19 +831,19 @@ const styles = StyleSheet.create({
     },
     bannerTitle: {
         color: '#FFFFFF',
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '900',
     },
     bannerSubtitle: {
         color: '#FFFFFF',
         fontSize: 13,
-        opacity: 0.8,
+        opacity: 0.85,
         marginTop: 2,
     },
     bannerIconBadge: {
         backgroundColor: 'rgba(255,255,255,0.2)',
         padding: 10,
-        borderRadius: 15,
+        borderRadius: 14,
     },
     bannerFooter: {
         flexDirection: 'row',
@@ -722,20 +853,14 @@ const styles = StyleSheet.create({
     },
     statusBadge: {
         paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
     },
     statusText: {
         color: '#FFFFFF',
         fontSize: 10,
         fontWeight: '900',
         letterSpacing: 1,
-    },
-    footerLine: {
-        height: 4,
-        width: 30,
-        backgroundColor: 'rgba(255,255,255,0.3)',
-        borderRadius: 2,
     },
     arrowCircle: {
         width: 28,
@@ -752,30 +877,30 @@ const styles = StyleSheet.create({
         transform: [{ rotate: '15deg' }],
     },
     cardActions: {
-        padding: 16,
+        padding: 14,
         flexDirection: 'row',
-        gap: 12,
+        gap: 10,
     },
     editBtn: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F1F5F9',
         paddingVertical: 12,
-        borderRadius: 15,
+        borderRadius: 14,
         gap: 8,
     },
     editBtnText: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#64748B',
+        color: '#475569',
     },
     deleteBtn: {
-        width: 48,
-        height: 48,
+        width: 46,
+        height: 46,
         backgroundColor: '#FEF2F2',
-        borderRadius: 15,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -804,21 +929,17 @@ const styles = StyleSheet.create({
     },
     // Modal
     modalContainer: {
-        flex: 1,
         backgroundColor: '#FFFFFF',
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingBottom: 24,
-        paddingTop: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
+        paddingHorizontal: 20,
+        paddingBottom: 16,
     },
     modalTitle: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '900',
         color: '#1E293B',
     },
@@ -826,39 +947,26 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '900',
         color: '#94A3B8',
-        letterSpacing: 2,
-        marginTop: 4,
+        letterSpacing: 1.5,
+        marginTop: 2,
     },
     closeBtn: {
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F1F5F9',
         padding: 8,
         borderRadius: 12,
     },
-    scrollBody: {
-        flex: 1,
-        backgroundColor: '#F8FAFC',
-    },
-    modalScrollContainer: {
-        flex: 1,
-    },
     scrollBodyContent: {
-        paddingBottom: 20,
-        padding: 24,
-        flexGrow: 1,
-    },
-    receiptBody: {
-        padding: 24,
+        padding: 20,
     },
     labelGroup: {
         fontSize: 11,
         fontWeight: '900',
         color: '#94A3B8',
         letterSpacing: 1.5,
-        marginBottom: 12,
+        marginBottom: 10,
     },
     formSection: {
-        gap: 20,
-        paddingBottom: 40,
+        gap: 18,
     },
     formGroup: {
         gap: 8,
@@ -866,60 +974,64 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 11,
         fontWeight: '900',
-        color: '#94A3B8',
-        letterSpacing: 1,
-        marginLeft: 4,
+        color: '#64748B',
+        letterSpacing: 0.8,
+        marginLeft: 2,
     },
     input: {
-        backgroundColor: '#F8FAFC',
-        borderRadius: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        fontSize: 15,
-        fontWeight: 'bold',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 14,
+        fontWeight: '600',
         color: '#1E293B',
     },
     colorGrid: {
-        gap: 12,
-        paddingVertical: 5,
+        gap: 10,
+        paddingVertical: 6,
     },
     colorCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 2,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        borderWidth: 3,
         borderColor: 'transparent',
     },
     activeColor: {
-        borderColor: '#138FEA',
-        transform: [{ scale: 1.1 }],
+        borderColor: '#0F172A',
+        transform: [{ scale: 1.15 }],
     },
     iconGrid: {
-        gap: 12,
-        paddingVertical: 5,
+        gap: 10,
+        paddingVertical: 6,
     },
     iconBox: {
-        width: 48,
-        height: 48,
-        backgroundColor: '#F8FAFC',
+        width: 46,
+        height: 46,
+        backgroundColor: '#FFFFFF',
         borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'transparent',
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
     },
     activeIconBox: {
-        backgroundColor: '#138FEA',
-        borderColor: '#138FEA',
+        backgroundColor: '#2563EB',
+        borderColor: '#2563EB',
     },
     toggleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#FFFFFF',
         borderRadius: 16,
-        marginTop: 10,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        marginTop: 6,
     },
     toggleTitle: {
         fontSize: 14,
@@ -932,60 +1044,38 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     modalFooter: {
-        padding: 24,
+        padding: 20,
         flexDirection: 'row',
         gap: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
-        backgroundColor: '#FFFFFF',
-        zIndex: 999,
-        elevation: 20,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: -10 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 20,
-                borderTopWidth: 0,
-            },
-            web: {
-                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
-                borderTopWidth: 0,
-            }
-        })
     },
     cancelBtn: {
         flex: 1,
-        paddingVertical: 16,
+        paddingVertical: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F8FAFC',
-        borderRadius: 16,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 14,
     },
     cancelBtnText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: 'bold',
         color: '#64748B',
     },
     saveBtn: {
         flex: 2,
         flexDirection: 'row',
-        paddingVertical: 16,
+        paddingVertical: 14,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#2563EB',
-        borderRadius: 16,
-        gap: 10,
+        borderRadius: 14,
+        gap: 8,
     },
     saveBtnText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '900',
         color: '#FFFFFF',
     },
-    // Background Image Styles
     bannerBackgroundImage: {
         position: 'absolute',
         top: 0,
@@ -1002,21 +1092,20 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        backgroundColor: 'rgba(0, 0, 0, 0.35)',
         borderRadius: 20,
     },
-    // Image Upload Styles
     imageUploadBox: {
-        borderWidth: 2,
-        borderColor: '#E2E8F0',
-        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#CBD5E1',
+        borderRadius: 14,
         borderStyle: 'dashed',
         overflow: 'hidden',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#FFFFFF',
     },
     imagePreviewContainer: {
         width: '100%',
-        height: 180,
+        height: 160,
         position: 'relative',
     },
     imagePreview: {
@@ -1029,30 +1118,29 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
     },
     imageOverlayText: {
         color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 13,
+        fontWeight: 'bold',
     },
     uploadPlaceholder: {
-        paddingVertical: 40,
+        paddingVertical: 32,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
+        gap: 6,
     },
     uploadText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '600',
         color: '#64748B',
-        marginTop: 8,
     },
     uploadHint: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#94A3B8',
     },
     removeImageBtn: {
@@ -1060,16 +1148,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        marginTop: 12,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
+        marginTop: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
         backgroundColor: '#FEF2F2',
-        borderRadius: 12,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: '#FEE2E2',
+        alignSelf: 'flex-start',
     },
     removeImageText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '600',
         color: '#EF4444',
     },

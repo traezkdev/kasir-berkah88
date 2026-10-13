@@ -436,9 +436,9 @@ const upload = multer({
 
         const allowedTypes = /jpeg|jpg|png|webp|gif|svg|ico/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
+        const mimetype = allowedTypes.test(file.mimetype) || (file.mimetype && file.mimetype.startsWith('image/'));
 
-        if (mimetype && extname) {
+        if (mimetype || extname) {
             return cb(null, true);
         } else {
             cb(new Error('Hanya file gambar (jpg, png, webp, gif, svg, ico) dan file JSON yang diizinkan!'));
@@ -2263,8 +2263,21 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 
         const { title, subtitle, color_class, icon_name, link_url, is_active, show_text, remove_image } = bannerData;
         const parseBool = (val) => val === true || val === 'true' || val === 1 || val === '1';
 
-        // Fetch current banner to handle image cleanup
-        let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active, final_show_text];
+        if (!title) {
+            return res.status(400).json({ "error": "Judul banner (title) wajib diisi" });
+        }
+
+        const final_is_active = is_active !== undefined ? (parseBool(is_active) ? 1 : 0) : 1;
+        const final_show_text = show_text !== undefined ? (parseBool(show_text) ? 1 : 0) : 1;
+
+        // Fetch current banner to verify existence and handle image cleanup
+        const [currentBanner] = await db.query('SELECT * FROM banners WHERE id = ?', [id]);
+        if (!currentBanner || currentBanner.length === 0) {
+            return res.status(404).json({ "error": "Banner tidak ditemukan" });
+        }
+
+        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?, show_text = ?';
+        let params = [title, subtitle || '', color_class || 'bg-indigo-600', icon_name || 'Percent', link_url || '', final_is_active, final_show_text];
 
         if (req.file) {
             const image_url = `/public/uploads/${req.file.filename}`;
@@ -2272,16 +2285,20 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 
             params.push(image_url);
 
             // Delete old image if it exists
-            if (currentBanner.length > 0 && currentBanner[0].image_url) {
+            if (currentBanner[0].image_url) {
                 const oldPath = path.join(__dirname, currentBanner[0].image_url);
-                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+                if (fs.existsSync(oldPath)) {
+                    try { fs.unlinkSync(oldPath); } catch (e) { console.error('Error removing old banner image:', e); }
+                }
             }
         } else if (remove_image === true || remove_image === 'true') {
             sql += ', image_url = NULL';
             // Delete old image if it exists
-            if (currentBanner.length > 0 && currentBanner[0].image_url) {
+            if (currentBanner[0].image_url) {
                 const oldPath = path.join(__dirname, currentBanner[0].image_url);
-                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+                if (fs.existsSync(oldPath)) {
+                    try { fs.unlinkSync(oldPath); } catch (e) { console.error('Error removing old banner image:', e); }
+                }
             }
         }
 
@@ -2301,7 +2318,7 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 
 });
 
 // Delete a banner
-app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -2310,12 +2327,16 @@ app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penju
         if (rows.length > 0 && rows[0].image_url) {
             const imagePath = path.join(__dirname, rows[0].image_url);
             if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
+                try { fs.unlinkSync(imagePath); } catch (e) { console.error('Error removing banner image on delete:', e); }
             }
         }
 
         const sql = 'DELETE FROM banners WHERE id = ?';
-        await db.query(sql, [id]);
+        const [result] = await db.query(sql, [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Banner tidak ditemukan" });
+        }
+
         await logActivity(req.user.userId, 'Hapus Banner', 'banner', id, `Banner ID ${id} dihapus`);
         res.json({ "message": "success" });
     } catch (err) {
