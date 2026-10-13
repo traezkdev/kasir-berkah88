@@ -620,7 +620,8 @@ const setupDatabase = async () => {
       ['initial_capital', '0'],
       ['initial_capital_date', new Date().toISOString().slice(0, 19).replace('T', ' ')],
       ['points_per_item', '0'],
-      ['point_system_enabled', '1']
+      ['point_system_enabled', '1'],
+      ['mobile_receipt_ui_version', '1']
     ];
 
     for (const [sKey, sVal] of defaultSettingsToEnsure) {
