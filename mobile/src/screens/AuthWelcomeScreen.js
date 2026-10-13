@@ -8,88 +8,22 @@ import {
     Platform,
     StatusBar,
     Image,
-    FlatList
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { API_URL } from '../api/apiService';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const AuthWelcomeScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { logoUrl, headerTitle } = useAppSettings();
-    const [activeSlide, setActiveSlide] = React.useState(0);
-
-    const onboardingData = [
-        {
-            id: '1',
-            title: 'Assalamu’alaikum',
-            description: `Telah hadir ${headerTitle || 'Berkah 88'} buat nemenin hari kamu dengan menu-menu pilihan yang insyaAllah berkah.`,
-            color: '#059669'
-        },
-        {
-            id: '2',
-            title: 'Menu Penuh Berkah',
-            description: 'Banyak pilihan menu halal dan lezat yang siap bikin lidah kamu happy setiap hari.',
-            color: '#10B981'
-        },
-        {
-            id: '3',
-            title: 'Layanan Amanah',
-            description: 'Gak perlu antre lama, pesanan kamu langsung kami proses dengan cepat dan jujur.',
-            color: '#10B981'
-        }
-    ];
 
     const getLogoSource = () => {
         if (!logoUrl) return null;
         if (logoUrl.startsWith('http')) return { uri: logoUrl };
         return { uri: `${API_URL}${logoUrl}` };
-    };
-
-    const renderSlide = ({ item }) => (
-        <View style={styles.slide}>
-            {/* Branding Section */}
-            <View style={styles.premiumBranding}>
-                <View style={styles.premiumLogoWrapper}>
-                    {logoUrl ? (
-                        <Image
-                            source={getLogoSource()}
-                            style={styles.premiumLogo}
-                            resizeMode="contain"
-                        />
-                    ) : (
-                        <View style={styles.premiumPlaceholderLogo}>
-                            <View style={styles.placeholderLogoBar1} />
-                            <View style={styles.placeholderLogoBar2} />
-                        </View>
-                    )}
-                </View>
-                <View style={styles.premiumBrandingInfo}>
-                    <Text style={styles.premiumBrandName}>
-                        {headerTitle?.toUpperCase() || 'BERKAH 88'}
-                    </Text>
-                    <View style={styles.premiumBrandLine} />
-                </View>
-            </View>
-
-            {/* Content Section */}
-            <View style={styles.premiumContentCard}>
-
-                <Text style={styles.premiumGreeting}>{item.title}</Text>
-                <View style={styles.premiumMessageWrapper}>
-                    <Text style={styles.premiumMessage}>{item.description}</Text>
-                </View>
-            </View>
-        </View>
-    );
-
-    const onScroll = (event) => {
-        const slideSize = event.nativeEvent.layoutMeasurement.width;
-        const index = event.nativeEvent.contentOffset.x / slideSize;
-        setActiveSlide(Math.round(index));
     };
 
     return (
@@ -111,34 +45,32 @@ const AuthWelcomeScreen = ({ navigation }) => {
                     )}
                 </View>
 
-                {/* Onboarding Carousel */}
-                <FlatList
-                    data={onboardingData}
-                    renderItem={renderSlide}
-                    keyExtractor={(item) => item.id}
-                    horizontal
-                    pagingEnabled
-                    showsHorizontalScrollIndicator={false}
-                    onScroll={onScroll}
-                    scrollEventThrottle={16}
-                    style={styles.carousel}
-                />
+                {/* Branding Section */}
+                <View style={styles.brandingSection}>
+                    <View style={styles.premiumLogoWrapper}>
+                        {logoUrl ? (
+                            <Image
+                                source={getLogoSource()}
+                                style={styles.premiumLogo}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <View style={styles.premiumPlaceholderLogo}>
+                                <View style={styles.placeholderLogoBar1} />
+                                <View style={styles.placeholderLogoBar2} />
+                            </View>
+                        )}
+                    </View>
+                    <View style={styles.premiumBrandingInfo}>
+                        <Text style={styles.premiumBrandName}>
+                            {headerTitle?.toUpperCase() || 'BERKAH 88'}
+                        </Text>
+                        <View style={styles.premiumBrandLine} />
+                    </View>
+                </View>
 
                 {/* Footer Section */}
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 40) }]}>
-                    {/* Pagination Dots */}
-                    <View style={styles.dotsContainer}>
-                        {onboardingData.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.dot,
-                                    activeSlide === index && styles.dotActive
-                                ]}
-                            />
-                        ))}
-                    </View>
-
                     {/* Action Buttons */}
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
@@ -215,29 +147,22 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         letterSpacing: 1,
     },
-    carousel: {
+    brandingSection: {
         flex: 1,
-    },
-    slide: {
-        width: width,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 30,
     },
-    premiumBranding: {
-        alignItems: 'center',
-        marginBottom: 50,
-    },
     premiumLogoWrapper: {
-        width: 120,
-        height: 120,
+        width: 140,
+        height: 140,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 20,
     },
     premiumLogo: {
-        width: 110,
-        height: 110,
+        width: 130,
+        height: 130,
     },
     premiumPlaceholderLogo: {
         width: 60,
@@ -246,15 +171,27 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
     },
+    placeholderLogoBar1: {
+        width: 20,
+        height: 40,
+        backgroundColor: 'rgba(255,255,255,0.5)',
+        borderRadius: 4,
+    },
+    placeholderLogoBar2: {
+        width: 20,
+        height: 40,
+        backgroundColor: 'rgba(255,255,255,0.3)',
+        borderRadius: 4,
+    },
     premiumBrandingInfo: {
         alignItems: 'center',
     },
     premiumBrandName: {
         color: '#FFFFFF',
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '900',
         letterSpacing: 4,
-        marginBottom: 10,
+        marginBottom: 12,
     },
     premiumBrandLine: {
         width: 40,
@@ -262,49 +199,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#10B981',
         borderRadius: 2,
     },
-    premiumContentCard: {
-        width: '100%',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-    },
-    premiumGreeting: {
-        color: '#FFFFFF',
-        fontSize: 32,
-        fontWeight: '900',
-        marginBottom: 15,
-        textAlign: 'center',
-        textShadowColor: 'rgba(0, 0, 0, 0.1)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
-    },
-    premiumMessageWrapper: {
-        paddingHorizontal: 20,
-    },
-    premiumMessage: {
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 26,
-        fontWeight: '600',
-    },
     footer: {
         paddingHorizontal: 30,
         alignItems: 'center',
-    },
-    dotsContainer: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 35,
-    },
-    dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    dotActive: {
-        width: 16,
-        backgroundColor: '#FFFFFF',
     },
     buttonContainer: {
         width: '100%',

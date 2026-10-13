@@ -5221,16 +5221,19 @@ app.post("/api/orders", (req, res, next) => {
 
         // Realtime Update via Socket.io (instant)
         const socketTimestamp = new Date().toISOString();
-        req.app.get('io').emit('new_order', {
-            id: orderId,
-            customer_name,
-            total: calculatedTotal,
-            promo_discount: finalPromoDiscount,
-            status: 'pending',
-            created_at: socketTimestamp,
-            timestamp: socketTimestamp,
-            user_id: userId
-        });
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('new_order', {
+                id: orderId,
+                customer_name,
+                total: calculatedTotal,
+                promo_discount: finalPromoDiscount,
+                status: 'pending',
+                created_at: socketTimestamp,
+                timestamp: socketTimestamp,
+                user_id: userId
+            });
+        }
 
         res.status(201).json({
             message: "Order created successfully and is pending verification.",
