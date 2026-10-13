@@ -85,6 +85,19 @@ const LoginV1 = () => {
       if (response.ok) {
         localStorage.setItem('token', data.token);
         const decodedToken = jwtDecode(data.token);
+        localStorage.setItem('userId', decodedToken.userId);
+        localStorage.setItem('role', decodedToken.role);
+        localStorage.setItem('username', decodedToken.username || formData.username);
+
+        // Jadikan tema admin sebagai default UI di awal untuk user baru login
+        const lastUserId = localStorage.getItem('last_logged_in_user_id');
+        if (!lastUserId || lastUserId !== String(decodedToken.userId) || !localStorage.getItem('theme_user_selected')) {
+          localStorage.setItem('app-theme', 'admin');
+          localStorage.removeItem('theme_user_selected');
+          window.dispatchEvent(new CustomEvent('app-theme-reset', { detail: 'admin' }));
+        }
+        localStorage.setItem('last_logged_in_user_id', String(decodedToken.userId));
+
         const userRole = decodedToken.role;
         if (userRole === 'kasir') {
           navigate('/cashier-dashboard');

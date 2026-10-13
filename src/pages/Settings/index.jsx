@@ -53,7 +53,7 @@ const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
 };
 
 const Settings = () => {
-  const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
+  const { theme, toggleTheme, setTheme, appStyle, setAppStyle } = useTheme();
   const { appMode, toggleAppMode, toggleSidebar, dailyWelcomeEnabled, updateDailyWelcome } = useAppSettings();
   const { showToast } = useToast();
 
@@ -1375,7 +1375,7 @@ const Settings = () => {
             <h4 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4">Pilih Tema Panel</h4>
             <div className="grid grid-cols-2 gap-4">
               <div
-                onClick={() => theme !== 'default' && toggleTheme()}
+                onClick={() => theme !== 'default' && setTheme('default')}
                 className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 ${theme === 'default' ? 'border-blue-600 bg-blue-50/50' : 'border-border hover:border-blue-300'}`}
               >
                 <div className="text-center">
@@ -1386,7 +1386,7 @@ const Settings = () => {
                 </div>
               </div>
               <div
-                onClick={() => theme !== 'admin' && toggleTheme()}
+                onClick={() => theme !== 'admin' && setTheme('admin')}
                 className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 ${theme === 'admin' ? 'border-gray-900 bg-gray-50' : 'border-border hover:border-gray-300'}`}
               >
                 <div className="text-center">
