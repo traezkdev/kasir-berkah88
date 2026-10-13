@@ -120,7 +120,7 @@ export const theme1Styles = StyleSheet.create({
 
 // Warna ikons untuk tema 1
 export const theme1Colors = {
-    background: '#F8FAFC',
+    background: '#FFFFFF',
     accentColor: '#148FEA',
     iconColorCart: '#1E40AF',
     iconColorStatus: '#10B981',
