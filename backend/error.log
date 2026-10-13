@@ -283,3 +283,35 @@ Stack: ReferenceError: processedImageUrl is not defined
     at Layer.handle [as handle_request] (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\express\lib\router\layer.js:95:5)
     at next (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\express\lib\router\route.js:149:13)
 ---------------------
+
+--- UNCAUGHT EXCEPTION ---
+Time: 2026-10-13T10:37:56.762Z
+Error: listen EADDRINUSE: address already in use :::4000
+Stack: Error: listen EADDRINUSE: address already in use :::4000
+    at Server.setupListenHandle [as _listen2] (node:net:2328:16)
+    at listenInCluster (node:net:2437:12)
+    at Server.listen (node:net:2562:7)
+    at Object.<anonymous> (C:\Users\hp\Documents\GitHub\kasir-berkah88\backend\server.js:450:8)
+    at Module._compile (node:internal/modules/cjs/loader:1929:14)
+    at Object..js (node:internal/modules/cjs/loader:2060:10)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+---------------------
+
+--- UNCAUGHT EXCEPTION ---
+Time: 2026-10-13T10:48:05.641Z
+Error: listen EADDRINUSE: address already in use :::4000
+Stack: Error: listen EADDRINUSE: address already in use :::4000
+    at Server.setupListenHandle [as _listen2] (node:net:2328:16)
+    at listenInCluster (node:net:2437:12)
+    at Server.listen (node:net:2562:7)
+    at Object.<anonymous> (C:\Users\hp\Documents\GitHub\kasir-berkah88\backend\server.js:450:8)
+    at Module._compile (node:internal/modules/cjs/loader:1929:14)
+    at Object..js (node:internal/modules/cjs/loader:2060:10)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+---------------------

@@ -33,6 +33,18 @@ apiService.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        // Jika data adalah FormData, hapus Content-Type default (application/json)
+        // agar browser/Axios otomatis menyetel multipart/form-data beserta boundary yang valid!
+        if (config.data instanceof FormData || (config.data && typeof config.data.append === 'function')) {
+            if (config.headers) {
+                if (typeof config.headers.delete === 'function') {
+                    config.headers.delete('Content-Type');
+                    config.headers.delete('content-type');
+                }
+                delete config.headers['Content-Type'];
+                delete config.headers['content-type'];
+            }
+        }
         return config;
     },
     (error) => {
