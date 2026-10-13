@@ -120,7 +120,7 @@ const MenuItem = memo(({ item, qty, globalIgnoreStock, onAdd, onRemove }) => {
 
 const GuestCheckoutScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
-    const { ownerPhone } = useAppSettings();
+    const { ownerPhone, headerTitle } = useAppSettings();
     const appState = useRef(AppState.currentState);
     const [menuItems, setMenuItems] = useState([]);
     const [cart, setCart] = useState({});
@@ -349,7 +349,7 @@ const GuestCheckoutScreen = ({ navigation }) => {
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle}>Pesan Delivery</Text>
-                        <Text style={styles.headerSubtitle}>Tamu Berkah 88</Text>
+                        <Text style={styles.headerSubtitle}>Tamu {headerTitle || 'Berkah 88'}</Text>
                     </View>
                     <View style={styles.cartBadgeContainer}>
                         <ShoppingCart size={24} color="#FFFFFF" />

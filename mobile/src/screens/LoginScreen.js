@@ -28,7 +28,7 @@ const LoginScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
-    const { logoUrl } = useAppSettings();
+    const { logoUrl, headerTitle } = useAppSettings();
     const insets = useSafeAreaInsets();
 
     const handleLogin = async () => {
@@ -170,7 +170,7 @@ const LoginScreen = ({ navigation }) => {
                     </View>
 
                     <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                        <Text style={styles.footerText}>© 2026 Kasir Berkah88. Aplikasi POS Premium.</Text>
+                        <Text style={styles.footerText}>© 2026 {headerTitle || 'Kasir Berkah 88'}. Aplikasi POS Premium.</Text>
                     </View>
                 </KeyboardAvoidingView>
             </LinearGradient>
