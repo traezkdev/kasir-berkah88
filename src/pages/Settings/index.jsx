@@ -192,6 +192,8 @@ const Settings = () => {
   const [newPpnEnabled, setNewPpnEnabled] = useState(false);
   const [receiptVersion, setReceiptVersion] = useState('1');
   const [newReceiptVersion, setNewReceiptVersion] = useState('1');
+  const [mobileReceiptUiVersion, setMobileReceiptUiVersion] = useState('1');
+  const [newMobileReceiptUiVersion, setNewMobileReceiptUiVersion] = useState('1');
   const [authUiVersion, setAuthUiVersion] = useState('1');
   const [newAuthUiVersion, setNewAuthUiVersion] = useState('1');
   const [newDailyWelcomeEnabled, setNewDailyWelcomeEnabled] = useState(true);
@@ -303,6 +305,8 @@ const Settings = () => {
         setNewPpnEnabled(isPpnOn);
         setReceiptVersion(data.data.receipt_version || '1');
         setNewReceiptVersion(data.data.receipt_version || '1');
+        setMobileReceiptUiVersion(data.data.mobile_receipt_ui_version || '1');
+        setNewMobileReceiptUiVersion(data.data.mobile_receipt_ui_version || '1');
         setAuthUiVersion(data.data.auth_ui_version || '1');
         setNewAuthUiVersion(data.data.auth_ui_version || '1');
         setDashboardRunningText(data.data.dashboard_running_text || '');
@@ -852,6 +856,21 @@ const Settings = () => {
                 disabled={!isAdmin} 
               />
               <SettingsCard icon="FileText" title="Format Struk" description="Pilih versi tampilan struk transaksi" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
+              <SettingsCard
+                icon="Smartphone"
+                title="UI Struk Mobile"
+                description="Pilih tema tampilan struk pada aplikasi mobile"
+                badge={
+                  <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                    {mobileReceiptUiVersion === '1' ? 'Klasik' : mobileReceiptUiVersion === '2' ? 'Dark' : 'Berkah'}
+                  </span>
+                }
+                onClick={() => {
+                  setNewMobileReceiptUiVersion(mobileReceiptUiVersion);
+                  setActiveModal('mobileReceiptUiVersion');
+                }}
+                disabled={!isAdmin}
+              />
               <SettingsCard icon="LayoutList" title="Kategori Menu" description="Kelola kategori produk makanan/minuman" onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
               <SettingsCard icon="Wallet" title="Kategori Biaya" description="Kelola kategori pengeluaran operasional" onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
               <SettingsCard icon="FileText" title="Template PDF Audit" description="Kustomisasi teks laporan audit PDF" onClick={() => setIsAuditPdfTemplateModalOpen(true)} disabled={!isAdmin} />
@@ -1228,6 +1247,65 @@ const Settings = () => {
               </div>
               {newReceiptVersion === '2' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
             </div>
+          </div>
+          <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      {/* Modal: UI Struk Mobile */}
+      <SettingsModal title="UI Struk Mobile" isOpen={activeModal === 'mobileReceiptUiVersion'} onClose={handleModalClose}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleUpdateSetting(e, '/api/settings/mobile_receipt_ui_version', { value: newMobileReceiptUiVersion }, 'Tema struk mobile berhasil diperbarui!');
+        }} className="space-y-6">
+          <p className="text-sm text-text-secondary mb-4">Pilih tema tampilan struk transaksi yang tampil di aplikasi mobile.</p>
+          <div className="grid grid-cols-1 gap-4">
+
+            {/* Tema 1: Klasik Modern */}
+            <div
+              onClick={() => setNewMobileReceiptUiVersion('1')}
+              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '1' ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 shadow-md' : 'border-border hover:border-sky-300'}`}
+            >
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #FFFFFF 50%, #EFF6FF 100%)', border: '1.5px solid #E2E8F0' }}>
+                <div className="w-8 h-8 rounded-lg" style={{ background: 'linear-gradient(135deg, #148FEA, #1E40AF)' }}></div>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-text-primary">Klasik Modern</h4>
+                <p className="text-sm text-text-secondary">Putih bersih dengan aksen biru. Tampilan default.</p>
+              </div>
+              {newMobileReceiptUiVersion === '1' && <AppIcon name="CheckCircle" className="text-sky-500 w-6 h-6 shrink-0" />}
+            </div>
+
+            {/* Tema 2: Dark Premium */}
+            <div
+              onClick={() => setNewMobileReceiptUiVersion('2')}
+              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '2' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 shadow-md' : 'border-border hover:border-yellow-300'}`}
+            >
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #0F172A 60%, #1E293B 100%)', border: '1.5px solid #334155' }}>
+                <div className="w-8 h-8 rounded-lg" style={{ background: 'linear-gradient(135deg, #D4AF37, #F5C842)' }}></div>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-text-primary">Dark Premium</h4>
+                <p className="text-sm text-text-secondary">Latar hitam mewah dengan aksen emas gold.</p>
+              </div>
+              {newMobileReceiptUiVersion === '2' && <AppIcon name="CheckCircle" className="text-yellow-500 w-6 h-6 shrink-0" />}
+            </div>
+
+            {/* Tema 3: Warung Berkah */}
+            <div
+              onClick={() => setNewMobileReceiptUiVersion('3')}
+              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '3' ? 'border-amber-700 bg-amber-50 dark:bg-amber-900/20 shadow-md' : 'border-border hover:border-amber-400'}`}
+            >
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #FDF6EE 50%, #F5E6D3 100%)', border: '1.5px solid #D4B89A' }}>
+                <div className="w-8 h-8 rounded-full" style={{ background: 'linear-gradient(135deg, #4A3728, #5C8C60)' }}></div>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-text-primary">Warung Berkah</h4>
+                <p className="text-sm text-text-secondary">Hangat & alami — tone cokelat dan hijau natural.</p>
+              </div>
+              {newMobileReceiptUiVersion === '3' && <AppIcon name="CheckCircle" className="text-amber-700 w-6 h-6 shrink-0" />}
+            </div>
+
           </div>
           <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
