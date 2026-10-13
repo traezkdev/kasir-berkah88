@@ -1266,44 +1266,64 @@ const Settings = () => {
               onClick={() => setNewMobileReceiptUiVersion('1')}
               className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '1' ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 shadow-md' : 'border-border hover:border-sky-300'}`}
             >
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #FFFFFF 50%, #EFF6FF 100%)', border: '1.5px solid #E2E8F0' }}>
-                <div className="w-8 h-8 rounded-lg" style={{ background: 'linear-gradient(135deg, #148FEA, #1E40AF)' }}></div>
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm" style={{ border: '1.5px solid #E2E8F0' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #148FEA, #1E40AF)' }}>
+                  <div className="w-4 h-1 bg-white rounded-full"></div>
+                </div>
               </div>
               <div className="flex-1">
-                <h4 className="font-black text-text-primary">Klasik Modern</h4>
-                <p className="text-sm text-text-secondary">Putih bersih dengan aksen biru. Tampilan default.</p>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-black text-text-primary">Klasik Modern</h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Default</span>
+                </div>
+                <p className="text-sm text-text-secondary">Putih bersih, layout klasik rapi dengan indikator baris biru.</p>
               </div>
               {newMobileReceiptUiVersion === '1' && <AppIcon name="CheckCircle" className="text-sky-500 w-6 h-6 shrink-0" />}
             </div>
 
-            {/* Tema 2: Dark Premium */}
+            {/* Tema 2: Modern Minimal Card */}
             <div
               onClick={() => setNewMobileReceiptUiVersion('2')}
-              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '2' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 shadow-md' : 'border-border hover:border-yellow-300'}`}
+              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '2' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-md' : 'border-border hover:border-indigo-300'}`}
             >
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #0F172A 60%, #1E293B 100%)', border: '1.5px solid #334155' }}>
-                <div className="w-8 h-8 rounded-lg" style={{ background: 'linear-gradient(135deg, #D4AF37, #F5C842)' }}></div>
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm" style={{ border: '1.5px solid #E0E7FF' }}>
+                <div className="w-8 h-8 rounded-lg flex flex-col justify-between p-1" style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5)' }}>
+                  <div className="w-full h-1 bg-white/70 rounded-full"></div>
+                  <div className="w-3/4 h-1 bg-white/50 rounded-full"></div>
+                </div>
               </div>
               <div className="flex-1">
-                <h4 className="font-black text-text-primary">Dark Premium</h4>
-                <p className="text-sm text-text-secondary">Latar hitam mewah dengan aksen emas gold.</p>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-black text-text-primary">Modern Minimal Card</h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Cards</span>
+                </div>
+                <p className="text-sm text-text-secondary">Putih bersih, layout floating card terpisah per item, aksen indigo.</p>
               </div>
-              {newMobileReceiptUiVersion === '2' && <AppIcon name="CheckCircle" className="text-yellow-500 w-6 h-6 shrink-0" />}
+              {newMobileReceiptUiVersion === '2' && <AppIcon name="CheckCircle" className="text-indigo-500 w-6 h-6 shrink-0" />}
             </div>
 
-            {/* Tema 3: Warung Berkah */}
+            {/* Tema 3: Tiket / Voucher Struk */}
             <div
               onClick={() => setNewMobileReceiptUiVersion('3')}
-              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '3' ? 'border-amber-700 bg-amber-50 dark:bg-amber-900/20 shadow-md' : 'border-border hover:border-amber-400'}`}
+              className={`cursor-pointer p-4 border-2 rounded-2xl transition-all duration-200 flex items-center gap-4 ${newMobileReceiptUiVersion === '3' ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 shadow-md' : 'border-border hover:border-sky-300'}`}
             >
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #FDF6EE 50%, #F5E6D3 100%)', border: '1.5px solid #D4B89A' }}>
-                <div className="w-8 h-8 rounded-full" style={{ background: 'linear-gradient(135deg, #4A3728, #5C8C60)' }}></div>
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm" style={{ border: '1.5px solid #BAE6FD' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-dashed border-sky-400 bg-sky-50">
+                  <div className="w-5 h-3 flex items-end justify-center gap-0.5">
+                    <span className="w-0.5 h-3 bg-sky-600"></span>
+                    <span className="w-0.5 h-2 bg-sky-600"></span>
+                    <span className="w-0.5 h-3.5 bg-sky-600"></span>
+                  </div>
+                </div>
               </div>
               <div className="flex-1">
-                <h4 className="font-black text-text-primary">Warung Berkah</h4>
-                <p className="text-sm text-text-secondary">Hangat & alami — tone cokelat dan hijau natural.</p>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-black text-text-primary">Tiket / Voucher Struk</h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Ticket</span>
+                </div>
+                <p className="text-sm text-text-secondary">Putih bersih, perforasi dashed tiket fisik, tabel nota & barcode.</p>
               </div>
-              {newMobileReceiptUiVersion === '3' && <AppIcon name="CheckCircle" className="text-amber-700 w-6 h-6 shrink-0" />}
+              {newMobileReceiptUiVersion === '3' && <AppIcon name="CheckCircle" className="text-sky-500 w-6 h-6 shrink-0" />}
             </div>
 
           </div>

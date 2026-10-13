@@ -617,8 +617,8 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 }
             ]}>
                 <StatusBar
-                    barStyle={mobileReceiptUiVersion === '2' ? 'light-content' : 'dark-content'}
-                    backgroundColor={tc.background}
+                    barStyle="dark-content"
+                    backgroundColor="#FFFFFF"
                 />
                 <View style={[styles.topHeader, { paddingTop: Math.max(insets.top, 10), height: 60 + insets.top }]}>
                     <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
@@ -642,6 +642,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                         contentContainerStyle={styles.scrollBodyContent}
                     >
                         <View style={t.receiptBody} ref={receiptRef} collapsable={false}>
+                            {/* ====== HEADER (sama untuk semua tema) ====== */}
                             <View style={t.receiptHeader}>
                                 <View style={[
                                     t.logoContainer,
@@ -663,27 +664,59 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 <Text style={t.restaurantName}>{settings.restaurant_name}</Text>
                                 <Text style={t.restaurantSlogan}>{settings.restaurant_slogan.toUpperCase()}</Text>
 
-                                <View style={t.dividerRow}>
-                                    <View style={t.dividerLine} />
-                                    <View style={t.dividerDot} />
-                                    <View style={t.dividerLine} />
-                                </View>
+                                {/* Divider — hanya Tema 1 & 2 */}
+                                {mobileReceiptUiVersion !== '3' && (
+                                    <View style={t.dividerRow}>
+                                        <View style={t.dividerLine} />
+                                        <View style={t.dividerDot} />
+                                        <View style={t.dividerLine} />
+                                    </View>
+                                )}
                             </View>
 
-                            <View style={t.infoBar}>
-                                <View>
-                                    <Text style={t.infoLabel}>ID REFERENSI</Text>
-                                    <View style={t.idRow}>
-                                        <View style={t.activeDot} />
-                                        <Text style={t.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
+                            {/* ====== PERFORASI — khusus Tema 3 ====== */}
+                            {mobileReceiptUiVersion === '3' && (
+                                <View style={t.perforationRow}>
+                                    <View style={t.perforationCircleLeft} />
+                                    <View style={t.perforationLine} />
+                                    <View style={t.perforationCircleRight} />
+                                </View>
+                            )}
+
+                            {/* ====== INFO BAR ====== */}
+                            {mobileReceiptUiVersion === '2' ? (
+                                // Tema 2 — info bar dengan padding horizontal (jadi full-width di dalam horizontal margin)
+                                <View style={t.infoBar}>
+                                    <View style={{ flex: 1, paddingVertical: 14, paddingHorizontal: 16, borderRightWidth: 1, borderRightColor: '#E0E7FF' }}>
+                                        <Text style={t.infoLabel}>ID REFERENSI</Text>
+                                        <View style={t.idRow}>
+                                            <View style={t.activeDot} />
+                                            <Text style={t.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={{ flex: 1, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'flex-end' }}>
+                                        <Text style={t.infoLabel}>WAKTU</Text>
+                                        <Text style={t.dateValue}>{formatDate(transaction.timestamp)}</Text>
                                     </View>
                                 </View>
-                                <View style={t.infoRight}>
-                                    <Text style={t.infoLabel}>WAKTU</Text>
-                                    <Text style={t.dateValue}>{formatDate(transaction.timestamp)}</Text>
+                            ) : (
+                                // Tema 1 & 3
+                                <View style={t.infoBar}>
+                                    <View>
+                                        <Text style={t.infoLabel}>ID REFERENSI</Text>
+                                        <View style={t.idRow}>
+                                            <View style={t.activeDot} />
+                                            <Text style={t.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={t.infoRight}>
+                                        <Text style={t.infoLabel}>WAKTU</Text>
+                                        <Text style={t.dateValue}>{formatDate(transaction.timestamp)}</Text>
+                                    </View>
                                 </View>
-                            </View>
+                            )}
 
+                            {/* ====== SECTION HEADER items ====== */}
                             <View style={t.sectionHeader}>
                                 <View style={t.sectionTitleRow}>
                                     <ShoppingCart size={14} color={tc.iconColorCart} />
@@ -694,7 +727,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
-                            {/* Customer Info Section */}
+                            {/* ====== CUSTOMER INFO ====== */}
                             {(transaction.customer_name || transaction.customer_phone || transaction.customer_address) && (
                                 <View style={t.customerSection}>
                                     <Text style={t.customerSectionTitle}>Penerima / Pelanggan:</Text>
@@ -721,28 +754,82 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             )}
 
+                            {/* ====== ITEMS LIST ====== */}
                             <View style={t.itemsContainer}>
-                                {(transaction.items || []).map((item, index) => (
-                                    <View key={index} style={t.itemRow}>
-                                        <View style={t.itemLeft}>
-                                            <View style={t.itemIndicator} />
-                                            <View>
-                                                <View style={t.itemNameRow}>
-                                                    <Text style={t.itemName}>{item.name}</Text>
-                                                    <View style={t.itemQtyBadge}>
-                                                        <Text style={t.itemQtyText}>x{item.quantity || item.qty}</Text>
+                                {(transaction.items || []).map((item, index) => {
+                                    const unitPrice = Number(item.price) || 0;
+                                    const qty = item.quantity || item.qty;
+
+                                    if (mobileReceiptUiVersion === '2') {
+                                        // Tema 2 — floating card per item dengan accent strip atas
+                                        return (
+                                            <View key={index} style={t.itemRow}>
+                                                <View style={t.itemCardAccent} />
+                                                <View style={t.itemCardBody}>
+                                                    <View style={t.itemLeft}>
+                                                        <View style={t.itemIndicator}>
+                                                            <Text style={t.itemIndicatorText}>{qty}</Text>
+                                                        </View>
+                                                        <View>
+                                                            <View style={t.itemNameRow}>
+                                                                <Text style={t.itemName}>{item.name}</Text>
+                                                                <Text style={t.itemUnitPrice}>@ {formatCurrency(unitPrice)}</Text>
+                                                            </View>
+                                                            <View style={t.itemQtyBadge}>
+                                                                <Text style={t.itemQtyText}>x{qty} unit</Text>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                    <View style={t.itemRight}>
+                                                        <Text style={t.itemSublabel}>Total</Text>
+                                                        <Text style={t.itemPriceText}>{formatCurrency(unitPrice * qty)}</Text>
                                                     </View>
                                                 </View>
                                             </View>
-                                        </View>
-                                        <View style={t.itemRight}>
-                                            <Text style={t.itemSublabel}>Subtotal</Text>
-                                            <Text style={t.itemPriceText}>{formatCurrency(item.price * (item.quantity || item.qty))}</Text>
-                                        </View>
-                                    </View>
-                                ))}
+                                        );
+                                    } else if (mobileReceiptUiVersion === '3') {
+                                        // Tema 3 — baris tabel rapi seperti nota fisik
+                                        return (
+                                            <View key={index} style={t.itemRow}>
+                                                <View style={t.itemLeft}>
+                                                    <Text style={t.itemName}>{item.name}</Text>
+                                                    <Text style={t.itemUnitPrice}>{qty} × {formatCurrency(unitPrice)}</Text>
+                                                    <View style={t.itemQtyBadge}>
+                                                        <Text style={t.itemQtyText}>x{qty}</Text>
+                                                    </View>
+                                                </View>
+                                                <View style={t.itemRight}>
+                                                    <Text style={t.itemSublabel}>Subtotal</Text>
+                                                    <Text style={t.itemPriceText}>{formatCurrency(unitPrice * qty)}</Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    } else {
+                                        // Tema 1 — layout original
+                                        return (
+                                            <View key={index} style={t.itemRow}>
+                                                <View style={t.itemLeft}>
+                                                    <View style={t.itemIndicator} />
+                                                    <View>
+                                                        <View style={t.itemNameRow}>
+                                                            <Text style={t.itemName}>{item.name}</Text>
+                                                            <View style={t.itemQtyBadge}>
+                                                                <Text style={t.itemQtyText}>x{qty}</Text>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                                <View style={t.itemRight}>
+                                                    <Text style={t.itemSublabel}>Subtotal</Text>
+                                                    <Text style={t.itemPriceText}>{formatCurrency(unitPrice * qty)}</Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    }
+                                })}
                             </View>
 
+                            {/* ====== SUMMARY CARD ====== */}
                             <View style={t.summaryCard}>
                                 <View style={t.summaryGlow} />
                                 <View style={t.summaryContent}>
@@ -779,7 +866,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                         </View>
                                     )}
 
-                                    {/* Additional Payment Info for Cash */}
+                                    {/* Cash payment details */}
                                     {((transaction.payment_method || '').toLowerCase() === 'tunai' || (transaction.payment_method || '').toLowerCase() === 'cash') && (
                                         <>
                                             <View style={t.summaryRow}>
@@ -799,6 +886,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                             <Text style={t.summaryValue}>-{formatCurrency(transaction.points_used)}</Text>
                                         </View>
                                     )}
+
                                     <View style={t.thickDivider} />
                                     <View style={t.totalSection}>
                                         <Text style={t.totalLabel}>TOTAL TAGIHAN</Text>
@@ -807,13 +895,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                             <Text style={t.totalFinalValue}>{formatCurrency(transaction.total).replace('Rp', '').trim()}</Text>
                                         </View>
                                         <View style={t.successBadge}>
-                                            <CheckCircle2 size={12} color={mobileReceiptUiVersion === '2' ? '#0F172A' : '#FFFFFF'} strokeWidth={3} />
+                                            <CheckCircle2 size={12} color={mobileReceiptUiVersion === '3' ? '#FFFFFF' : (mobileReceiptUiVersion === '2' ? '#16A34A' : '#FFFFFF')} strokeWidth={3} />
                                             <Text style={t.successText}>PEMBAYARAN BERHASIL</Text>
                                         </View>
                                     </View>
                                 </View>
                             </View>
 
+                            {/* ====== PAYMENT PILL ====== */}
                             <View style={t.paymentPill}>
                                 <View style={t.pillPart}>
                                     <Text style={t.pillLabel}>METODE</Text>
@@ -825,6 +914,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
+                            {/* ====== CATATAN ====== */}
                             {(transaction.catatan || transaction.notes) && (
                                 <View style={t.notesContainer}>
                                     <View style={t.notesHeader}>
@@ -835,12 +925,26 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             )}
 
+                            {/* ====== FOOTER ====== */}
                             <View style={t.receiptFooter}>
                                 <View style={t.footerDecoration}>
                                     <Zap size={12} color={tc.iconColorFooter} fill={tc.iconColorFooter} />
                                 </View>
                                 <Text style={t.footerMainText}>TERIMA KASIH</Text>
                                 <Text style={t.footerSubText}>SEMOGA BERKAH</Text>
+                                {/* Barcode dekoratif — khusus Tema 3 */}
+                                {mobileReceiptUiVersion === '3' && (
+                                    <>
+                                        <View style={t.barcodeContainer}>
+                                            {[18, 12, 22, 10, 16, 8, 20, 14, 18, 10, 24, 12, 16, 8, 20, 14, 10, 22, 16, 12].map((h, i) => (
+                                                <View key={i} style={[t.barcodeBar, { height: h }]} />
+                                            ))}
+                                        </View>
+                                        <Text style={t.barcodeText}>
+                                            {transaction.id.toString().padStart(12, '0')}
+                                        </Text>
+                                    </>
+                                )}
                             </View>
                         </View>
                     </ScrollView>
