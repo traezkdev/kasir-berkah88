@@ -1,0 +1,832 @@
+cat > /root/install_kasir_berkah88.sh <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+SERVER_IP="139.190.99.150"
+API_DOMAIN="api.kberkah88.my.id"
+DB_DOMAIN="db.kberkah88.my.id"
+FRONTEND_URL="https://kasir-berkah88.vercel.app"
+API_URL="https://${API_DOMAIN}"
+DB_NAME="kasir_berkah88"
+DB_USER="traezkdev"
+APP_DIR="/opt/kasir-berkah88/backend"
+LOG_DIR="/var/log/kasir-berkah88"
+LOG_FILE="/var/log/kasir-install.log"
+
+if [[ "$EUID" -ne 0 ]]; then
+    echo "Jalankan sebagai root."
+    exit 1
+fi
+
+mkdir -p /var/log
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+trap 'echo "[ERROR] Gagal pada baris $LINENO. Periksa $LOG_FILE"' ERR
+
+echo "=================================================="
+echo " INSTALASI BACKEND KASIR BERKAH 88"
+echo "=================================================="
+
+. /etc/os-release
+
+if [[ "${VERSION_ID:-}" != "22.04" ]]; then
+    echo "ERROR: Script ini khusus Ubuntu 22.04."
+    exit 1
+fi
+
+echo "OS: $PRETTY_NAME"
+echo "IP target: $SERVER_IP"
+
+# --------------------------------------------------
+# 1. PEMERIKSAAN DNS
+# --------------------------------------------------
+
+echo
+echo "[1/15] Memeriksa DNS..."
+
+for DOMAIN in "$API_DOMAIN" "$DB_DOMAIN"; do
+    IPS=$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk '{print $1}' | sort -u || true)
+
+    if ! grep -Fxq "$SERVER_IP" <<< "$IPS"; then
+        echo
+        echo "DNS $DOMAIN belum mengarah langsung ke $SERVER_IP."
+        echo "Hasil DNS: ${IPS:-tidak ditemukan}"
+        echo
+        echo "Periksa Cloudflare:"
+        echo "A $DOMAIN -> $SERVER_IP"
+        echo "Proxy harus DNS Only (abu-abu) sementara."
+        exit 1
+    fi
+
+    echo "$DOMAIN OK"
+done
+
+# --------------------------------------------------
+# 2. INFORMASI DAN PASSWORD
+# --------------------------------------------------
+
+echo
+echo "[2/15] Menyiapkan kredensial..."
+
+read -r -p "Email untuk SSL Let's Encrypt: " LE_EMAIL
+
+if [[ ! "$LE_EMAIL" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+    echo "Alamat email tidak valid."
+    exit 1
+fi
+
+read -r -p "Username Basic Auth phpMyAdmin [dbadmin]: " PMA_USER
+PMA_USER="${PMA_USER:-dbadmin}"
+
+read -r -s -p "Password Basic Auth phpMyAdmin: " PMA_PASS
+echo
+read -r -s -p "Ulangi password: " PMA_PASS2
+echo
+
+if [[ "$PMA_PASS" != "$PMA_PASS2" || ${#PMA_PASS} -lt 12 ]]; then
+    echo "Password tidak sama atau kurang dari 12 karakter."
+    exit 1
+fi
+
+echo
+echo "Integrasi email dan OneSignal bersifat opsional."
+echo "Kosongkan jika belum ingin mengaktifkannya."
+
+read -r -p "EMAIL_USER: " EMAIL_USER
+EMAIL_PASS=""
+ONESIGNAL_APP_ID=""
+ONESIGNAL_API_KEY=""
+
+if [[ -n "$EMAIL_USER" ]]; then
+    read -r -s -p "EMAIL_PASS: " EMAIL_PASS
+    echo
+fi
+
+read -r -p "ONESIGNAL_APP_ID: " ONESIGNAL_APP_ID
+
+if [[ -n "$ONESIGNAL_APP_ID" ]]; then
+    read -r -s -p "ONESIGNAL_API_KEY: " ONESIGNAL_API_KEY
+    echo
+fi
+
+DB_PASSWORD=$(openssl rand -hex 24)
+JWT_SECRET=$(openssl rand -hex 48)
+TURN_SECRET=$(openssl rand -hex 32)
+PMA_BLOWFISH=$(openssl rand -hex 32)
+
+# --------------------------------------------------
+# 3. UPDATE UBUNTU
+# --------------------------------------------------
+
+echo
+echo "[3/15] Update Ubuntu..."
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get upgrade -y
+
+apt-get install -y \
+    curl wget git ca-certificates gnupg \
+    lsb-release software-properties-common \
+    openssl cron logrotate ufw fail2ban \
+    unattended-upgrades apache2-utils \
+    dnsutils build-essential
+
+add-apt-repository -y universe
+apt-get update
+
+# --------------------------------------------------
+# 4. INSTALL MARIADB 10.11
+# --------------------------------------------------
+
+echo
+echo "[4/15] Memasang MariaDB 10.11..."
+
+curl -fsSL \
+    https://r.mariadb.com/downloads/mariadb_repo_setup \
+    -o /tmp/mariadb_repo_setup
+
+bash /tmp/mariadb_repo_setup \
+    --mariadb-server-version="mariadb-10.11" \
+    --os-type=ubuntu \
+    --os-version=jammy
+
+apt-get update
+apt-get install -y mariadb-server mariadb-client
+
+cat > /etc/mysql/mariadb.conf.d/60-kasir-tuning.cnf <<'EOF'
+[mysqld]
+bind-address = 127.0.0.1
+max_connections = 30
+innodb_buffer_pool_size = 128M
+innodb_log_buffer_size = 8M
+max_allowed_packet = 64M
+tmp_table_size = 16M
+max_heap_table_size = 16M
+table_open_cache = 400
+thread_cache_size = 8
+performance_schema = OFF
+skip_name_resolve = 1
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+EOF
+
+systemctl enable mariadb
+systemctl restart mariadb
+
+for i in {1..30}; do
+    if mariadb -uroot -e "SELECT 1" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 2
+done
+
+mariadb -uroot -e "SELECT VERSION();"
+
+# Buat database dan user lokal.
+mariadb -uroot <<SQL
+CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
+CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1'
+IDENTIFIED BY '${DB_PASSWORD}';
+
+ALTER USER '${DB_USER}'@'127.0.0.1'
+IDENTIFIED BY '${DB_PASSWORD}';
+
+GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.*
+TO '${DB_USER}'@'127.0.0.1';
+
+FLUSH PRIVILEGES;
+SQL
+
+# --------------------------------------------------
+# 5. INSTALL NODE.JS 24
+# --------------------------------------------------
+
+echo
+echo "[5/15] Memasang Node.js 24..."
+
+curl -fsSL \
+    https://deb.nodesource.com/setup_24.x \
+    -o /tmp/nodesource_setup.sh
+
+bash /tmp/nodesource_setup.sh
+
+apt-get install -y nodejs
+
+node -v
+npm -v
+
+npm install -g pm2
+
+# --------------------------------------------------
+# 6. INSTALL NGINX DAN PHP
+# --------------------------------------------------
+
+echo
+echo "[6/15] Memasang Nginx dan PHP-FPM..."
+
+apt-get install -y nginx \
+    php8.1-fpm \
+    php8.1-cli \
+    php8.1-mysql \
+    php8.1-mbstring \
+    php8.1-xml \
+    php8.1-curl \
+    php8.1-zip \
+    php8.1-gd \
+    certbot \
+    coturn
+
+# PHP-FPM hemat RAM.
+sed -ri \
+    -e 's/^pm = .*/pm = ondemand/' \
+    -e 's/^pm.max_children = .*/pm.max_children = 2/' \
+    -e 's/^pm.start_servers = .*/pm.start_servers = 1/' \
+    -e 's/^pm.min_spare_servers = .*/pm.min_spare_servers = 1/' \
+    -e 's/^pm.max_spare_servers = .*/pm.max_spare_servers = 1/' \
+    /etc/php/8.1/fpm/pool.d/www.conf
+
+grep -q '^pm.process_idle_timeout' /etc/php/8.1/fpm/pool.d/www.conf \
+    || echo 'pm.process_idle_timeout = 10s' >> /etc/php/8.1/fpm/pool.d/www.conf
+
+sed -ri \
+    -e 's/^memory_limit = .*/memory_limit = 128M/' \
+    -e 's/^upload_max_filesize = .*/upload_max_filesize = 50M/' \
+    -e 's/^post_max_size = .*/post_max_size = 55M/' \
+    -e 's/^max_execution_time = .*/max_execution_time = 120/' \
+    /etc/php/8.1/fpm/php.ini
+
+grep -q '^date.timezone' /etc/php/8.1/fpm/php.ini \
+    && sed -i 's|^;*date.timezone.*|date.timezone = Asia/Jakarta|' /etc/php/8.1/fpm/php.ini \
+    || echo 'date.timezone = Asia/Jakarta' >> /etc/php/8.1/fpm/php.ini
+
+# Nginx optimasi satu CPU.
+sed -i 's/^worker_processes .*/worker_processes 1;/' /etc/nginx/nginx.conf
+sed -i 's/worker_connections .*/worker_connections 512;/' /etc/nginx/nginx.conf
+sed -i 's/keepalive_timeout .*/keepalive_timeout 15;/' /etc/nginx/nginx.conf
+
+# --------------------------------------------------
+# 7. INSTALL PHPMYADMIN TANPA APACHE
+# --------------------------------------------------
+
+echo
+echo "[7/15] Memasang phpMyAdmin..."
+
+echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" \
+    | debconf-set-selections
+
+echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" \
+    | debconf-set-selections
+
+DEBIAN_FRONTEND=noninteractive \
+apt-get install -y --no-install-recommends phpmyadmin
+
+mkdir -p /var/lib/phpmyadmin/tmp
+chown -R www-data:www-data /var/lib/phpmyadmin
+chmod 750 /var/lib/phpmyadmin
+
+cat > /etc/phpmyadmin/config.inc.php <<EOF
+<?php
+\$cfg['blowfish_secret'] = '${PMA_BLOWFISH}';
+
+\$i = 0;
+\$i++;
+
+\$cfg['Servers'][\$i]['auth_type'] = 'cookie';
+\$cfg['Servers'][\$i]['host'] = '127.0.0.1';
+\$cfg['Servers'][\$i]['port'] = '3306';
+\$cfg['Servers'][\$i]['connect_type'] = 'tcp';
+\$cfg['Servers'][\$i]['AllowNoPassword'] = false;
+\$cfg['Servers'][\$i]['compress'] = false;
+
+\$cfg['TempDir'] = '/var/lib/phpmyadmin/tmp';
+\$cfg['UploadDir'] = '';
+\$cfg['SaveDir'] = '';
+EOF
+
+# --------------------------------------------------
+# 8. SWAP 1 GB
+# --------------------------------------------------
+
+echo
+echo "[8/15] Memeriksa Swap..."
+
+if ! swapon --show | grep -q '/swapfile'; then
+    if [[ ! -f /swapfile ]]; then
+        fallocate -l 1G /swapfile || \
+            dd if=/dev/zero of=/swapfile bs=1M count=1024 status=progress
+        chmod 600 /swapfile
+        mkswap /swapfile
+    fi
+
+    swapon /swapfile
+    grep -q '^/swapfile ' /etc/fstab \
+        || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+cat > /etc/sysctl.d/99-kasir-memory.conf <<'EOF'
+vm.swappiness=10
+vm.vfs_cache_pressure=50
+EOF
+
+sysctl --system >/dev/null
+
+# --------------------------------------------------
+# 9. AMBIL BACKEND GITHUB
+# --------------------------------------------------
+
+echo
+echo "[9/15] Mengambil backend GitHub..."
+
+mkdir -p /opt/kasir-berkah88
+TMP_DIR=$(mktemp -d)
+chmod 700 "$TMP_DIR"
+
+git clone \
+    --depth 1 \
+    --filter=blob:none \
+    --sparse \
+    https://github.com/traezkdev/kasir-berkah88.git \
+    "$TMP_DIR/repo"
+
+git -C "$TMP_DIR/repo" sparse-checkout set backend
+
+# PENTING:
+# .env yang tersimpan di repository tidak digunakan.
+rm -f "$TMP_DIR/repo/backend/.env"
+
+rm -rf "$APP_DIR"
+cp -a "$TMP_DIR/repo/backend" "$APP_DIR"
+
+rm -rf "$TMP_DIR"
+
+mkdir -p "$APP_DIR/public/uploads"
+
+# --------------------------------------------------
+# 10. BUAT ENVIRONMENT PRODUKSI
+# --------------------------------------------------
+
+echo
+echo "[10/15] Membuat konfigurasi environment..."
+
+dotenv_quote() {
+    local v="$1"
+    v="${v//\\/\\\\}"
+    v="${v//\"/\\\"}"
+    v="${v//$'\n'/\\n}"
+    v="${v//$'\r'/\\r}"
+    printf '"%s"' "$v"
+}
+
+cat > "$APP_DIR/.env" <<EOF
+NODE_ENV=production
+PORT=4000
+
+DB_HOST=127.0.0.1
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASSWORD}
+DB_DATABASE=${DB_NAME}
+DB_PORT=3306
+
+JWT_SECRET=${JWT_SECRET}
+
+FRONTEND_URL=${FRONTEND_URL}
+API_URL=${API_URL}
+
+TZ=Asia/Jakarta
+
+ONESIGNAL_APP_ID=$(dotenv_quote "$ONESIGNAL_APP_ID")
+ONESIGNAL_API_KEY=$(dotenv_quote "$ONESIGNAL_API_KEY")
+
+EMAIL_USER=$(dotenv_quote "$EMAIL_USER")
+EMAIL_PASS=$(dotenv_quote "$EMAIL_PASS")
+
+TURN_HOST=${SERVER_IP}
+TURN_SECRET=${TURN_SECRET}
+EOF
+
+chmod 600 "$APP_DIR/.env"
+
+# --------------------------------------------------
+# 11. INSTALL DEPENDENSI DAN PM2
+# --------------------------------------------------
+
+echo
+echo "[11/15] Instalasi dependensi backend..."
+
+cd "$APP_DIR"
+
+npm install --omit=dev --no-audit --no-fund
+
+id kasir >/dev/null 2>&1 || \
+    useradd --system --create-home --shell /usr/sbin/nologin kasir
+
+mkdir -p "$LOG_DIR"
+chown -R kasir:kasir /opt/kasir-berkah88 "$LOG_DIR"
+chmod 750 "$LOG_DIR"
+chmod 600 "$APP_DIR/.env"
+
+cat > "$APP_DIR/ecosystem.config.cjs" <<'EOF'
+module.exports = {
+  apps: [{
+    name: 'kasir-berkah88-api',
+    script: 'server.js',
+    cwd: '/opt/kasir-berkah88/backend',
+    instances: 1,
+    exec_mode: 'fork',
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '450M',
+    env: {
+      NODE_ENV: 'production',
+      NODE_OPTIONS: '--max-old-space-size=384',
+      TZ: 'Asia/Jakarta'
+    },
+    out_file: '/var/log/kasir-berkah88/backend-out.log',
+    error_file: '/var/log/kasir-berkah88/backend-error.log',
+    merge_logs: true,
+    time: true
+  }]
+};
+EOF
+
+chown kasir:kasir "$APP_DIR/ecosystem.config.cjs"
+
+PM2_RUNTIME="$(command -v pm2-runtime)"
+
+cat > /etc/systemd/system/kasir-backend.service <<EOF
+[Unit]
+Description=Kasir Berkah 88 Node.js Backend
+After=network-online.target mariadb.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=kasir
+Group=kasir
+WorkingDirectory=${APP_DIR}
+Environment=PM2_HOME=/home/kasir/.pm2
+ExecStart=${PM2_RUNTIME} start ${APP_DIR}/ecosystem.config.cjs
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now kasir-backend
+
+echo "Menunggu setupDatabase() menyelesaikan inisialisasi..."
+
+DB_READY=0
+
+for i in {1..180}; do
+    if grep -Fq 'hpp_ingredients table is ready.' \
+        "$LOG_DIR/backend-out.log" 2>/dev/null; then
+        DB_READY=1
+        break
+    fi
+
+    if ! systemctl is-active --quiet kasir-backend; then
+        echo "Backend berhenti. Periksa log."
+        break
+    fi
+
+    sleep 2
+done
+
+if [[ "$DB_READY" -eq 0 ]]; then
+    echo "PERINGATAN: Inisialisasi database belum terkonfirmasi."
+    echo "Periksa: journalctl -u kasir-backend -n 100"
+fi
+
+# --------------------------------------------------
+# 12. KONFIGURASI PHPMYADMIN DAN NGINX
+# --------------------------------------------------
+
+echo
+echo "[12/15] Konfigurasi Nginx..."
+
+printf '%s\n' "$PMA_PASS" | \
+    htpasswd -B -c -i /etc/nginx/.pma_htpasswd "$PMA_USER"
+
+chown root:www-data /etc/nginx/.pma_htpasswd
+chmod 640 /etc/nginx/.pma_htpasswd
+
+cat > /etc/nginx/conf.d/00-kasir-websocket.conf <<'EOF'
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+EOF
+
+rm -f /etc/nginx/sites-enabled/default
+
+cat > /etc/nginx/sites-available/kasir-api <<'EOF'
+server {
+    listen 80;
+    server_name api.kberkah88.my.id;
+
+    client_max_body_size 55m;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+}
+EOF
+
+cat > /etc/nginx/sites-available/kasir-db <<'EOF'
+server {
+    listen 80;
+    server_name db.kberkah88.my.id;
+
+    root /usr/share/phpmyadmin;
+    index index.php index.html;
+
+    auth_basic "Database Administration";
+    auth_basic_user_file /etc/nginx/.pma_htpasswd;
+
+    location ^~ /.well-known/acme-challenge/ {
+        auth_basic off;
+        root /var/www/html;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+}
+EOF
+
+ln -sf /etc/nginx/sites-available/kasir-api \
+    /etc/nginx/sites-enabled/kasir-api
+
+ln -sf /etc/nginx/sites-available/kasir-db \
+    /etc/nginx/sites-enabled/kasir-db
+
+mkdir -p /var/www/html/.well-known/acme-challenge
+
+systemctl enable nginx php8.1-fpm
+systemctl restart php8.1-fpm
+nginx -t
+systemctl restart nginx
+
+# --------------------------------------------------
+# 13. FIREWALL DAN KEAMANAN
+# --------------------------------------------------
+
+echo
+echo "[13/15] Konfigurasi firewall..."
+
+SSH_PORT=$(sshd -T 2>/dev/null | awk '$1=="port"{print $2; exit}')
+SSH_PORT="${SSH_PORT:-22}"
+
+ufw default deny incoming
+ufw default allow outgoing
+
+ufw allow "${SSH_PORT}/tcp"
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# Coturn: signaling dan relay panggilan suara/video.
+ufw allow 3478/tcp
+ufw allow 3478/udp
+ufw allow 5349/tcp
+ufw allow 49160:49200/udp
+
+ufw --force enable
+
+systemctl enable --now fail2ban
+
+cat > /etc/fail2ban/jail.d/kasir.local <<'EOF'
+[sshd]
+enabled = true
+backend = systemd
+maxretry = 5
+findtime = 10m
+bantime = 1h
+EOF
+
+systemctl restart fail2ban
+
+systemctl enable --now unattended-upgrades || true
+
+# --------------------------------------------------
+# 14. SSL LET'S ENCRYPT
+# --------------------------------------------------
+
+echo
+echo "[14/15] Meminta sertifikat SSL..."
+
+CERT_OK=0
+
+if certbot certonly \
+    --webroot \
+    --webroot-path /var/www/html \
+    -d "$API_DOMAIN" \
+    -d "$DB_DOMAIN" \
+    --email "$LE_EMAIL" \
+    --agree-tos \
+    --non-interactive; then
+
+    CERT_OK=1
+else
+    echo "PERINGATAN: SSL belum berhasil diterbitkan."
+    echo "Periksa DNS, Cloudflare, dan port 80."
+fi
+
+if [[ "$CERT_OK" -eq 1 ]]; then
+
+cat > /etc/nginx/sites-available/kasir-api <<'EOF'
+server {
+    listen 80;
+    server_name api.kberkah88.my.id;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name api.kberkah88.my.id;
+
+    ssl_certificate /etc/letsencrypt/live/api.kberkah88.my.id/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.kberkah88.my.id/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    client_max_body_size 55m;
+
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+}
+EOF
+
+cat > /etc/nginx/sites-available/kasir-db <<'EOF'
+server {
+    listen 80;
+    server_name db.kberkah88.my.id;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name db.kberkah88.my.id;
+
+    ssl_certificate /etc/letsencrypt/live/api.kberkah88.my.id/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.kberkah88.my.id/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    root /usr/share/phpmyadmin;
+    index index.php index.html;
+
+    auth_basic "Database Administration";
+    auth_basic_user_file /etc/nginx/.pma_htpasswd;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+}
+EOF
+
+nginx -t
+systemctl reload nginx
+
+fi
+
+# --------------------------------------------------
+# 15. COTURN, BACKUP, MONITORING
+# --------------------------------------------------
+
+echo
+echo "[15/15] Konfigurasi Coturn dan backup..."
+
+if [[ "$CERT_OK" -eq 1 ]]; then
+    TLS_CONFIG=$(cat <<EOF
+tls-listening-port=5349
+cert=/etc/letsencrypt/live/api.kberkah88.my.id/fullchain.pem
+pkey=/etc/letsencrypt/live/api.kberkah88.my.id/privkey.pem
+no-tlsv1
+no-tlsv1_1
+EOF
+)
+else
+    TLS_CONFIG="no-tls"
+fi
+
+cat > /etc/turnserver.conf <<EOF
+listening-port=3478
+fingerprint
+use-auth-secret
+static-auth-secret=${TURN_SECRET}
+realm=${API_DOMAIN}
+external-ip=${SERVER_IP}
+min-port=49160
+max-port=49200
+user-quota=12
+total-quota=60
+no-cli
+no-loopback-peers
+no-multicast-peers
+${TLS_CONFIG}
+EOF
+
+if grep -q '^TURNSERVER_ENABLED=' /etc/default/coturn; then
+    sed -i 's/^TURNSERVER_ENABLED=.*/TURNSERVER_ENABLED=1/' /etc/default/coturn
+else
+    echo 'TURNSERVER_ENABLED=1' >> /etc/default/coturn
+fi
+
+systemctl enable coturn
+systemctl restart coturn
+
+# Backup database dan upload.
+mkdir -p /var/backups/kasir-berkah88
+chmod 700 /var/backups/kasir-berkah88
+
+cat > /usr/local/sbin/kasir-backup <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+DEST="/var/backups/kasir-berkah88"
+DATE=$(date
